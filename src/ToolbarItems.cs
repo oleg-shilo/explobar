@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using static System.Environment;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -8,42 +11,133 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Shell32;
 using TsudaKageyu;
+using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
 
 namespace Explobar
 {
     static class ToolbarItems
     {
-        public static List<ToolbarItem> Items =
-            [
+        static string ConfigPath = Path.Combine(
+            GetFolderPath(SpecialFolder.ApplicationData),
+            "Explobar",
+            "toolbar-items.yaml");
+
+        public static List<ToolbarItem> Items => LoadItems();
+
+        static List<ToolbarItem> LoadItems()
+        {
+            try
+            {
+                if (File.Exists(ConfigPath))
+                {
+                    var yaml = File.ReadAllText(ConfigPath);
+                    var deserializer = new DeserializerBuilder()
+                        .WithNamingConvention(PascalCaseNamingConvention.Instance)
+                        .Build();
+
+                    var items = deserializer.Deserialize<List<ToolbarItem>>(yaml);
+                    if (items != null && items.Count > 0)
+                    {
+                        // Resolve paths after loading
+                        foreach (var item in items)
+                        {
+                            item.Path = item.Path.ResolvePath();
+                            item.Arguments = ExpandEnvironmentVariables(item.Arguments);
+                        }
+                        return items.Resolve();
+                    }
+                }
+                else
+                {
+                    // Create default config file if it doesn't exist
+                    SaveDefaultConfig();
+                }
+            }
+            catch (YamlDotNet.Core.SyntaxErrorException ex)
+            {
+                Console.WriteLine($"Error loading toolbar items: {ex.Message}; start: {ex.Start}, end: {ex.End}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading toolbar items: {ex.Message}");
+            }
+
+            // Return default items if file doesn't exist or loading fails
+            return GetDefaultItems().Resolve();
+        }
+
+        static void SaveDefaultConfig()
+        {
+            try
+            {
+                var directory = Path.GetDirectoryName(ConfigPath);
+                if (!Directory.Exists(directory))
+                {
+                    Directory.CreateDirectory(directory!);
+                }
+
+                var serializer = new SerializerBuilder()
+                    .WithNamingConvention(PascalCaseNamingConvention.Instance)
+                    .Build();
+
+                var yaml = serializer.Serialize(GetDefaultItems());
+                File.WriteAllText(ConfigPath, yaml);
+
+                Console.WriteLine($"Default config created at: {ConfigPath}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error saving default config: {ex.Message}");
+            }
+        }
+
+        static List<ToolbarItem> GetDefaultItems()
+        {
+            var items = new List<ToolbarItem>
+            {
                 new()
-            {
-                IconPath = @"C:\Program Files\Sublime Text\sublime_text.exe",
-                Path = @"C:\Program Files\Sublime Text\sublime_text.exe",
-                Arguments = "%f%",
-                WorkingDir = "%c%"
-            },
-            new()
-            {
-                IconPath = @"C:\Program Files\Everything\Everything.exe",
-                Path = @"C:\Program Files\Everything\Everything.exe",
-                Arguments = @"-path %c%",
-            },
-            new()
-            {
-                IconPath = @"C:\Windows\System32\cmd.exe",
-                Path = @"C:\Program Files\WindowsApps\Microsoft.WindowsTerminal_1.19.11213.0_x64__8wekyb3d8bbwe\wt.exe",
-                // Path = @"C:\Windows\System32\cmd.exe",
-                Arguments = @"-d %c% -p ""Command Prompt""; -d %c% -p ""Windows PowerShell""",
-            },
-        ];
+                {
+                    Icon = @"%ProgramFiles%\Sublime Text\sublime_text.exe",
+                    Path = @"%ProgramFiles%\Sublime Text\sublime_text.exe",
+                    Arguments = "%f%",
+                    WorkingDir = "%c%",
+                    Tooltip = "Open in Sublime Text"
+                },
+                new()
+                {
+                    Icon = @"%ProgramFiles%\Everything\Everything.exe",
+                    Path = @"%ProgramFiles%\Everything\Everything.exe",
+                    Arguments = @"-path %c%",
+                    Tooltip = "Search in Everything"
+                },
+                new()
+                {
+                    Icon = @"%SystemRoot%\System32\cmd.exe",
+                    Path = "wt.exe",
+                    Arguments = @"-d %c% -p ""Command Prompt""; -d %c% -p ""Windows PowerShell""",
+                    Tooltip = "Open Windows Terminal"
+                },
+                new()
+                {
+                    Icon = @"%SystemRoot%\System32\shell32.dll,16",
+                    Path = "notepad.exe",
+                    Tooltip = "Open Notepad"
+                }
+            };
+            return items;
+        }
     }
 
     class ToolbarItem
     {
-        public string IconPath;
-        public string Path;
-        public string Arguments;
-        public string WorkingDir;
+        public string Icon { get; set; } = "";
+        internal string IconPath => Icon.ParseIconPath().path.ResolvePath();
+        internal int IconIndex => Icon.ParseIconPath().index;
+        public string Path { get; set; } = "";
+        public string Arguments { get; set; } = "";
+        public string WorkingDir { get; set; } = "";
+        public string Tooltip { get; set; } = "";
     }
 
     static class ToolbarExtesnions
@@ -56,7 +150,7 @@ namespace Explobar
                     return;
 
                 var firstItem = selectedItems.FirstOrDefault() ?? "";
-                var currDir = Path.GetDirectoryName(firstItem) ?? "";
+                var currDir = System.IO.Path.GetDirectoryName(firstItem) ?? "";
 
                 var args = info.Arguments?
                     .Replace("%f%", $"\"{firstItem}\"")
@@ -80,15 +174,14 @@ namespace Explobar
             }
         }
 
-        public static Image? ExtractIcon(this string exePath)
+        public static Image? ExtractIcon(this string iconPath, int iconIndex)
         {
             try
             {
-                if (string.IsNullOrEmpty(exePath) || !System.IO.File.Exists(exePath))
+                if (string.IsNullOrEmpty(iconPath))
                     return null;
 
-                using (var icon = new IconExtractor(exePath).GetIcon(0))
-                // using (var icon = Icon.ExtractAssociatedIcon(exePath))
+                using (var icon = new IconExtractor(iconPath).GetIcon(iconIndex))
                 {
                     if (icon == null)
                         return null;
@@ -101,6 +194,93 @@ namespace Explobar
             {
                 return null;
             }
+        }
+
+        public static List<ToolbarItem> Resolve(this List<ToolbarItem> items)
+        {
+            foreach (var item in items)
+            {
+                item.Path = item.Path.ResolvePath();
+                item.Arguments = ExpandEnvironmentVariables(item.Arguments);
+            }
+
+            return items;
+        }
+
+        public static (string path, int index) ParseIconPath(this string iconPath)
+        {
+            if (string.IsNullOrEmpty(iconPath))
+                return (iconPath, 0);
+
+            var parts = iconPath.Split(',');
+            if (parts.Length > 1 && int.TryParse(parts[1].Trim(), out int index))
+            {
+                return (parts[0].Trim(), index);
+            }
+
+            return (iconPath, 0);
+        }
+
+        public static string ResolvePath(this string path)
+        {
+            if (string.IsNullOrEmpty(path))
+                return path;
+
+            // Expand environment variables
+            path = ExpandEnvironmentVariables(path);
+
+            // If path exists as-is, return it
+            if (File.Exists(path))
+                return path;
+
+            // If path contains directory separator, it's a full/relative path
+            if (path.Contains(Path.DirectorySeparatorChar) || path.Contains(Path.AltDirectorySeparatorChar))
+                return path;
+
+            // Search in well-known locations
+            var searchLocations = new[]
+            {
+                CurrentDirectory,
+                GetFolderPath(SpecialFolder.Windows),
+                GetFolderPath(SpecialFolder.System),
+                GetFolderPath(SpecialFolder.SystemX86),
+                GetFolderPath(SpecialFolder.ProgramFiles),
+                GetFolderPath(SpecialFolder.ProgramFilesX86),
+                Path.Combine(GetFolderPath(SpecialFolder.LocalApplicationData), "Microsoft", "WindowsApps")
+            };
+
+            // Search in standard locations
+            foreach (var location in searchLocations)
+            {
+                if (string.IsNullOrEmpty(location))
+                    continue;
+
+                var fullPath = Path.Combine(location, path);
+                if (File.Exists(fullPath))
+                    return fullPath;
+            }
+
+            // Search in PATH environment variable
+            var pathEnv = GetEnvironmentVariable("PATH") ?? "";
+            foreach (var pathDir in pathEnv.Split(Path.PathSeparator))
+            {
+                if (string.IsNullOrEmpty(pathDir))
+                    continue;
+
+                try
+                {
+                    var fullPath = Path.Combine(pathDir, path);
+                    if (File.Exists(fullPath))
+                        return fullPath;
+                }
+                catch
+                {
+                    // Ignore invalid paths
+                }
+            }
+
+            // Return original path if not found
+            return path;
         }
     }
 }

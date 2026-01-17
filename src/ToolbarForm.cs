@@ -18,6 +18,7 @@ namespace Explobar
         bool enableMouseCheck = false;
         FlowLayoutPanel toolbarPanel;
         IntPtr previousFocusedWindow = IntPtr.Zero;
+        ToolTip toolTip;
 
         [DllImport("user32.dll")]
         static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
@@ -40,17 +41,26 @@ namespace Explobar
             this.FormBorderStyle = FormBorderStyle.None;
             this.KeyPreview = true;
             this.ShowInTaskbar = false;
-            this.BackColor = System.Drawing.Color.DarkGray;
+            this.BackColor = Color.DarkGray;
             this.Padding = new Padding(1);
             this.AutoSize = true;
             this.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+
+            // Initialize tooltip
+            toolTip = new ToolTip
+            {
+                AutoPopDelay = 5000,
+                InitialDelay = 500,
+                ReshowDelay = 100,
+                ShowAlways = true
+            };
 
             // Create toolbar panel
             toolbarPanel = new FlowLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                BackColor = System.Drawing.Color.White,
-                // Padding = new Padding(1),
+                // BackColor = Color.AliceBlue,
+                BackColor = Color.WhiteSmoke,
                 AutoSize = true,
                 AutoSizeMode = AutoSizeMode.GrowAndShrink
             };
@@ -60,6 +70,7 @@ namespace Explobar
             {
                 checkMouseTimer?.Stop();
                 checkMouseTimer?.Dispose();
+                toolTip?.Dispose();
 
                 // Restore focus to the previous window
                 if (previousFocusedWindow != IntPtr.Zero)
@@ -86,40 +97,23 @@ namespace Explobar
                     }));
                 });
             };
+            checkMouseTimer = new System.Windows.Forms.Timer { Interval = 100 };
+            checkMouseTimer.Tick += CheckMouseTimer_Tick;
 
             foreach (var item in ToolbarItems.Items)
             {
                 AddToolbarButton(item, items);
                 this.Controls.Add(toolbarPanel);
-                // Wait 2 seconds before starting mouse check
-                // Task.Run(() =>
-                // {
-                //     Thread.Sleep(2000);
-                // });
-                // var delayTimer = new System.Windows.Forms.Timer { Interval = 1000 };
-                // delayTimer.Tick += (s, e) =>
-                // {
-                //     delayTimer.Stop();
-                //     Console.WriteLine("Enabling mouse check");
-
-                //     enableMouseCheck = true;
-                //     checkMouseTimer.Start();
-                // };
-                // delayTimer.Start();
-
-                // Check mouse position every 100ms
-                checkMouseTimer = new System.Windows.Forms.Timer { Interval = 100 };
-                checkMouseTimer.Tick += CheckMouseTimer_Tick;
             }
         }
 
         void AddToolbarButton(ToolbarItem info, List<string> selectedItems)
         {
-            var originalIcon = info.IconPath.ExtractIcon();
+            var originalIcon = info.IconPath.ExtractIcon(info.IconIndex);
 
             // Resize icon to exactly 24x24
-            var resizedIcon = new System.Drawing.Bitmap(24, 24);
-            using (var graphics = System.Drawing.Graphics.FromImage(resizedIcon))
+            var resizedIcon = new Bitmap(24, 24);
+            using (var graphics = Graphics.FromImage(resizedIcon))
             {
                 graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
                 graphics.DrawImage(originalIcon, 0, 0, 24, 24);
@@ -132,14 +126,20 @@ namespace Explobar
                 BackgroundImage = resizedIcon,
                 BackgroundImageLayout = ImageLayout.Center,
                 FlatStyle = FlatStyle.Flat,
-                BackColor = System.Drawing.Color.Transparent,
+                BackColor = Color.Transparent,
                 Cursor = Cursors.Hand
             };
 
             // Configure border and appearance
             button.FlatAppearance.BorderSize = 0;
-            button.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(64, System.Drawing.Color.LightBlue);
-            button.FlatAppearance.MouseDownBackColor = System.Drawing.Color.Transparent;
+            button.FlatAppearance.MouseOverBackColor = Color.FromArgb(64, Color.LightBlue);
+            button.FlatAppearance.MouseDownBackColor = Color.Transparent;
+
+            // Set tooltip if available
+            if (!string.IsNullOrEmpty(info.Tooltip))
+            {
+                toolTip.SetToolTip(button, info.Tooltip);
+            }
 
             button.Click += (_, _) =>
             {
