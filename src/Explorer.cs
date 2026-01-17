@@ -1,0 +1,6 @@
+namespace Explbar
+{
+    class Explorer
+    {
+    }
+}
