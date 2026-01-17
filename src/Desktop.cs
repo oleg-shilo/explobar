@@ -48,7 +48,7 @@ namespace Explobar
             public int X;
             public int Y;
         }
-        public static void ShowSelectionForm(List<string> items, int x, int y)
+        public static void ShowSelectionForm(string root, List<string> items, int x, int y)
         {
             var form = new ToolbarForm(items);
             form.StartPosition = FormStartPosition.Manual;

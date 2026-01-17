@@ -10,20 +10,22 @@ using System.Windows.Forms;
 
 namespace Explobar
 {
+    public class DoNotShowFormInVS { }
+
     public class ToolbarForm : Form
     {
 
-        private System.Windows.Forms.Timer checkMouseTimer;
-        private bool enableMouseCheck = false;
-        private FlowLayoutPanel toolbarPanel;
+        System.Windows.Forms.Timer checkMouseTimer;
+        bool enableMouseCheck = false;
+        FlowLayoutPanel toolbarPanel;
 
         [DllImport("user32.dll")]
-        private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+        static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
 
-        private static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
-        private const uint SWP_NOSIZE = 0x0001;
-        private const uint SWP_NOMOVE = 0x0002;
-        private const uint SWP_SHOWWINDOW = 0x0040;
+        static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
+        const uint SWP_NOSIZE = 0x0001;
+        const uint SWP_NOMOVE = 0x0002;
+        const uint SWP_SHOWWINDOW = 0x0040;
 
         public ToolbarForm(List<string> items)
         {
@@ -42,7 +44,7 @@ namespace Explobar
             {
                 Dock = DockStyle.Fill,
                 BackColor = System.Drawing.Color.White,
-                Padding = new Padding(1),
+                // Padding = new Padding(1),
                 AutoSize = true,
                 AutoSizeMode = AutoSizeMode.GrowAndShrink
             };
@@ -50,11 +52,6 @@ namespace Explobar
             foreach (var item in ToolbarItems.Items)
             {
                 AddToolbarButton(item, items);
-                // Add sample buttons (will be added dynamically in the future)
-                // AddToolbarButton("1", (s, e) => MessageBox.Show("Button 1 clicked"));
-                // AddToolbarButton("2", (s, e) => MessageBox.Show("Button 2 clicked"));
-                // AddToolbarButton("3", (s, e) => MessageBox.Show("Button 3 clicked"));
-
                 this.Controls.Add(toolbarPanel);
 
                 // Ensure topmost when form is shown
@@ -69,6 +66,8 @@ namespace Explobar
                 delayTimer.Tick += (s, e) =>
                 {
                     delayTimer.Stop();
+                    Console.WriteLine("Enabling mouse check");
+
                     enableMouseCheck = true;
                     checkMouseTimer.Start();
                 };
@@ -79,16 +78,34 @@ namespace Explobar
                 checkMouseTimer.Tick += CheckMouseTimer_Tick;
             }
         }
-        private void AddToolbarButton(ToolbarItem info, List<string> selectedItems)
+        void AddToolbarButton(ToolbarItem info, List<string> selectedItems)
         {
+            var originalIcon = info.IconPath.ExtractIcon();
+
+            // Resize icon to exactly 24x24
+            var resizedIcon = new System.Drawing.Bitmap(24, 24);
+            using (var graphics = System.Drawing.Graphics.FromImage(resizedIcon))
+            {
+                graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                graphics.DrawImage(originalIcon, 0, 0, 24, 24);
+            }
+
             var button = new Button
             {
-                Width = 30,
-                Height = 30,
-                Image = info.IconPath.ExtractIcon(),
+                Width = 32,
+                Height = 32,
+                BackgroundImage = resizedIcon,
+                BackgroundImageLayout = ImageLayout.Center,
                 FlatStyle = FlatStyle.Flat,
-                BackColor = System.Drawing.Color.White
+                BackColor = System.Drawing.Color.Transparent,
+                Cursor = Cursors.Hand
             };
+
+            // Configure border and appearance
+            button.FlatAppearance.BorderSize = 0;
+            button.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(64, System.Drawing.Color.LightBlue);
+            button.FlatAppearance.MouseDownBackColor = System.Drawing.Color.Transparent;
+
             button.Click += (_, _) =>
             {
                 info.Execute(selectedItems);
@@ -109,7 +126,7 @@ namespace Explobar
             return base.ProcessCmdKey(ref msg, keyData);
         }
 
-        private void CheckMouseTimer_Tick(object? sender, EventArgs e)
+        void CheckMouseTimer_Tick(object? sender, EventArgs e)
         {
             if (!enableMouseCheck)
                 return;
