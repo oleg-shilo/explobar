@@ -19,27 +19,33 @@ namespace Explobar
         {
             // Console.WriteLine("Press...");
             // Console.ReadLine();
-            while (true)
+            // while (true)
+            // {
+            //     Thread.Sleep(200);
+            CheckUserInputAndPopupToolbar();
+            // }
+        }
+
+        static void CheckUserInputAndPopupToolbar()
+        {
+            Console.WriteLine("------------");
+            (var root, var selection) = UserInputListener.GetExplorerSelection();
+
+            if (root != null)
             {
-                Thread.Sleep(200);
-                Console.WriteLine("------------");
-                (var root, var selection) = UserInputListener.GetExplorerSelection();
-
-                if (root != null)
+                foreach (var item in selection)
                 {
-                    foreach (var item in selection)
-                    {
-                        Console.WriteLine(item);
-                    }
-
-                    Desktop.GetCursorPos(out Desktop.POINT cursorPos);
-                    Desktop.ShowSelectionForm(root, selection, cursorPos.X, cursorPos.Y);
-
-                    // Wait a bit to avoid showing multiple forms
-                    Thread.Sleep(2000);
+                    Console.WriteLine(item);
                 }
+
+                Desktop.GetCursorPos(out Desktop.POINT cursorPos);
+                Desktop.ShowSelectionForm(root, selection, cursorPos.X, cursorPos.Y);
+
+                // Wait a bit to avoid showing multiple forms
+                Thread.Sleep(2000);
             }
         }
+
     }
 }
 

@@ -56,8 +56,7 @@ namespace Explobar
                     selectedPaths.Add(item.Path);
                 }
 
-                if (selectedPaths.Any())
-                    return (root, selectedPaths);
+                break;
             }
             return (root, selectedPaths);
         }
