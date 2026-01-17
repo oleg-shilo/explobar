@@ -6,6 +6,10 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Explbar;
+
+// using static System.Windows.Forms.VisualStyles.VisualStyleElement;
+// using static System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox;
 using Shell32;
 
 namespace Explobar
@@ -17,7 +21,9 @@ namespace Explobar
         System.Windows.Forms.Timer checkMouseTimer;
         bool enableMouseCheck = false;
         FlowLayoutPanel toolbarPanel;
-        IntPtr previousFocusedWindow = IntPtr.Zero;
+        dynamic explorer = null;
+        IntPtr previousFocusedWindow;
+
         ToolTip toolTip;
 
         [DllImport("user32.dll")]
@@ -34,8 +40,11 @@ namespace Explobar
         const uint SWP_NOMOVE = 0x0002;
         const uint SWP_SHOWWINDOW = 0x0040;
 
-        public ToolbarForm(List<string> items)
+        public ToolbarForm(List<string> items, dynamic explorerWindow)
         {
+            long hWnd = explorerWindow.HWND;
+            this.previousFocusedWindow = hWnd != 0 ? new IntPtr(hWnd) : IntPtr.Zero;
+            this.explorer = explorerWindow;
             this.Text = "Selected Items";
             this.TopMost = true;
             this.FormBorderStyle = FormBorderStyle.None;
@@ -65,6 +74,26 @@ namespace Explobar
                 AutoSizeMode = AutoSizeMode.GrowAndShrink
             };
 
+            this.Shown += (s, e) =>
+            {
+                long hWnd = explorerWindow.HWND;
+                previousFocusedWindow = hWnd != 0 ? new IntPtr(hWnd) : IntPtr.Zero;
+
+                SetWindowPos(this.Handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+                this.Activate();
+                Task.Run(() =>
+                {
+                    Thread.Sleep(1000);
+                    this.BeginInvoke((Action)(() =>
+                    {
+                        enableMouseCheck = true;
+                        checkMouseTimer?.Start();
+                    }));
+                });
+            };
+            checkMouseTimer = new System.Windows.Forms.Timer { Interval = 100 };
+            checkMouseTimer.Tick += CheckMouseTimer_Tick;
+
             // Ensure topmost when form is shown
             this.FormClosing += (s, e) =>
             {
@@ -78,27 +107,6 @@ namespace Explobar
                     SetForegroundWindow(previousFocusedWindow);
                 }
             };
-
-            this.Shown += (s, e) =>
-            {
-                // Capture the current focused window before showing the toolbar
-                previousFocusedWindow = GetForegroundWindow();
-
-                SetWindowPos(this.Handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
-                this.Activate();
-                Task.Run(() =>
-                {
-                    Thread.Sleep(1000);
-                    this.BeginInvoke((Action)(() =>
-                    {
-                        Console.WriteLine("Enabling mouse check");
-                        enableMouseCheck = true;
-                        checkMouseTimer?.Start();
-                    }));
-                });
-            };
-            checkMouseTimer = new System.Windows.Forms.Timer { Interval = 100 };
-            checkMouseTimer.Tick += CheckMouseTimer_Tick;
 
             foreach (var item in ToolbarItems.Items)
             {
@@ -143,11 +151,33 @@ namespace Explobar
 
             button.Click += (_, _) =>
             {
-                info.Execute(selectedItems);
-                checkMouseTimer?.Stop();
+                bool test = false;
+                if (test)
+                {
+                    SentCtrlT();
+                    while (GetForegroundWindow() == previousFocusedWindow)
+                        Thread.Sleep(100);
+                    // need to get new explorer window, this.explorer is old
+                    // Explorer.NavigateToPath(explorer, @"C:\Windows");
+                }
+                else
+                {
+                    info.Execute(selectedItems);
+                    checkMouseTimer?.Stop();
+                }
                 this.Close();
             };
             toolbarPanel.Controls.Add(button);
+        }
+
+        void SentCtrlT()
+        {
+            SetForegroundWindow(previousFocusedWindow);
+            SendKeys.Flush();
+            Thread.Sleep(10);
+            SendKeys.SendWait("^t");
+            Thread.Sleep(10);
+            SendKeys.Flush();
         }
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)

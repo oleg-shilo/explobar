@@ -129,6 +129,12 @@ namespace Explobar
         }
     }
 
+    // class ExplorerContext
+    // {
+    //     public List<string> SelectedItems { get; set; } = new List<string>();
+    //     public dynamic ExplorerObject;
+    // }
+
     class ToolbarItem
     {
         public string Icon { get; set; } = "";

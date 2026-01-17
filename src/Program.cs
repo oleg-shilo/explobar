@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Explbar;
 using Shell32;
 
 // using static System.Windows.Forms.VisualStyles.VisualStyleElement;
@@ -67,7 +68,7 @@ namespace Explobar
         static void CheckUserInputAndPopupToolbar()
         {
             Console.WriteLine("------------");
-            (var root, var selection) = UserInputListener.GetExplorerSelection();
+            (var root, var selection, var window) = Explorer.GetExplorerSelection();
             Console.WriteLine("root: " + root);
 
             if (root != null)
@@ -78,7 +79,7 @@ namespace Explobar
                 }
 
                 Desktop.GetCursorPos(out Desktop.POINT cursorPos);
-                Desktop.ShowSelectionForm(root, selection, cursorPos.X, cursorPos.Y);
+                Desktop.ShowToolbarForm(root, selection, cursorPos.X, cursorPos.Y, window);
 
                 // Wait a bit to avoid showing multiple forms
                 // Thread.Sleep(2000);
