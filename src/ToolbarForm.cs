@@ -1,4 +1,3 @@
-using Shell32;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,6 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Shell32;
 
 namespace Explobar
 {
@@ -14,13 +14,19 @@ namespace Explobar
 
     public class ToolbarForm : Form
     {
-
         System.Windows.Forms.Timer checkMouseTimer;
         bool enableMouseCheck = false;
         FlowLayoutPanel toolbarPanel;
+        IntPtr previousFocusedWindow = IntPtr.Zero;
 
         [DllImport("user32.dll")]
         static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+
+        [DllImport("user32.dll")]
+        static extern IntPtr GetForegroundWindow();
+
+        [DllImport("user32.dll")]
+        static extern bool SetForegroundWindow(IntPtr hWnd);
 
         static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
         const uint SWP_NOSIZE = 0x0001;
@@ -49,35 +55,64 @@ namespace Explobar
                 AutoSizeMode = AutoSizeMode.GrowAndShrink
             };
 
+            // Ensure topmost when form is shown
+            this.FormClosing += (s, e) =>
+            {
+                checkMouseTimer?.Stop();
+                checkMouseTimer?.Dispose();
+
+                // Restore focus to the previous window
+                if (previousFocusedWindow != IntPtr.Zero)
+                {
+                    SetForegroundWindow(previousFocusedWindow);
+                }
+            };
+
+            this.Shown += (s, e) =>
+            {
+                // Capture the current focused window before showing the toolbar
+                previousFocusedWindow = GetForegroundWindow();
+
+                SetWindowPos(this.Handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+                this.Activate();
+                Task.Run(() =>
+                {
+                    Thread.Sleep(1000);
+                    this.BeginInvoke((Action)(() =>
+                    {
+                        Console.WriteLine("Enabling mouse check");
+                        enableMouseCheck = true;
+                        checkMouseTimer?.Start();
+                    }));
+                });
+            };
+
             foreach (var item in ToolbarItems.Items)
             {
                 AddToolbarButton(item, items);
                 this.Controls.Add(toolbarPanel);
-
-                // Ensure topmost when form is shown
-                this.Shown += (s, e) =>
-                {
-                    SetWindowPos(this.Handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
-                    this.Activate();
-                };
-
                 // Wait 2 seconds before starting mouse check
-                var delayTimer = new System.Windows.Forms.Timer { Interval = 2000 };
-                delayTimer.Tick += (s, e) =>
-                {
-                    delayTimer.Stop();
-                    Console.WriteLine("Enabling mouse check");
+                // Task.Run(() =>
+                // {
+                //     Thread.Sleep(2000);
+                // });
+                // var delayTimer = new System.Windows.Forms.Timer { Interval = 1000 };
+                // delayTimer.Tick += (s, e) =>
+                // {
+                //     delayTimer.Stop();
+                //     Console.WriteLine("Enabling mouse check");
 
-                    enableMouseCheck = true;
-                    checkMouseTimer.Start();
-                };
-                delayTimer.Start();
+                //     enableMouseCheck = true;
+                //     checkMouseTimer.Start();
+                // };
+                // delayTimer.Start();
 
                 // Check mouse position every 100ms
                 checkMouseTimer = new System.Windows.Forms.Timer { Interval = 100 };
                 checkMouseTimer.Tick += CheckMouseTimer_Tick;
             }
         }
+
         void AddToolbarButton(ToolbarItem info, List<string> selectedItems)
         {
             var originalIcon = info.IconPath.ExtractIcon();

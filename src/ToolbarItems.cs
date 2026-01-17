@@ -1,4 +1,3 @@
-using Shell32;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,6 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Shell32;
 using TsudaKageyu;
 
 namespace Explobar
@@ -17,8 +17,8 @@ namespace Explobar
             [
                 new()
             {
-                IconPath = @"D:\tools\SublimeText\sublime_text.exe",
-                Path = @"D:\tools\SublimeText\sublime_text.exe",
+                IconPath = @"C:\Program Files\Sublime Text\sublime_text.exe",
+                Path = @"C:\Program Files\Sublime Text\sublime_text.exe",
                 Arguments = "%f%",
                 WorkingDir = "%c%"
             },
@@ -31,7 +31,7 @@ namespace Explobar
             new()
             {
                 IconPath = @"C:\Windows\System32\cmd.exe",
-                Path = @"C:\Users\Oleg.Shilo\AppData\Local\Microsoft\WindowsApps\wt.exe",
+                Path = @"C:\Program Files\WindowsApps\Microsoft.WindowsTerminal_1.19.11213.0_x64__8wekyb3d8bbwe\wt.exe",
                 // Path = @"C:\Windows\System32\cmd.exe",
                 Arguments = @"-d %c% -p ""Command Prompt""; -d %c% -p ""Windows PowerShell""",
             },
@@ -45,6 +45,7 @@ namespace Explobar
         public string Arguments;
         public string WorkingDir;
     }
+
     static class ToolbarExtesnions
     {
         public static void Execute(this ToolbarItem info, List<string> selectedItems)
@@ -78,6 +79,7 @@ namespace Explobar
                 // Ignore errors
             }
         }
+
         public static Image? ExtractIcon(this string exePath)
         {
             try

@@ -1,4 +1,3 @@
-using Shell32;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,12 +6,12 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Shell32;
 
 namespace Explobar
 {
     static class Desktop
     {
-
         [DllImport("user32.dll")]
         public static extern IntPtr GetForegroundWindow();
 
@@ -48,8 +47,12 @@ namespace Explobar
             public int X;
             public int Y;
         }
+
         public static void ShowSelectionForm(string root, List<string> items, int x, int y)
         {
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+
             var form = new ToolbarForm(items);
             form.StartPosition = FormStartPosition.Manual;
 
