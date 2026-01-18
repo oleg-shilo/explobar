@@ -18,12 +18,12 @@ namespace Explobar
     // Low-level keyboard hook class
     public class LowLevelKeyboardHook
     {
-        private const int WH_KEYBOARD_LL = 13;
-        private const int WM_KEYDOWN = 0x0100;
-        private const int WM_SYSKEYDOWN = 0x0104;
+        const int WH_KEYBOARD_LL = 13;
+        const int WM_KEYDOWN = 0x0100;
+        const int WM_SYSKEYDOWN = 0x0104;
 
-        private LowLevelKeyboardProc _proc;
-        private IntPtr _hookID = IntPtr.Zero;
+        LowLevelKeyboardProc _proc;
+        IntPtr _hookID = IntPtr.Zero;
 
         public delegate void KeyPressedEventHandler(Keys key);
 
@@ -48,7 +48,7 @@ namespace Explobar
             }
         }
 
-        private IntPtr SetHook(LowLevelKeyboardProc proc)
+        IntPtr SetHook(LowLevelKeyboardProc proc)
         {
             using (var curProcess = System.Diagnostics.Process.GetCurrentProcess())
             using (var curModule = curProcess.MainModule)
@@ -58,7 +58,7 @@ namespace Explobar
             }
         }
 
-        private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
+        IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
         {
             if (nCode >= 0 && (wParam == (IntPtr)WM_KEYDOWN || wParam == (IntPtr)WM_SYSKEYDOWN))
             {
@@ -69,21 +69,21 @@ namespace Explobar
             return CallNextHookEx(_hookID, nCode, wParam, lParam);
         }
 
-        private delegate IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lParam);
+        delegate IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lParam);
 
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        private static extern IntPtr SetWindowsHookEx(int idHook,
+        static extern IntPtr SetWindowsHookEx(int idHook,
             LowLevelKeyboardProc lpfn, IntPtr hMod, uint dwThreadId);
 
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool UnhookWindowsHookEx(IntPtr hhk);
+        static extern bool UnhookWindowsHookEx(IntPtr hhk);
 
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        private static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode,
+        static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode,
             IntPtr wParam, IntPtr lParam);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        private static extern IntPtr GetModuleHandle(string lpModuleName);
+        static extern IntPtr GetModuleHandle(string lpModuleName);
     }
 }

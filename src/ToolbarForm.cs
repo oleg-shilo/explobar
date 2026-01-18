@@ -22,7 +22,6 @@ namespace Explobar
         bool enableMouseCheck = false;
         FlowLayoutPanel toolbarPanel;
         dynamic explorer = null;
-        IntPtr previousFocusedWindow;
 
         ToolTip toolTip;
 
@@ -35,6 +34,8 @@ namespace Explobar
         [DllImport("user32.dll")]
         static extern bool SetForegroundWindow(IntPtr hWnd);
 
+        static bool SetForegroundWindow(ulong hWnd) => SetForegroundWindow(hWnd == 0 ? IntPtr.Zero : new IntPtr((int)hWnd));
+
         static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
         const uint SWP_NOSIZE = 0x0001;
         const uint SWP_NOMOVE = 0x0002;
@@ -42,8 +43,6 @@ namespace Explobar
 
         public ToolbarForm(List<string> items, dynamic explorerWindow)
         {
-            long hWnd = explorerWindow.HWND;
-            this.previousFocusedWindow = hWnd != 0 ? new IntPtr(hWnd) : IntPtr.Zero;
             this.explorer = explorerWindow;
             this.Text = "Selected Items";
             this.TopMost = true;
@@ -76,9 +75,6 @@ namespace Explobar
 
             this.Shown += (s, e) =>
             {
-                long hWnd = explorerWindow.HWND;
-                previousFocusedWindow = hWnd != 0 ? new IntPtr(hWnd) : IntPtr.Zero;
-
                 SetWindowPos(this.Handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
                 this.Activate();
                 Task.Run(() =>
@@ -100,12 +96,6 @@ namespace Explobar
                 checkMouseTimer?.Stop();
                 checkMouseTimer?.Dispose();
                 toolTip?.Dispose();
-
-                // Restore focus to the previous window
-                if (previousFocusedWindow != IntPtr.Zero)
-                {
-                    SetForegroundWindow(previousFocusedWindow);
-                }
             };
 
             foreach (var item in ToolbarItems.Items)
@@ -151,12 +141,16 @@ namespace Explobar
 
             button.Click += (_, _) =>
             {
-                bool test = false;
+                bool test = true;
                 if (test)
                 {
                     SentCtrlT();
-                    while (GetForegroundWindow() == previousFocusedWindow)
+
+                    while (GetForegroundWindow() == (IntPtr)explorer.HWND)
+                    {
                         Thread.Sleep(100);
+                    }
+
                     // need to get new explorer window, this.explorer is old
                     // Explorer.NavigateToPath(explorer, @"C:\Windows");
                 }
@@ -164,6 +158,7 @@ namespace Explobar
                 {
                     info.Execute(selectedItems);
                     checkMouseTimer?.Stop();
+                    SetForegroundWindow((IntPtr)explorer.HWND);
                 }
                 this.Close();
             };
@@ -172,7 +167,7 @@ namespace Explobar
 
         void SentCtrlT()
         {
-            SetForegroundWindow(previousFocusedWindow);
+            SetForegroundWindow((IntPtr)explorer.HWND);
             SendKeys.Flush();
             Thread.Sleep(10);
             SendKeys.SendWait("^t");

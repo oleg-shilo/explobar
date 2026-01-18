@@ -3,9 +3,9 @@ using Shell32;
 
 namespace Explbar
 {
-    class Explorer
+    static class Explorer
     {
-        public static (string root, List<string> selected, dynamic window) GetExplorerSelection()
+        public static (string root, List<string> selected, dynamic window) GetSelection()
         {
             var shell = new Shell();
             IntPtr foregroundWindow = Desktop.GetForegroundWindow();
@@ -25,10 +25,17 @@ namespace Explbar
                 bool hasFocus = windowHandle == foregroundWindow;
                 bool hasMouseOver = windowHandle == rootWindowUnderMouse;
 
-                if (!hasFocus)
+                // if (!hasFocus) // more aggressive approach than IsObstructedByOtherWindows
+                // {
+                //     Console.WriteLine("Window does not have focus, skipping.");
+                //     continue;
+                // }
+
+                if (Desktop.IsObstructedByOtherWindows(windowHandle))
                 {
-                    Console.WriteLine("Window does not have focus, skipping.");
-                    continue;
+                    // Window is not fully visible. Note, even if the window does not have user input/focus,
+                    // but fully visible, we should popup the toolbar
+                    Console.WriteLine("Window is not fully visible, skipping.");
                 }
 
                 if (!hasMouseOver)

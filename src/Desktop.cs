@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -34,6 +35,21 @@ namespace Explobar
         [DllImport("user32.dll")]
         public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
 
+        [DllImport("user32.dll", SetLastError = true)]
+        static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
+
+        [DllImport("user32.dll")]
+        static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+
+        [DllImport("user32.dll")]
+        static extern bool IsWindowVisible(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        static extern IntPtr GetWindow(IntPtr hWnd, uint uCmd);
+
+        [DllImport("user32.dll")]
+        static extern int GetWindowLong(IntPtr hWnd, int nIndex);
+
         static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
         const uint SWP_NOSIZE = 0x0001;
         const uint SWP_NOMOVE = 0x0002;
@@ -42,11 +58,94 @@ namespace Explobar
         public const uint GA_ROOT = 2;
         public const int VK_LSHIFT = 0xA0;
 
+        const uint GW_HWNDPREV = 3;
+        const int GWL_EXSTYLE = -20;
+        const int WS_EX_TRANSPARENT = 0x00000020;
+        const int WS_EX_LAYERED = 0x00080000;
+
         [StructLayout(LayoutKind.Sequential)]
         public struct POINT
         {
             public int X;
             public int Y;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct RECT
+        {
+            public int Left;
+            public int Top;
+            public int Right;
+            public int Bottom;
+
+            public int Width => Right - Left;
+            public int Height => Bottom - Top;
+
+            public bool IntersectsWith(RECT other)
+            {
+                return !(other.Left >= Right ||
+                        other.Right <= Left ||
+                        other.Top >= Bottom ||
+                        other.Bottom <= Top);
+            }
+        }
+
+        public static uint GetWindowProcess(IntPtr hWnd)
+        {
+            if (hWnd == IntPtr.Zero)
+                return 0;
+
+            GetWindowThreadProcessId(hWnd, out uint processId);
+            return processId;
+        }
+
+        public static bool IsObstructedByOtherWindows(IntPtr hWnd)
+        {
+            if (hWnd == IntPtr.Zero)
+                return true;
+
+            // Get the target window's rectangle
+            if (!GetWindowRect(hWnd, out RECT targetRect))
+                return true;
+
+            // Check if the target window is visible
+            if (!IsWindowVisible(hWnd))
+                return true;
+
+            // Walk through all windows above the target in Z-order
+            IntPtr currentWindow = GetWindow(hWnd, GW_HWNDPREV);
+
+            while (currentWindow != IntPtr.Zero)
+            {
+                // Only check visible windows
+                if (IsWindowVisible(currentWindow))
+                {
+                    // Get the window's rectangle
+                    if (GetWindowRect(currentWindow, out RECT currentRect))
+                    {
+                        // Check if it's a transparent or layered window
+                        int exStyle = GetWindowLong(currentWindow, GWL_EXSTYLE);
+                        bool isTransparent = (exStyle & WS_EX_TRANSPARENT) != 0;
+
+                        // Skip transparent windows as they don't obstruct
+                        if (!isTransparent)
+                        {
+                            // Check if the current window intersects with target window
+                            if (currentRect.IntersectsWith(targetRect))
+                            {
+                                // Window is obstructed
+                                return true;
+                            }
+                        }
+                    }
+                }
+
+                // Move to the next window above in Z-order
+                currentWindow = GetWindow(currentWindow, GW_HWNDPREV);
+            }
+
+            // No obstruction found
+            return false;
         }
 
         public static void SendCtrlT()

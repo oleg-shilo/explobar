@@ -44,7 +44,8 @@ namespace Explobar
 
         private static void KeyboardHook_OnKeyPressed(Keys key)
         {
-            if (key == Keys.LShiftKey && !_isProcessing)
+            // if (key == Keys.LShiftKey && !_isProcessing)
+            if (key == Keys.Oemtilde && !_isProcessing)
             {
                 _isProcessing = true;
 
@@ -68,7 +69,7 @@ namespace Explobar
         static void CheckUserInputAndPopupToolbar()
         {
             Console.WriteLine("------------");
-            (var root, var selection, var window) = Explorer.GetExplorerSelection();
+            (var root, var selection, var window) = Explorer.GetSelection();
             Console.WriteLine("root: " + root);
 
             if (root != null)
