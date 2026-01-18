@@ -4,11 +4,10 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows.Automation;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
-using Explbar;
 using Explobar;
 using Shell32;
 
-namespace Explbar
+namespace Explobar
 {
     static class Explorer
     {
@@ -27,10 +26,10 @@ namespace Explbar
             var selectedPaths = new List<string>();
             string root = null;
 
+            var shell = new Shell();
+
             try
             {
-                var shell = new Shell();
-
                 Desktop.GetCursorPos(out Desktop.POINT cursorPos);
                 IntPtr windowUnderMouse = Desktop.WindowFromPoint(cursorPos);
                 IntPtr rootWindowUnderMouse = Desktop.GetAncestor(windowUnderMouse, Desktop.GA_ROOT);
@@ -101,6 +100,10 @@ namespace Explbar
             catch (Exception ex)
             {
                 Console.WriteLine("Error getting explorer selection: " + ex.Message);
+            }
+            finally
+            {
+                Marshal.ReleaseComObject(shell);
             }
 
             return (root, selectedPaths, explorerWindow);

@@ -100,55 +100,6 @@ namespace Explobar
             return processId;
         }
 
-        // public static bool IsObstructedByOtherWindows(IntPtr hWnd)
-        // {
-        //     if (hWnd == IntPtr.Zero)
-        //         return true;
-
-        //     // Get the target window's rectangle
-        //     if (!GetWindowRect(hWnd, out RECT targetRect))
-        //         return true;
-
-        //     // Check if the target window is visible
-        //     if (!IsWindowVisible(hWnd))
-        //         return true;
-
-        //     // Walk through all windows above the target in Z-order
-        //     IntPtr currentWindow = GetWindow(hWnd, GW_HWNDPREV);
-
-        //     while (currentWindow != IntPtr.Zero)
-        //     {
-        //         // Only check visible windows
-        //         if (IsWindowVisible(currentWindow))
-        //         {
-        //             // Get the window's rectangle
-        //             if (GetWindowRect(currentWindow, out RECT currentRect))
-        //             {
-        //                 // Check if it's a transparent or layered window
-        //                 int exStyle = GetWindowLong(currentWindow, GWL_EXSTYLE);
-        //                 bool isTransparent = (exStyle & WS_EX_TRANSPARENT) != 0;
-
-        //                 // Skip transparent windows as they don't obstruct
-        //                 if (!isTransparent)
-        //                 {
-        //                     // Check if the current window intersects with target window
-        //                     if (currentRect.IntersectsWith(targetRect))
-        //                     {
-        //                         // Window is obstructed
-        //                         return true;
-        //                     }
-        //                 }
-        //             }
-        //         }
-
-        //         // Move to the next window above in Z-order
-        //         currentWindow = GetWindow(currentWindow, GW_HWNDPREV);
-        //     }
-
-        //     // No obstruction found
-        //     return false;
-        // }
-
         public static void SendCtrlT()
         {
             SendKeyDown(VK_CONTROL);

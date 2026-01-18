@@ -29,30 +29,21 @@ namespace Explobar
             {
                 if (File.Exists(ConfigPath))
                 {
-                    var stopwatch = Stopwatch.StartNew();
-                    try
-                    {
-                        var yaml = File.ReadAllText(ConfigPath);
-                        var deserializer = new DeserializerBuilder()
-                            .WithNamingConvention(PascalCaseNamingConvention.Instance)
-                            .Build();
+                    var yaml = File.ReadAllText(ConfigPath);
+                    var deserializer = new DeserializerBuilder()
+                        .WithNamingConvention(PascalCaseNamingConvention.Instance)
+                        .Build();
 
-                        var items = deserializer.Deserialize<List<ToolbarItem>>(yaml);
-                        if (items != null && items.Count > 0)
-                        {
-                            // Resolve paths after loading
-                            foreach (var item in items)
-                            {
-                                item.Path = item.Path.ResolvePath();
-                                item.Arguments = ExpandEnvironmentVariables(item.Arguments);
-                            }
-                            return items.Resolve();
-                        }
-                    }
-                    finally
+                    var items = deserializer.Deserialize<List<ToolbarItem>>(yaml);
+                    if (items != null && items.Count > 0)
                     {
-                        stopwatch.Stop();
-                        Console.WriteLine($"Loaded toolbar items in {stopwatch.ElapsedMilliseconds} ms");
+                        // Resolve paths after loading
+                        foreach (var item in items)
+                        {
+                            item.Path = item.Path.ResolvePath();
+                            item.Arguments = ExpandEnvironmentVariables(item.Arguments);
+                        }
+                        return items.Resolve();
                     }
                 }
                 else

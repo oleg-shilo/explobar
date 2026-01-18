@@ -7,13 +7,10 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Explbar;
-
-using Shell32;
 
 namespace Explobar
 {
-    public class DoNotShowFormInVS { }
+    public class DoNotShowInVSDesigner { }
 
     public class ToolbarForm : Form
     {
@@ -104,70 +101,73 @@ namespace Explobar
                 toolTip?.Dispose();
             };
 
+            this.Controls.Add(toolbarPanel);
             foreach (var item in ToolbarItems.Items)
             {
                 AddToolbarButton(item, items, explorerWindow);
-                this.Controls.Add(toolbarPanel);
             }
         }
 
         void AddToolbarButton(ToolbarItem info, List<string> selectedItems, dynamic explorerWindow)
         {
-            var originalIcon = info.IconPath.ExtractIcon(info.IconIndex);
-
-            // Resize icon to exactly 24x24
-            var resizedIcon = new Bitmap(24, 24);
-            using (var graphics = Graphics.FromImage(resizedIcon))
+            using (var originalIcon = info.IconPath.ExtractIcon(info.IconIndex))
             {
-                graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
-                graphics.DrawImage(originalIcon, 0, 0, 24, 24);
-            }
-
-            var button = new Button
-            {
-                Width = 32,
-                Height = 32,
-                BackgroundImage = resizedIcon,
-                BackgroundImageLayout = ImageLayout.Center,
-                FlatStyle = FlatStyle.Flat,
-                BackColor = Color.Transparent,
-                Cursor = Cursors.Hand
-            };
-
-            // Configure border and appearance
-            button.FlatAppearance.BorderSize = 0;
-            button.FlatAppearance.MouseOverBackColor = Color.FromArgb(64, Color.LightBlue);
-            button.FlatAppearance.MouseDownBackColor = Color.Transparent;
-
-            if (info.Tooltip.HasText())
-                toolTip.SetToolTip(button, info.Tooltip);
-
-            button.Click += (x, y) =>
-            {
-                this.Close();
-                checkMouseTimer?.Stop();
-                SetForegroundWindow((IntPtr)explorer.HWND);
-
-                bool test = false;
-                if (test)
+                var resizedIcon = new Bitmap(24, 24);
+                // Resize icon to exactly 24x24
+                using (var graphics = Graphics.FromImage(resizedIcon))
                 {
-                    var tabs = Explorer.GetTabs();
-                    SentCtrlT();
-                    Thread.Sleep(100);
+                    graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                    graphics.DrawImage(originalIcon, 0, 0, 24, 24);
+                }
 
-                    var newTab = Explorer.GetTabs().Except(tabs).FirstOrDefault();
-                    if (newTab != null)
+                var button = new Button
+                {
+                    Width = 32,
+                    Height = 32,
+                    BackgroundImage = resizedIcon,
+                    BackgroundImageLayout = ImageLayout.Center,
+                    FlatStyle = FlatStyle.Flat,
+                    BackColor = Color.Transparent,
+                    Cursor = Cursors.Hand
+                };
+
+                // Configure border and appearance
+                button.FlatAppearance.BorderSize = 0;
+                button.FlatAppearance.MouseOverBackColor = Color.FromArgb(64, Color.LightBlue);
+                button.FlatAppearance.MouseDownBackColor = Color.Transparent;
+
+                if (info.Tooltip.HasText())
+                    toolTip.SetToolTip(button, info.Tooltip);
+
+                button.Click += (x, y) =>
+                {
+                    this.Close();
+                    checkMouseTimer?.Stop();
+                    SetForegroundWindow((IntPtr)explorer.HWND);
+
+                    bool test = false;
+                    if (test)
                     {
-                        Explorer.NavigateToPath(newTab, @"C:\Windows");
+                        // opening new tab and navigating to C:\Windows
+
+                        var tabs = Explorer.GetTabs();
+                        SentCtrlT();
+                        Thread.Sleep(100);
+
+                        var newTab = Explorer.GetTabs().Except(tabs).FirstOrDefault();
+                        if (newTab != null)
+                        {
+                            Explorer.NavigateToPath(newTab, @"C:\Windows");
+                        }
                     }
-                }
-                else
-                {
-                    var explorerDir = (string)explorer?.Document?.Folder?.Self?.Path?.ToString();
-                    info.Execute(selectedItems, explorerDir);
-                }
-            };
-            toolbarPanel.Controls.Add(button);
+                    else
+                    {
+                        var explorerDir = (string)explorer?.Document?.Folder?.Self?.Path?.ToString();
+                        info.Execute(selectedItems, explorerDir);
+                    }
+                };
+                toolbarPanel.Controls.Add(button);
+            }
         }
 
         void SentCtrlT()

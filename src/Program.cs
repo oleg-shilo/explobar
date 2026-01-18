@@ -8,8 +8,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Explbar;
-using Shell32;
 
 // using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
@@ -46,7 +44,8 @@ namespace Explobar
         private static void KeyboardHook_OnKeyPressed(Keys key)
         {
             // if (key == Keys.LShiftKey && !_isProcessing)
-            if (key == Keys.Oemtilde && !_isProcessing)
+            // if (key == Keys.Oemtilde && !_isProcessing)
+            if (key == Keys.Escape && !_isProcessing)
             {
                 _isProcessing = true;
 
