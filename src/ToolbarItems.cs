@@ -153,7 +153,7 @@ namespace Explobar
         {
             try
             {
-                if (string.IsNullOrEmpty(info.Path) || !System.IO.File.Exists(info.Path))
+                if (info.Path.IsEmpty() || !File.Exists(info.Path))
                     return;
 
                 var firstItem = selectedItems.FirstOrDefault() ?? "";
@@ -184,7 +184,7 @@ namespace Explobar
         {
             try
             {
-                if (string.IsNullOrEmpty(iconPath))
+                if (iconPath.IsEmpty())
                     return null;
 
                 using (var icon = new IconExtractor(iconPath).GetIcon(iconIndex))
@@ -215,7 +215,7 @@ namespace Explobar
 
         public static (string path, int index) ParseIconPath(this string iconPath)
         {
-            if (string.IsNullOrEmpty(iconPath))
+            if (iconPath.IsEmpty())
                 return (iconPath, 0);
 
             var parts = iconPath.Split(',');
@@ -229,13 +229,11 @@ namespace Explobar
 
         public static string ResolvePath(this string path)
         {
-            if (string.IsNullOrEmpty(path))
+            if (path.IsEmpty())
                 return path;
 
-            // Expand environment variables
             path = ExpandEnvironmentVariables(path);
 
-            // If path exists as-is, return it
             if (File.Exists(path))
                 return path;
 
@@ -258,7 +256,7 @@ namespace Explobar
             // Search in standard locations
             foreach (var location in searchLocations)
             {
-                if (string.IsNullOrEmpty(location))
+                if (location.IsEmpty())
                     continue;
 
                 var fullPath = Path.Combine(location, path);
@@ -270,7 +268,7 @@ namespace Explobar
             var pathEnv = GetEnvironmentVariable("PATH") ?? "";
             foreach (var pathDir in pathEnv.Split(Path.PathSeparator))
             {
-                if (string.IsNullOrEmpty(pathDir))
+                if (pathDir.IsEmpty())
                     continue;
 
                 try

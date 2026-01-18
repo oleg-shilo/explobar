@@ -23,7 +23,7 @@ namespace Explbar
 
         public static (string root, List<string> selected, dynamic window) GetSelection()
         {
-            dynamic exporerWindow = null;
+            dynamic explorerWindow = null;
             var selectedPaths = new List<string>();
             string root = null;
 
@@ -75,24 +75,24 @@ namespace Explbar
                             .Where(x => new IntPtr(x.HWND) == windowHandle)
                             .ToList();
 
-                        exporerWindow = thisExplorerTabs.FirstOrDefault(x => x.Document.Folder.Self.Path == activeTabPath);
+                        explorerWindow = thisExplorerTabs.FirstOrDefault(x => x.Document.Folder.Self.Path == activeTabPath);
 
-                        if (exporerWindow == null) // we could not match (e.g. it was special folder)
+                        if (explorerWindow == null) // we could not match (e.g. it was special folder)
                         {
                             var firstSpecialFolder = explorersTabs
                                 .FirstOrDefault(x => x.Document.Folder.Self.Path.ToString().StartsWith("::{"));
 
-                            exporerWindow = firstSpecialFolder;
+                            explorerWindow = firstSpecialFolder;
                         }
                     }
                     else
                     {
-                        exporerWindow = tabObject;
+                        explorerWindow = tabObject;
                     }
 
-                    root = exporerWindow?.Document?.Folder?.Self?.Path?.ToString();
+                    root = explorerWindow?.Document?.Folder?.Self?.Path?.ToString();
 
-                    foreach (FolderItem item in exporerWindow.Document.SelectedItems())
+                    foreach (FolderItem item in explorerWindow.Document.SelectedItems())
                         selectedPaths.Add(item.Path);
 
                     break;
@@ -103,7 +103,7 @@ namespace Explbar
                 Console.WriteLine("Error getting explorer selection: " + ex.Message);
             }
 
-            return (root, selectedPaths, exporerWindow);
+            return (root, selectedPaths, explorerWindow);
         }
 
         public static void NavigateToPath(dynamic explorerWindow, string path)
@@ -132,7 +132,7 @@ static class AutomationHelper
         if (root == null) return null;
 
         var name = root.Current.Name;
-        if (string.IsNullOrEmpty(name)) return null;
+        if (name.IsEmpty()) return null;
 
         var folderName = window.LocationName?.ToString();
 
@@ -157,7 +157,7 @@ static class AutomationHelper
         if (root == null) return null;
 
         var name = root.Current.Name;
-        if (string.IsNullOrEmpty(name)) return null;
+        if (name.IsEmpty()) return null;
 
         // Console.WriteLine("Foreground tabObject title: " + name);
         return name.Contains("File Explorer") ? root : null;

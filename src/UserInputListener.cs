@@ -12,10 +12,6 @@ using Shell32;
 
 namespace Explobar
 {
-    class UserInputListener
-    {
-    }
-
     // Low-level keyboard hook class
     public class LowLevelKeyboardHook
     {

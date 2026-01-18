@@ -9,8 +9,6 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Explbar;
 
-// using static System.Windows.Forms.VisualStyles.VisualStyleElement;
-// using static System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox;
 using Shell32;
 
 namespace Explobar
@@ -141,11 +139,8 @@ namespace Explobar
             button.FlatAppearance.MouseOverBackColor = Color.FromArgb(64, Color.LightBlue);
             button.FlatAppearance.MouseDownBackColor = Color.Transparent;
 
-            // Set tooltip if available
-            if (!string.IsNullOrEmpty(info.Tooltip))
-            {
+            if (info.Tooltip.HasText())
                 toolTip.SetToolTip(button, info.Tooltip);
-            }
 
             button.Click += (x, y) =>
             {
@@ -165,7 +160,6 @@ namespace Explobar
                     {
                         Explorer.NavigateToPath(newTab, @"C:\Windows");
                     }
-                    // testCount++;
                 }
                 else
                 {
@@ -175,8 +169,6 @@ namespace Explobar
             };
             toolbarPanel.Controls.Add(button);
         }
-
-        static int testCount = 0;
 
         void SentCtrlT()
         {
