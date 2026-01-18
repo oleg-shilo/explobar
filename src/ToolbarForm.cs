@@ -80,11 +80,18 @@ namespace Explobar
                 Task.Run(() =>
                 {
                     Thread.Sleep(1000);
-                    this.BeginInvoke((Action)(() =>
+                    try
                     {
-                        enableMouseCheck = true;
-                        checkMouseTimer?.Start();
-                    }));
+                        this.BeginInvoke((Action)(() =>
+                        {
+                            enableMouseCheck = true;
+                            checkMouseTimer?.Start();
+                        }));
+                    }
+                    catch
+                    {
+                        // Ignore errors
+                    }
                 });
             };
             checkMouseTimer = new System.Windows.Forms.Timer { Interval = 100 };
@@ -141,29 +148,38 @@ namespace Explobar
 
             button.Click += (_, _) =>
             {
+                this.Close();
+                checkMouseTimer?.Stop();
+                // SetForegroundWindow((IntPtr)explorer.HWND);
+
                 bool test = true;
                 if (test)
                 {
-                    SentCtrlT();
+                    var tabs = Explorer.GetTabs();
 
-                    while (GetForegroundWindow() == (IntPtr)explorer.HWND)
-                    {
-                        Thread.Sleep(100);
-                    }
+                    // works well,
+                    // !!!but need top ensure that GetTabs does not return tabs from the other windows
 
-                    // need to get new explorer window, this.explorer is old
-                    // Explorer.NavigateToPath(explorer, @"C:\Windows");
+                    // var tabs = Explorer.GetTabs();
+                    // SentCtrlT();
+                    // Thread.Sleep(100);
+
+                    // var newTab = Explorer.GetTabs().Except(tabs).FirstOrDefault();
+                    // if (newTab != null)
+                    // {
+                    //     Explorer.NavigateToPath(newTab, @"C:\Windows");
+                    // }
+                    // testCount++;
                 }
                 else
                 {
                     info.Execute(selectedItems);
-                    checkMouseTimer?.Stop();
-                    SetForegroundWindow((IntPtr)explorer.HWND);
                 }
-                this.Close();
             };
             toolbarPanel.Controls.Add(button);
         }
+
+        static int testCount = 0;
 
         void SentCtrlT()
         {
