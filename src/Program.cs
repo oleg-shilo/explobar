@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection.Metadata;
+
+// using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -16,7 +17,7 @@ namespace Explobar
 {
     internal class Program
     {
-        private static LowLevelKeyboardHook? _keyboardHook;
+        private static LowLevelKeyboardHook _keyboardHook;
         private static bool _isProcessing = false;
 
         [STAThread]

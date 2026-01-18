@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -107,12 +108,12 @@ namespace Explobar
 
             foreach (var item in ToolbarItems.Items)
             {
-                AddToolbarButton(item, items);
+                AddToolbarButton(item, items, explorerWindow);
                 this.Controls.Add(toolbarPanel);
             }
         }
 
-        void AddToolbarButton(ToolbarItem info, List<string> selectedItems)
+        void AddToolbarButton(ToolbarItem info, List<string> selectedItems, dynamic explorerWindow)
         {
             var originalIcon = info.IconPath.ExtractIcon(info.IconIndex);
 
@@ -146,34 +147,30 @@ namespace Explobar
                 toolTip.SetToolTip(button, info.Tooltip);
             }
 
-            button.Click += (_, _) =>
+            button.Click += (x, y) =>
             {
                 this.Close();
                 checkMouseTimer?.Stop();
-                // SetForegroundWindow((IntPtr)explorer.HWND);
+                SetForegroundWindow((IntPtr)explorer.HWND);
 
-                bool test = true;
+                bool test = false;
                 if (test)
                 {
                     var tabs = Explorer.GetTabs();
+                    SentCtrlT();
+                    Thread.Sleep(100);
 
-                    // works well,
-                    // !!!but need top ensure that GetTabs does not return tabs from the other windows
-
-                    // var tabs = Explorer.GetTabs();
-                    // SentCtrlT();
-                    // Thread.Sleep(100);
-
-                    // var newTab = Explorer.GetTabs().Except(tabs).FirstOrDefault();
-                    // if (newTab != null)
-                    // {
-                    //     Explorer.NavigateToPath(newTab, @"C:\Windows");
-                    // }
+                    var newTab = Explorer.GetTabs().Except(tabs).FirstOrDefault();
+                    if (newTab != null)
+                    {
+                        Explorer.NavigateToPath(newTab, @"C:\Windows");
+                    }
                     // testCount++;
                 }
                 else
                 {
-                    info.Execute(selectedItems);
+                    var explorerDir = (string)explorer?.Document?.Folder?.Self?.Path?.ToString();
+                    info.Execute(selectedItems, explorerDir);
                 }
             };
             toolbarPanel.Controls.Add(button);
@@ -202,7 +199,7 @@ namespace Explobar
             return base.ProcessCmdKey(ref msg, keyData);
         }
 
-        void CheckMouseTimer_Tick(object? sender, EventArgs e)
+        void CheckMouseTimer_Tick(object sender, EventArgs e)
         {
             if (!enableMouseCheck)
                 return;

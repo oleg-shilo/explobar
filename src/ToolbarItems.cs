@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using static System.Environment;
 using System.IO;
 using System.Linq;
@@ -74,7 +75,7 @@ namespace Explobar
                 var directory = Path.GetDirectoryName(ConfigPath);
                 if (!Directory.Exists(directory))
                 {
-                    Directory.CreateDirectory(directory!);
+                    Directory.CreateDirectory(directory);
                 }
 
                 var serializer = new SerializerBuilder()
@@ -96,7 +97,7 @@ namespace Explobar
         {
             var items = new List<ToolbarItem>
             {
-                new()
+                new ToolbarItem()
                 {
                     Icon = @"%ProgramFiles%\Sublime Text\sublime_text.exe",
                     Path = @"%ProgramFiles%\Sublime Text\sublime_text.exe",
@@ -104,21 +105,21 @@ namespace Explobar
                     WorkingDir = "%c%",
                     Tooltip = "Open in Sublime Text"
                 },
-                new()
+                new ToolbarItem()
                 {
                     Icon = @"%ProgramFiles%\Everything\Everything.exe",
                     Path = @"%ProgramFiles%\Everything\Everything.exe",
                     Arguments = @"-path %c%",
                     Tooltip = "Search in Everything"
                 },
-                new()
+                new ToolbarItem()
                 {
                     Icon = @"%SystemRoot%\System32\cmd.exe",
                     Path = "wt.exe",
                     Arguments = @"-d %c% -p ""Command Prompt""; -d %c% -p ""Windows PowerShell""",
                     Tooltip = "Open Windows Terminal"
                 },
-                new()
+                new ToolbarItem()
                 {
                     Icon = @"%SystemRoot%\System32\shell32.dll,16",
                     Path = "notepad.exe",
@@ -148,7 +149,7 @@ namespace Explobar
 
     static class ToolbarExtesnions
     {
-        public static void Execute(this ToolbarItem info, List<string> selectedItems)
+        public static void Execute(this ToolbarItem info, List<string> selectedItems, string currDir)
         {
             try
             {
@@ -156,7 +157,6 @@ namespace Explobar
                     return;
 
                 var firstItem = selectedItems.FirstOrDefault() ?? "";
-                var currDir = System.IO.Path.GetDirectoryName(firstItem) ?? "";
 
                 var args = info.Arguments?
                     .Replace("%f%", $"\"{firstItem}\"")
@@ -180,7 +180,7 @@ namespace Explobar
             }
         }
 
-        public static Image? ExtractIcon(this string iconPath, int iconIndex)
+        public static Image ExtractIcon(this string iconPath, int iconIndex)
         {
             try
             {
