@@ -19,10 +19,7 @@ namespace Explobar
 {
     static class ToolbarItems
     {
-        static string ConfigPath = Path.Combine(
-            GetFolderPath(SpecialFolder.ApplicationData),
-            "Explobar",
-            "toolbar-items.yaml");
+        static string ConfigPath = SpecialFolder.ApplicationData.Combine("Explobar", "toolbar-items.yaml");
 
         public static List<ToolbarItem> Items => LoadItems();
 
@@ -32,21 +29,30 @@ namespace Explobar
             {
                 if (File.Exists(ConfigPath))
                 {
-                    var yaml = File.ReadAllText(ConfigPath);
-                    var deserializer = new DeserializerBuilder()
-                        .WithNamingConvention(PascalCaseNamingConvention.Instance)
-                        .Build();
-
-                    var items = deserializer.Deserialize<List<ToolbarItem>>(yaml);
-                    if (items != null && items.Count > 0)
+                    var stopwatch = Stopwatch.StartNew();
+                    try
                     {
-                        // Resolve paths after loading
-                        foreach (var item in items)
+                        var yaml = File.ReadAllText(ConfigPath);
+                        var deserializer = new DeserializerBuilder()
+                            .WithNamingConvention(PascalCaseNamingConvention.Instance)
+                            .Build();
+
+                        var items = deserializer.Deserialize<List<ToolbarItem>>(yaml);
+                        if (items != null && items.Count > 0)
                         {
-                            item.Path = item.Path.ResolvePath();
-                            item.Arguments = ExpandEnvironmentVariables(item.Arguments);
+                            // Resolve paths after loading
+                            foreach (var item in items)
+                            {
+                                item.Path = item.Path.ResolvePath();
+                                item.Arguments = ExpandEnvironmentVariables(item.Arguments);
+                            }
+                            return items.Resolve();
                         }
-                        return items.Resolve();
+                    }
+                    finally
+                    {
+                        stopwatch.Stop();
+                        Console.WriteLine($"Loaded toolbar items in {stopwatch.ElapsedMilliseconds} ms");
                     }
                 }
                 else
