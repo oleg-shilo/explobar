@@ -11,14 +11,33 @@ using System.Windows.Forms;
 
 namespace Explobar
 {
-    public class DoNotShowInVSDesigner { }
+    public class ExplorerContext
+    {
+        public dynamic Window { get; set; }
+        public string RootPath { get; set; }
+        public List<string> SelectedItems { get; set; }
+    }
 
     public class ToolbarForm : Form
     {
+        public static bool reuseInstance = false;
+
+        static ToolbarForm currentInstance = null;
+        public static ToolbarForm Create()
+        {
+            if (currentInstance == null || !reuseInstance)
+            {
+                currentInstance = new ToolbarForm();
+                currentInstance.Init();
+            }
+            return currentInstance;
+        }
+
         System.Windows.Forms.Timer checkMouseTimer;
         bool enableMouseCheck = false;
         FlowLayoutPanel toolbarPanel;
-        dynamic explorer = null;
+
+        public readonly ExplorerContext ExplorerContext = new ExplorerContext();
 
         ToolTip toolTip;
 
@@ -38,9 +57,9 @@ namespace Explobar
         const uint SWP_NOMOVE = 0x0002;
         const uint SWP_SHOWWINDOW = 0x0040;
 
-        public ToolbarForm(List<string> items, dynamic explorerWindow)
+        // public void Init(List<string> items, dynamic explorerWindow)
+        public void Init()
         {
-            this.explorer = explorerWindow;
             this.Text = "Selected Items";
             this.TopMost = true;
             this.FormBorderStyle = FormBorderStyle.None;
@@ -91,8 +110,12 @@ namespace Explobar
                     }
                 });
             };
-            checkMouseTimer = new System.Windows.Forms.Timer { Interval = 100 };
-            checkMouseTimer.Tick += CheckMouseTimer_Tick;
+
+            if (checkMouseTimer == null)
+            {
+                checkMouseTimer = new System.Windows.Forms.Timer { Interval = 100 };
+                checkMouseTimer.Tick += CheckMouseTimer_Tick;
+            }
 
             // Ensure topmost when form is shown
             this.FormClosing += (s, e) =>
@@ -108,10 +131,11 @@ namespace Explobar
                 if (item.Path == "{separator}")
                     AddToolbarGroupSeparator();
                 else
-                    AddToolbarButton(item, items, explorerWindow);
+                    AddToolbarButton(item);
             }
         }
-        int buttonSize = 32;
+        int buttonSize = 24;
+        int imagePadding = 2;
         void AddToolbarGroupSeparator()
         {
             var separator = new Panel
@@ -119,16 +143,16 @@ namespace Explobar
                 Width = 1,
                 Height = buttonSize,
                 BackColor = Color.Gray,
-                Margin = new Padding(4, 4, 4, 4)
+                Margin = new Padding(imagePadding, imagePadding, imagePadding, imagePadding)
             };
             toolbarPanel.Controls.Add(separator);
         }
-        void AddToolbarButton(ToolbarItem info, List<string> selectedItems, dynamic explorerWindow)
+        void AddToolbarButton(ToolbarItem info)
         {
             var iconIndex = info.IconIndex;
             using (var originalIcon = info.IconPath.IfEmpty(info.Path).ExtractIcon(info.IconIndex))
             {
-                int imageSize = buttonSize - 4 - 4;
+                int imageSize = buttonSize - imagePadding - imagePadding;
                 var resizedIcon = new Bitmap(imageSize, imageSize);
 
                 // Resize icon to exactly 24x24
@@ -159,9 +183,8 @@ namespace Explobar
 
                 button.Click += (x, y) =>
                 {
-                    this.Close();
-                    checkMouseTimer?.Stop();
-                    SetForegroundWindow((IntPtr)explorer.HWND);
+                    HideToolbar();
+                    SetForegroundWindow((IntPtr)ExplorerContext.Window.HWND);
 
                     bool test = false;
                     if (test)
@@ -180,8 +203,8 @@ namespace Explobar
                     }
                     else
                     {
-                        var explorerDir = (string)explorer?.Document?.Folder?.Self?.Path?.ToString();
-                        info.Execute(selectedItems, explorerDir);
+                        var explorerDir = (string)ExplorerContext.Window?.Document?.Folder?.Self?.Path?.ToString();
+                        info.Execute(this.ExplorerContext);
                     }
                 };
                 toolbarPanel.Controls.Add(button);
@@ -190,7 +213,7 @@ namespace Explobar
 
         void SentCtrlT()
         {
-            SetForegroundWindow((IntPtr)explorer.HWND);
+            SetForegroundWindow((IntPtr)ExplorerContext.Window.HWND);
             SendKeys.Flush();
             Thread.Sleep(10);
             SendKeys.SendWait("^t");
@@ -202,11 +225,19 @@ namespace Explobar
         {
             if (keyData == Keys.Escape)
             {
-                checkMouseTimer?.Stop();
-                this.Close();
+                HideToolbar();
                 return true;
             }
             return base.ProcessCmdKey(ref msg, keyData);
+        }
+
+        void HideToolbar()
+        {
+            checkMouseTimer?.Stop();
+            if (reuseInstance)
+                this.Hide();
+            else
+                this.Close();
         }
 
         void CheckMouseTimer_Tick(object sender, EventArgs e)
@@ -220,8 +251,7 @@ namespace Explobar
 
                 if (!formBounds.Contains(cursorPos))
                 {
-                    checkMouseTimer.Stop();
-                    this.Close();
+                    HideToolbar();
                 }
             }
             catch

@@ -68,7 +68,9 @@ namespace Explobar
                 {
                     try
                     {
+                        Console.WriteLine(">>>");
                         CheckUserInputAndPopupToolbar();
+                        Console.WriteLine("<<<");
                     }
                     finally
                     {

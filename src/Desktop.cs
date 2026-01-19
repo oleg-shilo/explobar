@@ -146,7 +146,12 @@ namespace Explobar
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
-            var form = new ToolbarForm(items, window);
+            var form = ToolbarForm.Create();
+
+            form.ExplorerContext.RootPath = root;
+            form.ExplorerContext.SelectedItems = items;
+            form.ExplorerContext.Window = window;
+
             form.StartPosition = FormStartPosition.Manual;
 
             // Offset from cursor to avoid it being under the cursor initially

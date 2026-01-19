@@ -132,8 +132,10 @@ namespace Explobar
 
     static class ToolbarExtesnions
     {
-        public static void Execute(this ToolbarItem info, List<string> selectedItems, string currDir)
+        public static void Execute(this ToolbarItem info, ExplorerContext context)
         {
+            List<string> selectedItems = context.SelectedItems;
+            string currDir = context.RootPath ?? CurrentDirectory;
             try
             {
                 if (info.Path.IsEmpty() || !File.Exists(info.Path))
