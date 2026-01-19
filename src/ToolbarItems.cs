@@ -96,21 +96,6 @@ namespace Explobar
             {
                 new ToolbarItem()
                 {
-                    Icon = @"%ProgramFiles%\Sublime Text\sublime_text.exe",
-                    Path = @"%ProgramFiles%\Sublime Text\sublime_text.exe",
-                    Arguments = "%f%",
-                    WorkingDir = "%c%",
-                    Tooltip = "Open in Sublime Text"
-                },
-                new ToolbarItem()
-                {
-                    Icon = @"%ProgramFiles%\Everything\Everything.exe",
-                    Path = @"%ProgramFiles%\Everything\Everything.exe",
-                    Arguments = @"-path %c%",
-                    Tooltip = "Search in Everything"
-                },
-                new ToolbarItem()
-                {
                     Icon = @"%SystemRoot%\System32\cmd.exe",
                     Path = "wt.exe",
                     Arguments = @"-d %c% -p ""Command Prompt""; -d %c% -p ""Windows PowerShell""",
@@ -118,9 +103,10 @@ namespace Explobar
                 },
                 new ToolbarItem()
                 {
-                    Icon = @"%SystemRoot%\System32\shell32.dll,16",
+                    Icon = @"%SystemRoot%\System32\shell32.dll,314",
                     Path = "notepad.exe",
-                    Tooltip = "Open Notepad"
+                    Arguments = @"%AppData%\Explobar\toolbar-items.yaml",
+                    Tooltip = "Open configuration"
                 }
             };
             return items;

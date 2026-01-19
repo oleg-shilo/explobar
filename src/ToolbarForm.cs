@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -110,15 +111,18 @@ namespace Explobar
 
         void AddToolbarButton(ToolbarItem info, List<string> selectedItems, dynamic explorerWindow)
         {
-            using (var originalIcon = info.IconPath.ExtractIcon(info.IconIndex))
+            var iconIndex = info.IconIndex;
+            using (var originalIcon = info.IconPath.IfEmpty(info.Path).ExtractIcon(info.IconIndex))
             {
                 var resizedIcon = new Bitmap(24, 24);
+
                 // Resize icon to exactly 24x24
-                using (var graphics = Graphics.FromImage(resizedIcon))
-                {
-                    graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
-                    graphics.DrawImage(originalIcon, 0, 0, 24, 24);
-                }
+                if (originalIcon != null)
+                    using (var graphics = Graphics.FromImage(resizedIcon))
+                    {
+                        graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                        graphics.DrawImage(originalIcon, 0, 0, 24, 24);
+                    }
 
                 var button = new Button
                 {
@@ -136,8 +140,7 @@ namespace Explobar
                 button.FlatAppearance.MouseOverBackColor = Color.FromArgb(64, Color.LightBlue);
                 button.FlatAppearance.MouseDownBackColor = Color.Transparent;
 
-                if (info.Tooltip.HasText())
-                    toolTip.SetToolTip(button, info.Tooltip);
+                toolTip.SetToolTip(button, info.Tooltip.IfEmpty(info.Path.GetFileName()));
 
                 button.Click += (x, y) =>
                 {

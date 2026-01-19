@@ -9,7 +9,16 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-// using static System.Windows.Forms.VisualStyles.VisualStyleElement;
+// TODO
+// buttons:
+//      create new file
+//      create new folder
+//      favorites
+//      recent folders
+//      navigate from clipboard content
+//      show selected file properties
+//      duplicate explorer tab in a new window
+//      button separator
 
 namespace Explobar
 {
@@ -21,6 +30,11 @@ namespace Explobar
         [STAThread]
         static void Main(string[] args)
         {
+            Explorer.ShowWarning = (msg) =>
+                MessageBox.Show(msg, "Explobar", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+
+            // var ttt = AutomationHelper.GetExplorer(h)?.FindTabControl()?.GetTabs().FirstOrDefault(t => t.IsActive())?.Current.Name;
+            // return;
             // Set up keyboard hook
             _keyboardHook = new LowLevelKeyboardHook();
             _keyboardHook.OnKeyPressed += KeyboardHook_OnKeyPressed;

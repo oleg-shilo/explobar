@@ -6,11 +6,13 @@ using System.Windows.Automation;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using Explobar;
 using Shell32;
+using System.IO;
 
 namespace Explobar
 {
     static class Explorer
     {
+        public static Action<string> ShowWarning = s => Console.WriteLine("[Explorer] " + s);
         public static List<dynamic> GetTabs()
         {
             var shell = new Shell();
@@ -34,8 +36,6 @@ namespace Explobar
                 IntPtr windowUnderMouse = Desktop.WindowFromPoint(cursorPos);
                 IntPtr rootWindowUnderMouse = Desktop.GetAncestor(windowUnderMouse, Desktop.GA_ROOT);
 
-                bool isLeftShiftPressed = (Desktop.GetAsyncKeyState(Desktop.VK_LSHIFT) & 0x8000) != 0;
-
                 var explorersTabs = new List<dynamic>();        // all tabs of all explorers
                 foreach (dynamic window in shell.Windows())     // need to use foreach since LINQ does not work with dynamic
                     explorersTabs.Add(window);
@@ -56,8 +56,12 @@ namespace Explobar
                     if (tabObject.Document == null)
                         continue;
 
+                    var thisExplorerTabs = explorersTabs
+                            .Where(x => new IntPtr(x.HWND) == windowHandle)
+                            .ToList();
+
                     bool supportWin11Tabs = true;
-                    if (supportWin11Tabs)
+                    if (thisExplorerTabs.Count > 1 && supportWin11Tabs)
                     {
                         // At this point we have identified the target explorer tabObject.
                         // The problem is that in Windows 11, if the explorer tabObject has multiple tabs,
@@ -70,11 +74,29 @@ namespace Explobar
                         if (activeTabPath == "This PC")
                             activeTabPath = Environment.GetFolderPath(Environment.SpecialFolder.MyComputer); // ::{20D04FE0-3AEA-1069-A2D8-08002B30309D}
 
-                        var thisExplorerTabs = explorersTabs
-                            .Where(x => new IntPtr(x.HWND) == windowHandle)
-                            .ToList();
+                        // Controlled by the explorer has 'Display the full path n the title bar' enabled
+                        bool fullPathInTitleBar = Path.IsPathRooted(activeTabPath);
 
-                        explorerWindow = thisExplorerTabs.FirstOrDefault(x => x.Document.Folder.Self.Path == activeTabPath);
+                        List<dynamic> matchingTabs;
+
+                        if (fullPathInTitleBar)
+                            matchingTabs = thisExplorerTabs.Where(x => x.Document.Folder.Self.Path == activeTabPath).ToList();
+                        else
+                            matchingTabs = thisExplorerTabs.Where(x => x.Document.Folder.Self.Path.ToString().EndsWith(activeTabPath)).ToList();
+
+                        if (matchingTabs.Count > 1)
+                        {
+                            var i = 1;
+                            var errorMessage = $"Warning: Multiple matching tabs found for path '{activeTabPath}':\n\n" +
+                                string.Join("\n", matchingTabs.Select(x => $"{i++}: {x.Document.Folder.Self.Path}".Trim())) + "\n\n" +
+                                "Due to the Windows Explorer API limitations it's impossible to detect which one is active.\n\n" +
+                                "You can minimize the chances of this error by enabling folder options 'Display the full path in the title bar'.\n\n" +
+                                "Please close duplicate tabs and try again.";
+                            ShowWarning(errorMessage);
+                            break;
+                        }
+
+                        explorerWindow = matchingTabs.FirstOrDefault();
 
                         if (explorerWindow == null) // we could not match (e.g. it was special folder)
                         {
@@ -91,8 +113,9 @@ namespace Explobar
 
                     root = explorerWindow?.Document?.Folder?.Self?.Path?.ToString();
 
-                    foreach (FolderItem item in explorerWindow.Document.SelectedItems())
-                        selectedPaths.Add(item.Path);
+                    if (root != null)
+                        foreach (FolderItem item in explorerWindow.Document.SelectedItems())
+                            selectedPaths.Add(item.Path);
 
                     break;
                 }
@@ -142,7 +165,7 @@ static class AutomationHelper
         // window.LocationName returns the name of the folder (not the path).
         // root.Current.Name returns he path of the active tab, but with extra text.
         // Path: @"D:\tools\QTTabBar"
-        // root.Current.Name: @"D:\tools\QTTabBar and 1 more tab -File Explorer"
+        // root.Current.Name: @"D:\tools\QTTabBar and 1 more tab - File Explorer"
         // window.LocationName: "QTTabBar"
 
         // var index = name.LastIndexOf(folderName) + folderName.Length;
@@ -162,7 +185,7 @@ static class AutomationHelper
         var name = root.Current.Name;
         if (name.IsEmpty()) return null;
 
-        // Console.WriteLine("Foreground tabObject title: " + name);
+        Console.WriteLine("Foreground tabObject title: " + name);
         return name.Contains("File Explorer") ? root : null;
     }
 

@@ -150,8 +150,8 @@ namespace Explobar
             form.StartPosition = FormStartPosition.Manual;
 
             // Offset from cursor to avoid it being under the cursor initially
-            int offsetX = 0;
-            int offsetY = 0;
+            int offsetX = 0 - form.Width / 2;
+            int offsetY = 0 - form.Height / 2;
 
             // Get screen bounds to ensure form is visible
             var screen = Screen.FromPoint(new Point(x, y));
