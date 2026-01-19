@@ -18,7 +18,7 @@ using System.Windows.Forms;
 //      navigate from clipboard content
 //      show selected file properties
 //      duplicate explorer tab in a new window
-//      button separator
+// ✅ button separator
 
 namespace Explobar
 {

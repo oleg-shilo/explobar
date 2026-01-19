@@ -23,8 +23,28 @@ namespace Explobar
 
         public static List<ToolbarItem> Items => LoadItems();
 
+        static DateTime configFileTimestamp = DateTime.MinValue;
+        static List<ToolbarItem> currentConfig = null;
+
+        public static bool IsConfigUpToDate
+        {
+            get
+            {
+                if (!File.Exists(ConfigPath))
+                    return false;
+                if (currentConfig == null)
+                    return false;
+
+                var lastWriteTime = File.GetLastWriteTime(ConfigPath);
+                return lastWriteTime == configFileTimestamp;
+            }
+        }
+
         static List<ToolbarItem> LoadItems()
         {
+            if (IsConfigUpToDate)
+                return currentConfig;
+
             try
             {
                 if (File.Exists(ConfigPath))
@@ -34,39 +54,40 @@ namespace Explobar
                         .WithNamingConvention(PascalCaseNamingConvention.Instance)
                         .Build();
 
-                    var items = deserializer.Deserialize<List<ToolbarItem>>(yaml);
-                    if (items != null && items.Count > 0)
-                    {
-                        // Resolve paths after loading
-                        foreach (var item in items)
-                        {
-                            item.Path = item.Path.ResolvePath();
-                            item.Arguments = ExpandEnvironmentVariables(item.Arguments);
-                        }
-                        return items.Resolve();
-                    }
+                    currentConfig = deserializer.Deserialize<List<ToolbarItem>>(yaml);
+                    if (currentConfig == null || !currentConfig.Any())
+                        currentConfig = SaveDefaultConfig();
                 }
                 else
                 {
-                    // Create default config file if it doesn't exist
-                    SaveDefaultConfig();
+                    currentConfig = SaveDefaultConfig();
                 }
             }
             catch (YamlDotNet.Core.SyntaxErrorException ex)
             {
-                Console.WriteLine($"Error loading toolbar items: {ex.Message}; start: {ex.Start}, end: {ex.End}");
+                var message = $"Error loading toolbar items: {ex.Message}; start: {ex.Start}, end: {ex.End}";
+                Explorer.ShowWarning(message);
+                Console.WriteLine(message);
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error loading toolbar items: {ex.Message}");
             }
 
-            // Return default items if file doesn't exist or loading fails
-            return GetDefaultItems().Resolve();
+            if (currentConfig == null)
+                currentConfig = SaveDefaultConfig();
+
+            if (File.Exists(ConfigPath))
+                configFileTimestamp = File.GetLastWriteTime(ConfigPath);
+            else
+                configFileTimestamp = DateTime.MinValue;
+
+            return currentConfig.Resolve();
         }
 
-        static void SaveDefaultConfig()
+        static List<ToolbarItem> SaveDefaultConfig()
         {
+            var result = GetDefaultItems();
             try
             {
                 var directory = Path.GetDirectoryName(ConfigPath);
@@ -79,7 +100,7 @@ namespace Explobar
                     .WithNamingConvention(PascalCaseNamingConvention.Instance)
                     .Build();
 
-                var yaml = serializer.Serialize(GetDefaultItems());
+                var yaml = serializer.Serialize(result);
                 File.WriteAllText(ConfigPath, yaml);
 
                 Console.WriteLine($"Default config created at: {ConfigPath}");
@@ -88,6 +109,7 @@ namespace Explobar
             {
                 Console.WriteLine($"Error saving default config: {ex.Message}");
             }
+            return result;
         }
 
         static List<ToolbarItem> GetDefaultItems()
@@ -112,12 +134,6 @@ namespace Explobar
             return items;
         }
     }
-
-    // class ExplorerContext
-    // {
-    //     public List<string> SelectedItems { get; set; } = new List<string>();
-    //     public dynamic ExplorerObject;
-    // }
 
     class ToolbarItem
     {

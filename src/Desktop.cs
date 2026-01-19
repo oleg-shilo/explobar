@@ -10,10 +10,7 @@ namespace Explobar
     static class Desktop
     {
         [DllImport("user32.dll")]
-        public static extern bool GetCursorPos(out POINT lpPoint);
-
-        [DllImport("user32.dll")]
-        public static extern IntPtr WindowFromPoint(POINT point);
+        public static extern IntPtr WindowFromPoint(Point point);
 
         [DllImport("user32.dll")]
         public static extern IntPtr GetAncestor(IntPtr hwnd, uint gaFlags);
@@ -31,15 +28,11 @@ namespace Explobar
 
         public const uint GA_ROOT = 2;
 
-        [StructLayout(LayoutKind.Sequential)]
-        public struct POINT
-        {
-            public int X;
-            public int Y;
-        }
-
         public static void ShowToolbarForm(string root, List<string> items, dynamic window)
         {
+            if (!ToolbarItems.IsConfigUpToDate)
+                ToolbarForm.ClearCache();
+
             var form = ToolbarForm.Create();
 
             form.ExplorerContext.RootPath = root;
@@ -52,9 +45,9 @@ namespace Explobar
             int offsetY = 0 - form.Height / 2;
 
             // Get screen bounds to ensure form is visible
-            Desktop.GetCursorPos(out Desktop.POINT cursorPos);
+            var cursorPos = Cursor.Position;
 
-            var screen = Screen.FromPoint(new Point(cursorPos.X, cursorPos.Y));
+            var screen = Screen.FromPoint(cursorPos);
             int formX = Math.Min(cursorPos.X + offsetX, screen.WorkingArea.Right - form.Width);
             int formY = Math.Min(cursorPos.Y + offsetY, screen.WorkingArea.Bottom - form.Height);
 

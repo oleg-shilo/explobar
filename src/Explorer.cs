@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows.Automation;
+using System.Windows.Forms;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using Explobar;
 using Shell32;
@@ -33,8 +34,9 @@ namespace Explobar
 
             try
             {
-                Desktop.GetCursorPos(out Desktop.POINT cursorPos);
-                IntPtr windowUnderMouse = Desktop.WindowFromPoint(cursorPos);
+                // Desktop.GetCursorPos(out Desktop.POINT cursorPos);
+                IntPtr windowUnderMouse = Desktop.WindowFromPoint(Cursor.Position);
+
                 IntPtr rootWindowUnderMouse = Desktop.GetAncestor(windowUnderMouse, Desktop.GA_ROOT);
 
                 var explorersTabs = new List<dynamic>();        // all tabs of all explorers

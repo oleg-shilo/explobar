@@ -23,6 +23,8 @@ namespace Explobar
     {
         static ToolbarForm nextInstance = null;
 
+        public static void ClearCache() => nextInstance = null;
+
         public static ToolbarForm Create()
         {
             // To avoid flickering, we create the next instance in advance and reuse it
@@ -228,21 +230,23 @@ namespace Explobar
 
         void CheckMouseTimer_Tick(object sender, EventArgs e)
         {
-            if (!enableMouseCheck)
-                return;
-            try
+            if (enableMouseCheck)
             {
-                var cursorPos = Cursor.Position;
-                var formBounds = new System.Drawing.Rectangle(this.Location, this.Size);
-
-                if (!formBounds.Contains(cursorPos))
+                try
                 {
-                    HideToolbar();
+                    var cursorPos = Cursor.Position;
+                    var formBounds = new Rectangle(this.Location, this.Size);
+                    formBounds.Inflate(15, 15); // add some tolerance
+
+                    if (!formBounds.Contains(cursorPos))
+                    {
+                        HideToolbar();
+                    }
                 }
-            }
-            catch
-            {
-                // Ignore errors
+                catch
+                {
+                    // Ignore errors
+                }
             }
         }
     }
