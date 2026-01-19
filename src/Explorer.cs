@@ -1,18 +1,19 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows.Automation;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using Explobar;
 using Shell32;
-using System.IO;
 
 namespace Explobar
 {
     static class Explorer
     {
         public static Action<string> ShowWarning = s => Console.WriteLine("[Explorer] " + s);
+
         public static List<dynamic> GetTabs()
         {
             var shell = new Shell();

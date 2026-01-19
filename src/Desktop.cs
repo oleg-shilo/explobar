@@ -2,22 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
-using Shell32;
 
 namespace Explobar
 {
     static class Desktop
     {
-        [DllImport("user32.dll")]
-        public static extern IntPtr GetForegroundWindow();
-
         [DllImport("user32.dll")]
         public static extern bool GetCursorPos(out POINT lpPoint);
 
@@ -28,67 +19,23 @@ namespace Explobar
         public static extern IntPtr GetAncestor(IntPtr hwnd, uint gaFlags);
 
         [DllImport("user32.dll")]
-        public static extern short GetAsyncKeyState(int vKey);
-
-        [DllImport("user32.dll")]
         public static extern bool SetForegroundWindow(IntPtr hWnd);
 
         [DllImport("user32.dll")]
         public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
 
-        [DllImport("user32.dll", SetLastError = true)]
-        static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
-
-        [DllImport("user32.dll")]
-        static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
-
-        [DllImport("user32.dll")]
-        static extern bool IsWindowVisible(IntPtr hWnd);
-
-        [DllImport("user32.dll")]
-        static extern IntPtr GetWindow(IntPtr hWnd, uint uCmd);
-
-        [DllImport("user32.dll")]
-        static extern int GetWindowLong(IntPtr hWnd, int nIndex);
-
-        static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
-        const uint SWP_NOSIZE = 0x0001;
-        const uint SWP_NOMOVE = 0x0002;
-        const uint SWP_SHOWWINDOW = 0x0040;
+        public static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
+        public const uint SWP_NOSIZE = 0x0001;
+        public const uint SWP_NOMOVE = 0x0002;
+        public const uint SWP_SHOWWINDOW = 0x0040;
 
         public const uint GA_ROOT = 2;
-        public const int VK_LSHIFT = 0xA0;
-
-        const uint GW_HWNDPREV = 3;
-        const int GWL_EXSTYLE = -20;
-        const int WS_EX_TRANSPARENT = 0x00000020;
-        const int WS_EX_LAYERED = 0x00080000;
 
         [StructLayout(LayoutKind.Sequential)]
         public struct POINT
         {
             public int X;
             public int Y;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        public struct RECT
-        {
-            public int Left;
-            public int Top;
-            public int Right;
-            public int Bottom;
-
-            public int Width => Right - Left;
-            public int Height => Bottom - Top;
-
-            public bool IntersectsWith(RECT other)
-            {
-                return !(other.Left >= Right ||
-                         other.Right <= Left ||
-                         other.Top >= Bottom ||
-                         other.Bottom <= Top);
-            }
         }
 
         public static void ShowToolbarForm(string root, List<string> items, dynamic window)
@@ -125,6 +72,57 @@ namespace Explobar
             SetWindowPos(form.Handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
 
             Application.Run(form);
+        }
+
+        public static void SendCtrlT()
+        {
+            const byte VK_CONTROL = 0x11;
+            const byte VK_T = 0x54;
+
+            // Simulate Ctrl + T
+            SendKeyDown(VK_CONTROL);
+            SendKeyDown(VK_T);
+            SendKeyUp(VK_T);
+            SendKeyUp(VK_CONTROL);
+        }
+
+        static void SendKeyDown(byte vk)
+        {
+            SendInput(vk, 0);
+        }
+
+        static void SendKeyUp(byte vk)
+        {
+            SendInput(vk, 2);
+        }
+
+        static void SendInput(byte vk, uint flags)
+        {
+            INPUT[] inputs = new INPUT[1];
+            inputs[0].type = 1; // Input type 1 is for keyboard input
+            inputs[0].ki.wVk = vk;
+
+            SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(typeof(INPUT)));
+        }
+
+        [DllImport("user32.dll")]
+        static extern uint SendInput(uint nInputs, INPUT[] pInputs, int cbSize);
+
+        [StructLayout(LayoutKind.Sequential)]
+        struct INPUT
+        {
+            public int type;
+            public KEYBDINPUT ki;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        struct KEYBDINPUT
+        {
+            public ushort wVk;
+            public ushort wScan;
+            public uint dwFlags;
+            public uint time;
+            public IntPtr dwExtraInfo;
         }
     }
 }

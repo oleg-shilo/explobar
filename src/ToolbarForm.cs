@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using static Explobar.Desktop;
 
 namespace Explobar
 {
@@ -42,17 +43,6 @@ namespace Explobar
 
         ToolTip toolTip;
 
-        [DllImport("user32.dll")]
-        static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
-
-        [DllImport("user32.dll")]
-        static extern bool SetForegroundWindow(IntPtr hWnd);
-
-        static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
-        const uint SWP_NOSIZE = 0x0001;
-        const uint SWP_NOMOVE = 0x0002;
-        const uint SWP_SHOWWINDOW = 0x0040;
-
         public ToolbarForm Init()
         {
             this.Text = "Selected Items";
@@ -73,7 +63,6 @@ namespace Explobar
                 ShowAlways = true
             };
 
-            // Create toolbar panel
             toolbarPanel = new FlowLayoutPanel
             {
                 Dock = DockStyle.Fill,
@@ -84,26 +73,26 @@ namespace Explobar
             };
 
             this.Shown += (s, e) =>
+            {
+                SetWindowPos(this.Handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+                this.Activate();
+                Task.Run(() =>
                 {
-                    SetWindowPos(this.Handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
-                    this.Activate();
-                    Task.Run(() =>
+                    Thread.Sleep(1000);
+                    try
                     {
-                        Thread.Sleep(1000);
-                        try
+                        this.BeginInvoke((Action)(() =>
                         {
-                            this.BeginInvoke((Action)(() =>
-                            {
-                                enableMouseCheck = true;
-                                checkMouseTimer?.Start();
-                            }));
-                        }
-                        catch
-                        {
-                            // Ignore errors
-                        }
-                    });
-                };
+                            enableMouseCheck = true;
+                            checkMouseTimer?.Start();
+                        }));
+                    }
+                    catch
+                    {
+                        // Ignore errors
+                    }
+                });
+            };
 
             if (checkMouseTimer == null)
             {
@@ -132,7 +121,7 @@ namespace Explobar
         }
 
         int buttonSize = 24;
-        int imagePadding = 2;
+        int imagePadding => (int)(buttonSize * 0.1); // 10% padding
 
         void AddToolbarGroupSeparator()
         {
@@ -152,9 +141,10 @@ namespace Explobar
             using (var originalIcon = info.IconPath.IfEmpty(info.Path).ExtractIcon(info.IconIndex))
             {
                 int imageSize = buttonSize - imagePadding - imagePadding;
+
+                // Resize icon to exactly imageSize x imageSize
                 var resizedIcon = new Bitmap(imageSize, imageSize);
 
-                // Resize icon to exactly 24x24
                 if (originalIcon != null)
                     using (var graphics = Graphics.FromImage(resizedIcon))
                     {
