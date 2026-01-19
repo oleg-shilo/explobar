@@ -105,29 +105,44 @@ namespace Explobar
             this.Controls.Add(toolbarPanel);
             foreach (var item in ToolbarItems.Items)
             {
-                AddToolbarButton(item, items, explorerWindow);
+                if (item.Path == "{separator}")
+                    AddToolbarGroupSeparator();
+                else
+                    AddToolbarButton(item, items, explorerWindow);
             }
         }
-
+        int buttonSize = 32;
+        void AddToolbarGroupSeparator()
+        {
+            var separator = new Panel
+            {
+                Width = 1,
+                Height = buttonSize,
+                BackColor = Color.Gray,
+                Margin = new Padding(4, 4, 4, 4)
+            };
+            toolbarPanel.Controls.Add(separator);
+        }
         void AddToolbarButton(ToolbarItem info, List<string> selectedItems, dynamic explorerWindow)
         {
             var iconIndex = info.IconIndex;
             using (var originalIcon = info.IconPath.IfEmpty(info.Path).ExtractIcon(info.IconIndex))
             {
-                var resizedIcon = new Bitmap(24, 24);
+                int imageSize = buttonSize - 4 - 4;
+                var resizedIcon = new Bitmap(imageSize, imageSize);
 
                 // Resize icon to exactly 24x24
                 if (originalIcon != null)
                     using (var graphics = Graphics.FromImage(resizedIcon))
                     {
                         graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
-                        graphics.DrawImage(originalIcon, 0, 0, 24, 24);
+                        graphics.DrawImage(originalIcon, 0, 0, imageSize, imageSize);
                     }
 
                 var button = new Button
                 {
-                    Width = 32,
-                    Height = 32,
+                    Width = buttonSize,
+                    Height = buttonSize,
                     BackgroundImage = resizedIcon,
                     BackgroundImageLayout = ImageLayout.Center,
                     FlatStyle = FlatStyle.Flat,
