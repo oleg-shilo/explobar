@@ -51,7 +51,6 @@ namespace Explobar
             // Keep the application running
             Application.Run();
 
-            // Cleanup on exit
             _keyboardHook?.UnhookKeyboard();
         }
 
@@ -68,9 +67,7 @@ namespace Explobar
                 {
                     try
                     {
-                        Console.WriteLine(">>>");
                         CheckUserInputAndPopupToolbar();
-                        Console.WriteLine("<<<");
                     }
                     finally
                     {
@@ -95,11 +92,7 @@ namespace Explobar
                     Console.WriteLine(item);
                 }
 
-                Desktop.GetCursorPos(out Desktop.POINT cursorPos);
-                Desktop.ShowToolbarForm(root, selection, cursorPos.X, cursorPos.Y, window);
-
-                // Wait a bit to avoid showing multiple forms
-                // Thread.Sleep(2000);
+                Desktop.ShowToolbarForm(root, selection, window);
             }
         }
     }

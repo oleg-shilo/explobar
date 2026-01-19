@@ -20,18 +20,27 @@ namespace Explobar
 
     public class ToolbarForm : Form
     {
-        static ToolbarForm nextInstance = null;
-
-        public static ToolbarForm Create()
+        static public Form ActiveInstance()
         {
-            // To avoid flickering, we create the next instance in advance and reuse it
+            if (currentInstance != null && reuseInstance)
+                return currentInstance;
+            else
+                return null;
+        }
 
-            var result = nextInstance ?? new ToolbarForm().Init();
+        public static bool reuseInstance = true;
 
-            nextInstance = new ToolbarForm();
-            nextInstance.Init();
+        public static ToolbarForm currentInstance = null;
 
-            return result;
+        public static (ToolbarForm, bool existing) Create()
+        {
+            if (currentInstance == null || !reuseInstance)
+            {
+                currentInstance = new ToolbarForm();
+                currentInstance.Init();
+                return (currentInstance, false);
+            }
+            return (currentInstance, true);
         }
 
         System.Windows.Forms.Timer checkMouseTimer;
@@ -46,14 +55,24 @@ namespace Explobar
         static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
 
         [DllImport("user32.dll")]
+        static extern IntPtr GetForegroundWindow();
+
+        [DllImport("user32.dll")]
         static extern bool SetForegroundWindow(IntPtr hWnd);
+
+        static bool SetForegroundWindow(ulong hWnd) => SetForegroundWindow(hWnd == 0 ? IntPtr.Zero : new IntPtr((int)hWnd));
 
         static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
         const uint SWP_NOSIZE = 0x0001;
         const uint SWP_NOMOVE = 0x0002;
         const uint SWP_SHOWWINDOW = 0x0040;
 
-        public ToolbarForm Init()
+        public void PlaceUnderCursor()
+        {
+        }
+
+        // public void Init(List<string> items, dynamic explorerWindow)
+        public void Init()
         {
             this.Text = "Selected Items";
             this.TopMost = true;
@@ -65,6 +84,7 @@ namespace Explobar
             this.AutoSize = true;
             this.AutoSizeMode = AutoSizeMode.GrowAndShrink;
 
+            // Initialize tooltip
             toolTip = new ToolTip
             {
                 AutoPopDelay = 5000,
@@ -84,26 +104,26 @@ namespace Explobar
             };
 
             this.Shown += (s, e) =>
+            {
+                SetWindowPos(this.Handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+                this.Activate();
+                Task.Run(() =>
                 {
-                    SetWindowPos(this.Handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
-                    this.Activate();
-                    Task.Run(() =>
+                    Thread.Sleep(1000);
+                    try
                     {
-                        Thread.Sleep(1000);
-                        try
+                        this.BeginInvoke((Action)(() =>
                         {
-                            this.BeginInvoke((Action)(() =>
-                            {
-                                enableMouseCheck = true;
-                                checkMouseTimer?.Start();
-                            }));
-                        }
-                        catch
-                        {
-                            // Ignore errors
-                        }
-                    });
-                };
+                            enableMouseCheck = true;
+                            checkMouseTimer?.Start();
+                        }));
+                    }
+                    catch
+                    {
+                        // Ignore errors
+                    }
+                });
+            };
 
             if (checkMouseTimer == null)
             {
@@ -127,8 +147,6 @@ namespace Explobar
                 else
                     AddToolbarButton(item);
             }
-
-            return this;
         }
 
         int buttonSize = 24;
@@ -233,7 +251,10 @@ namespace Explobar
         void HideToolbar()
         {
             checkMouseTimer?.Stop();
-            this.Close();
+            if (reuseInstance)
+                this.Hide();
+            else
+                this.Close();
         }
 
         void CheckMouseTimer_Tick(object sender, EventArgs e)

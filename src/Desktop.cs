@@ -91,61 +91,8 @@ namespace Explobar
             }
         }
 
-        public static uint GetWindowProcess(IntPtr hWnd)
+        public static void ShowToolbarForm(string root, List<string> items, dynamic window)
         {
-            if (hWnd == IntPtr.Zero)
-                return 0;
-
-            GetWindowThreadProcessId(hWnd, out uint processId);
-            return processId;
-        }
-
-        public static void SendCtrlT()
-        {
-            SendKeyDown(VK_CONTROL);
-            SendKeyDown((byte)'T');
-            SendKeyUp((byte)'T');
-            SendKeyUp(VK_CONTROL);
-        }
-
-        const byte VK_CONTROL = 0x11;
-
-        static void SendKeyDown(byte vk) =>
-            SendInput(vk, 0);
-
-        static void SendKeyUp(byte vk) =>
-            SendInput(vk, 2);
-
-        static void SendInput(byte vk, uint flags)
-        {
-            var input = new INPUT
-            {
-                type = 1,
-                ki = new KEYBDINPUT { wVk = vk, dwFlags = flags }
-            };
-            SendInput(1, new[] { input }, Marshal.SizeOf<INPUT>());
-        }
-
-        [DllImport("user32.dll")]
-        static extern uint SendInput(uint nInputs, INPUT[] pInputs, int cbSize);
-
-        struct INPUT
-        {
-            public uint type;
-            public KEYBDINPUT ki;
-        }
-
-        struct KEYBDINPUT
-        {
-            public byte wVk;
-            public uint dwFlags;
-        }
-
-        public static void ShowToolbarForm(string root, List<string> items, int x, int y, dynamic window)
-        {
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
-
             var form = ToolbarForm.Create();
 
             form.ExplorerContext.RootPath = root;
@@ -154,20 +101,21 @@ namespace Explobar
 
             form.StartPosition = FormStartPosition.Manual;
 
-            // Offset from cursor to avoid it being under the cursor initially
             int offsetX = 0 - form.Width / 2;
             int offsetY = 0 - form.Height / 2;
 
             // Get screen bounds to ensure form is visible
-            var screen = Screen.FromPoint(new Point(x, y));
-            int formX = Math.Min(x + offsetX, screen.WorkingArea.Right - form.Width);
-            int formY = Math.Min(y + offsetY, screen.WorkingArea.Bottom - form.Height);
+            Desktop.GetCursorPos(out Desktop.POINT cursorPos);
+
+            var screen = Screen.FromPoint(new Point(cursorPos.X, cursorPos.Y));
+            int formX = Math.Min(cursorPos.X + offsetX, screen.WorkingArea.Right - form.Width);
+            int formY = Math.Min(cursorPos.Y + offsetY, screen.WorkingArea.Bottom - form.Height);
 
             // Ensure it's not off the left or top edge
             formX = Math.Max(formX, screen.WorkingArea.Left);
             formY = Math.Max(formY, screen.WorkingArea.Top);
 
-            form.Location = new System.Drawing.Point(formX, formY);
+            form.Location = new Point(formX, formY);
 
             // Show the form and bring it to front
             form.Show();
