@@ -30,11 +30,6 @@ namespace Explobar
         [STAThread]
         static void Main(string[] args)
         {
-            Explorer.ShowWarning = (msg) =>
-                MessageBox.Show(msg, "Explobar", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-
-            // var ttt = AutomationHelper.GetExplorer(h)?.FindTabControl()?.GetTabs().FirstOrDefault(t => t.IsActive())?.Current.Name;
-            // return;
             // Set up keyboard hook
             _keyboardHook = new LowLevelKeyboardHook();
             _keyboardHook.OnKeyPressed += KeyboardHook_OnKeyPressed;
@@ -67,7 +62,26 @@ namespace Explobar
                 {
                     try
                     {
-                        CheckUserInputAndPopupToolbar();
+                        Runtime.Log("------------");
+                        (var root, var selection, var window) = Explorer.GetSelection();
+                        Runtime.Log("root: " + root);
+
+                        if (root != null)
+                        {
+                            // foreach (var item in selection) Runtime.Log(item);
+
+                            if (ToolbarForm.HideOnClosing && ToolbarForm.Instance != null)
+                            {
+                                // ShowToolbarForm will not block 
+                                Action unhide = () => Desktop.ShowToolbarForm(root, selection, window, startMessagePump: false);
+                                ToolbarForm.Instance.Invoke(unhide);
+                            }
+                            else
+                            {
+                                // ShowToolbarForm will block until the form is closed
+                                Desktop.ShowToolbarForm(root, selection, window, startMessagePump: true);
+                            }
+                        }
                     }
                     finally
                     {
@@ -76,23 +90,9 @@ namespace Explobar
                 });
                 thread.SetApartmentState(ApartmentState.STA);
                 thread.Start();
-            }
-        }
 
-        static void CheckUserInputAndPopupToolbar()
-        {
-            Console.WriteLine("------------");
-            (var root, var selection, var window) = Explorer.GetSelection();
-            Console.WriteLine("root: " + root);
-
-            if (root != null)
-            {
-                foreach (var item in selection)
-                {
-                    Console.WriteLine(item);
-                }
-
-                Desktop.ShowToolbarForm(root, selection, window);
+                if (ToolbarForm.HideOnClosing)
+                    _isProcessing = false;
             }
         }
     }

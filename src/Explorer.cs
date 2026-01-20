@@ -13,8 +13,6 @@ namespace Explobar
 {
     static class Explorer
     {
-        public static Action<string> ShowWarning = s => Console.WriteLine("[Explorer] " + s);
-
         public static List<dynamic> GetTabs()
         {
             var shell = new Shell();
@@ -90,12 +88,14 @@ namespace Explobar
                         if (matchingTabs.Count > 1)
                         {
                             var i = 1;
+
                             var errorMessage = $"Warning: Multiple matching tabs found for path '{activeTabPath}':\n\n" +
                                 string.Join("\n", matchingTabs.Select(x => $"{i++}: {x.Document.Folder.Self.Path}".Trim())) + "\n\n" +
                                 "Due to the Windows Explorer API limitations it's impossible to detect which one is active.\n\n" +
                                 "You can minimize the chances of this error by enabling folder options 'Display the full path in the title bar'.\n\n" +
                                 "Please close duplicate tabs and try again.";
-                            ShowWarning(errorMessage);
+                            Runtime.ShowWarning(errorMessage);
+
                             break;
                         }
 
@@ -125,7 +125,7 @@ namespace Explobar
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error getting explorer selection: " + ex.Message);
+                Runtime.Log("Error getting explorer selection: " + ex.Message);
             }
             finally
             {
@@ -143,7 +143,7 @@ namespace Explobar
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error navigating to path {path}: {ex.Message}");
+                Runtime.Log($"Error navigating to path {path}: {ex.Message}");
             }
         }
     }
@@ -188,7 +188,7 @@ static class AutomationHelper
         var name = root.Current.Name;
         if (name.IsEmpty()) return null;
 
-        Console.WriteLine("Foreground tabObject title: " + name);
+        Runtime.Log("Foreground tabObject title: " + name);
         return name.Contains("File Explorer") ? root : null;
     }
 

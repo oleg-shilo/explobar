@@ -66,12 +66,12 @@ namespace Explobar
             catch (YamlDotNet.Core.SyntaxErrorException ex)
             {
                 var message = $"Error loading toolbar items: {ex.Message}; start: {ex.Start}, end: {ex.End}";
-                Explorer.ShowWarning(message);
-                Console.WriteLine(message);
+                Runtime.ShowWarning(message);
+                Runtime.Log(message);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error loading toolbar items: {ex.Message}");
+                Runtime.Log($"Error loading toolbar items: {ex.Message}");
             }
 
             if (currentConfig == null)
@@ -101,13 +101,37 @@ namespace Explobar
                     .Build();
 
                 var yaml = serializer.Serialize(result);
-                File.WriteAllText(ConfigPath, yaml);
 
-                Console.WriteLine($"Default config created at: {ConfigPath}");
+                // Add comments at the start of the file
+                var comments = new StringBuilder();
+                comments.AppendLine("# Explobar Toolbar Configuration");
+                comments.AppendLine("# This file defines the toolbar items displayed when pressing Left Shift in Windows Explorer");
+                comments.AppendLine("#");
+                comments.AppendLine("# Each toolbar item has the following properties:");
+                comments.AppendLine("#   Icon: Path to icon file with optional index (e.g., 'shell32.dll,314' or 'notepad.exe')");
+                comments.AppendLine("#   Path: Executable or application to launch");
+                comments.AppendLine("#   Arguments: Command line arguments (supports placeholders)");
+                comments.AppendLine("#   WorkingDir: Working directory for the application");
+                comments.AppendLine("#   Tooltip: Tooltip text shown on hover");
+                comments.AppendLine("#");
+                comments.AppendLine("# Available placeholders:");
+                comments.AppendLine("#   %f% - First selected file (unquoted)");
+                comments.AppendLine("#   %c% - Current directory (unquoted)");
+                comments.AppendLine("#   %<environment-variable>% - Application data folder");
+                comments.AppendLine("#");
+                comments.AppendLine("# To add a separator between toolbar items, use:");
+                comments.AppendLine("#   Path: '{separator}'");
+                comments.AppendLine("#================================");
+                comments.AppendLine();
+
+                var yamlWithComments = comments.ToString() + yaml;
+                File.WriteAllText(ConfigPath, yamlWithComments);
+
+                Runtime.Log($"Default config created at: {ConfigPath}");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error saving default config: {ex.Message}");
+                Runtime.Log($"Error saving default config: {ex.Message}");
             }
             return result;
         }
@@ -167,13 +191,13 @@ namespace Explobar
                     .Replace("%c%", currDir)
                     ?? "";
 
-                var startInfo = new System.Diagnostics.ProcessStartInfo
+                var startInfo = new ProcessStartInfo
                 {
                     FileName = info.Path,
                     Arguments = args,
                     WorkingDirectory = workDir
                 };
-                System.Diagnostics.Process.Start(startInfo);
+                Process.Start(startInfo);
             }
             catch
             {

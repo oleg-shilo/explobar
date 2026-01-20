@@ -28,7 +28,7 @@ namespace Explobar
 
         public const uint GA_ROOT = 2;
 
-        public static void ShowToolbarForm(string root, List<string> items, dynamic window)
+        public static void ShowToolbarForm(string root, List<string> items, dynamic window, bool startMessagePump)
         {
             if (!ToolbarItems.IsConfigUpToDate)
                 ToolbarForm.ClearCache();
@@ -64,7 +64,8 @@ namespace Explobar
             SetForegroundWindow(form.Handle);
             SetWindowPos(form.Handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
 
-            Application.Run(form);
+            if (startMessagePump)
+                Application.Run(form);
         }
 
         public static void SendCtrlT()

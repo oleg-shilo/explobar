@@ -1,6 +1,7 @@
 using System;
-using static System.Environment;
 using System.IO;
+using System.Windows.Forms;
+using static System.Environment;
 
 namespace Explobar
 {
@@ -16,5 +17,19 @@ namespace Explobar
 
         public static string Combine(this SpecialFolder folder, string path, params string[] paths)
             => Path.Combine(Environment.GetFolderPath(folder), path, Path.Combine(paths));
+    }
+
+    static class Runtime
+    {
+
+        public static Action<string> ShowWarning = (message) => showMessage(message, MessageBoxIcon.Warning);
+        public static Action<string> Log = log;
+
+        static void showMessage(string message, MessageBoxIcon icon = MessageBoxIcon.None) => MessageBox.Show(message, "Explobar", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+
+        static void log(string message)
+        {
+            Console.WriteLine("[Explobar] " + message);
+        }
     }
 }
