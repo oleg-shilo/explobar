@@ -169,7 +169,7 @@ namespace Explobar
             return this;
         }
 
-        int buttonSize = 24;
+        int buttonSize => ToolbarItems.Settings.ButtonSize;
         int imagePadding => (int)(buttonSize * 0.1); // 10% padding
 
         void AddToolbarGroupSeparator()
@@ -245,6 +245,24 @@ namespace Explobar
                     }
                 };
                 toolbarPanel.Controls.Add(button);
+            }
+        }
+
+        (Action<ExplorerContext>, Image icon, string tooltip) OpenFromClipboardCommand
+        {
+            get
+            {
+                var action = new Action<ExplorerContext>(context =>
+                {
+                    var clipboardText = Clipboard.GetText();
+                    if (!string.IsNullOrEmpty(clipboardText))
+                    {
+                        context.OpenPath(clipboardText);
+                    }
+                });
+
+                var image = SystemIcons.Information.ToBitmap();
+                return (action, image);
             }
         }
 

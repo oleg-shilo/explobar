@@ -17,14 +17,27 @@ using YamlDotNet.Serialization.NamingConventions;
 
 namespace Explobar
 {
+    class ToolbarConfig
+    {
+        public ToolbarSettings Settings { get; set; } = new ToolbarSettings();
+        public List<ToolbarItem> Items { get; set; } = new List<ToolbarItem>();
+    }
+
+    class ToolbarSettings
+    {
+        public int ButtonSize { get; set; } = 24;
+        // public int ImagePadding { get; set; } = 2;
+    }
+
     static class ToolbarItems
     {
         static string ConfigPath = SpecialFolder.ApplicationData.Combine("Explobar", "toolbar-items.yaml");
 
-        public static List<ToolbarItem> Items => LoadItems();
+        public static List<ToolbarItem> Items => LoadConfig().Items;
+        public static ToolbarSettings Settings => LoadConfig().Settings;
 
         static DateTime configFileTimestamp = DateTime.MinValue;
-        static List<ToolbarItem> currentConfig = null;
+        static ToolbarConfig currentConfig = null;
 
         public static bool IsConfigUpToDate
         {
@@ -40,7 +53,7 @@ namespace Explobar
             }
         }
 
-        static List<ToolbarItem> LoadItems()
+        static ToolbarConfig LoadConfig()
         {
             if (IsConfigUpToDate)
                 return currentConfig;
@@ -54,8 +67,8 @@ namespace Explobar
                         .WithNamingConvention(PascalCaseNamingConvention.Instance)
                         .Build();
 
-                    currentConfig = deserializer.Deserialize<List<ToolbarItem>>(yaml);
-                    if (currentConfig == null || !currentConfig.Any())
+                    currentConfig = deserializer.Deserialize<ToolbarConfig>(yaml);
+                    if (currentConfig == null || currentConfig.Items == null || !currentConfig.Items.Any())
                         currentConfig = SaveDefaultConfig();
                 }
                 else
@@ -82,12 +95,22 @@ namespace Explobar
             else
                 configFileTimestamp = DateTime.MinValue;
 
-            return currentConfig.Resolve();
+            currentConfig.Items.Resolve();
+            return currentConfig;
         }
 
-        static List<ToolbarItem> SaveDefaultConfig()
+        static ToolbarConfig SaveDefaultConfig()
         {
-            var result = GetDefaultItems();
+            var result = new ToolbarConfig
+            {
+                Settings = new ToolbarSettings
+                {
+                    ButtonSize = 24,
+                    // ImagePadding = 2
+                },
+                Items = GetDefaultItems()
+            };
+
             try
             {
                 var directory = Path.GetDirectoryName(ConfigPath);
@@ -105,7 +128,11 @@ namespace Explobar
                 // Add comments at the start of the file
                 var comments = new StringBuilder();
                 comments.AppendLine("# Explobar Toolbar Configuration");
-                comments.AppendLine("# This file defines the toolbar items displayed when pressing Left Shift in Windows Explorer");
+                comments.AppendLine("# This file defines the toolbar settings and items displayed when pressing Left Shift in Windows Explorer");
+                comments.AppendLine("#");
+                comments.AppendLine("# Settings:");
+                comments.AppendLine("#   IconSize: Size of toolbar button icons in pixels (default: 24)");
+                comments.AppendLine("#   ImagePadding: Padding around icons in pixels (default: 2)");
                 comments.AppendLine("#");
                 comments.AppendLine("# Each toolbar item has the following properties:");
                 comments.AppendLine("#   Icon: Path to icon file with optional index (e.g., 'shell32.dll,314' or 'notepad.exe')");
