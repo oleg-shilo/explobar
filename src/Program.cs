@@ -62,15 +62,17 @@ namespace Explobar
                 {
                     try
                     {
-                        Runtime.Log("------------");
                         (var root, var selection, var window) = Explorer.GetSelection();
-                        Runtime.Log("root: " + root);
 
                         if (root != null)
                         {
                             // foreach (var item in selection) Runtime.Log(item);
 
-                            if (ToolbarForm.HideOnClosing && ToolbarForm.Instance != null)
+
+                            bool isToolbarHidden = (ToolbarForm.HideOnClosing && ToolbarForm.Instance != null);
+                            Runtime.Log($"root ({(isToolbarHidden ? "unhide" : "show")}): {root}");
+
+                            if (isToolbarHidden)
                             {
                                 // ShowToolbarForm will not block 
                                 Action unhide = () => Desktop.ShowToolbarForm(root, selection, window, startMessagePump: false);
