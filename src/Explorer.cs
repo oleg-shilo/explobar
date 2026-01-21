@@ -70,10 +70,11 @@ namespace Explobar
                         // Thus, we need to use UI Automation to find the active tab and get its path.
                         // And then we need to find the tabObject that matches that path.
 
-                        var activeTabPath = AutomationHelper.GetExplorerRoot(tabObject);
+                        // Use UI Automation returns tab name like "This PC" but the explorer window object has
+                        // it as "::{20D04FE0-3AEA-1069-A2D8-08002B30309D}"
+                        string activeTabPath = AutomationHelper.GetExplorerRoot(tabObject);
+                        activeTabPath = activeTabPath.GetSpecialFolderCLSID();
 
-                        if (activeTabPath == "This PC")
-                            activeTabPath = Environment.GetFolderPath(Environment.SpecialFolder.MyComputer); // ::{20D04FE0-3AEA-1069-A2D8-08002B30309D}
 
                         // Controlled by the explorer has 'Display the full path n the title bar' enabled
                         bool fullPathInTitleBar = Path.IsPathRooted(activeTabPath);
@@ -90,7 +91,7 @@ namespace Explobar
                             var i = 1;
 
                             var errorMessage = $"Warning: Multiple matching tabs found for path '{activeTabPath}':\n\n" +
-                                string.Join("\n", matchingTabs.Select(x => $"{i++}: {x.Document.Folder.Self.Path}".Trim())) + "\n\n" +
+                                string.Join("\n", matchingTabs.Select(x => $"{i++}: {(x.Document.Folder.Self.Path as string).GetSpecialFolderName()}".Trim())) + "\n\n" +
                                 "Due to the Windows Explorer API limitations it's impossible to detect which one is active.\n\n" +
                                 "You can minimize the chances of this error by enabling folder options 'Display the full path in the title bar'.\n\n" +
                                 "Please close duplicate tabs and try again.";
