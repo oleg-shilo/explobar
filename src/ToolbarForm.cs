@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Explobar;
 using static Explobar.Desktop;
+using Shell32;
 
 namespace Explobar
 {
@@ -316,64 +317,6 @@ namespace Explobar
                     // Ignore errors
                 }
             }
-        }
-    }
-
-    class StockToolbarControls
-    {
-        public static Dictionary<string, Func<Button>> Items = new Dictionary<string, Func<Button>>
-        {
-            { "{navigate-from-clipboard}", () => new NavigateFromClipboard() }
-        };
-    }
-
-    public interface ICustomButton
-    {
-        void OnClick(ExplorerContext context);
-
-        void OnInit(ToolbarItem item, ExplorerContext context);
-
-        int IconIndex { get; set; }
-        string IconPath { get; set; }
-
-        string Tooltip { get; set; }
-    }
-
-    class NavigateFromClipboard : Button, ICustomButton
-    {
-        public int IconIndex { get; set; } = 260;
-        public string IconPath { get; set; } = @"%SystemRoot%\System32\shell32.dll";
-
-        public string Tooltip { get; set; } = "Open new tab from clipboard path";
-
-        public void OnClick(ExplorerContext context)
-        {
-            string newRoot = null;
-
-            var path = Clipboard.GetText()?.Trim()?.Trim('"');
-            if (path.HasText())
-            {
-                if (Directory.Exists(path))
-                    newRoot = path;
-                else if (File.Exists(path))
-                    newRoot = Path.GetDirectoryName(path);
-
-                if (newRoot.HasText())
-                {
-                    var tabs = Explorer.GetTabs();
-                    Desktop.SentCtrlT(context.HWND);
-                    Thread.Sleep(100);
-
-                    var newTab = Explorer.GetTabs().Except(tabs).FirstOrDefault();
-                    if (newTab != null)
-                        Explorer.NavigateToPath(newTab, newRoot);
-                }
-            }
-        }
-
-        public void OnInit(ToolbarItem item, ExplorerContext context)
-        {
-            // this.Text = "CB";
         }
     }
 }

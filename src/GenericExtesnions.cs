@@ -21,6 +21,48 @@ namespace Explobar
         public static string Combine(this SpecialFolder folder, string path, params string[] paths)
             => Path.Combine(Environment.GetFolderPath(folder), path, Path.Combine(paths));
 
+        public static string NextAvailableName(this string folder, string desiredName)
+        {
+            string fullPath = Path.Combine(folder, desiredName);
+
+            if (!File.Exists(fullPath) && !Directory.Exists(fullPath))
+                return desiredName;
+
+            // Separate name and extension
+            string extension = Path.GetExtension(desiredName);
+            string nameWithoutExt = Path.GetFileNameWithoutExtension(desiredName);
+
+            // Start with (2) and increment until we find an available name
+            int counter = 2;
+
+            while (true)
+            {
+                string newName;
+
+                if (extension.HasText())
+                {
+                    // It's a file: "filename (n).ext"
+                    newName = $"{nameWithoutExt} ({counter}){extension}";
+                }
+                else
+                {
+                    // It's a folder: "foldername (n)"
+                    newName = $"{desiredName} ({counter})";
+                }
+
+                fullPath = Path.Combine(folder, newName);
+
+                if (!File.Exists(fullPath) && !Directory.Exists(fullPath))
+                    return newName;
+
+                counter++;
+
+                // Safety limit to prevent infinite loops
+                if (counter > 9999)
+                    return $"{nameWithoutExt}_{Guid.NewGuid()}{extension}";
+            }
+        }
+
         public static string ExpandEnvars(this string text) => Environment.ExpandEnvironmentVariables(text);
 
         static Dictionary<string, string> specialFolders = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)

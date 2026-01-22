@@ -75,7 +75,6 @@ namespace Explobar
                         string activeTabPath = AutomationHelper.GetExplorerRoot(tabObject);
                         activeTabPath = activeTabPath.GetSpecialFolderCLSID();
 
-
                         // Controlled by the explorer has 'Display the full path n the title bar' enabled
                         bool fullPathInTitleBar = Path.IsPathRooted(activeTabPath);
 
@@ -146,6 +145,28 @@ namespace Explobar
             {
                 Runtime.Log($"Error navigating to path {path}: {ex.Message}");
             }
+        }
+
+        public static void SelectItem(dynamic explorerWindow, string fullPath)
+        {
+            var folderView = explorerWindow.Document;
+            var folder = folderView.Folder;
+
+            var itemName = Path.GetFileName(fullPath);
+            var item = folder.ParseName(itemName);
+            if (item == null)
+                return;
+
+            const int SVSI_SELECT = 0x1;
+            const int SVSI_FOCUSED = 0x10;
+            const int SVSI_ENSUREVISIBLE = 0x8;
+            const int SVSI_DESELECTOTHERS = 0x4;
+
+            folderView.SelectItem(item,
+                SVSI_SELECT | SVSI_DESELECTOTHERS | SVSI_FOCUSED);
+
+            var ttt = folderView.SelectItem(item,
+                SVSI_SELECT | SVSI_FOCUSED | SVSI_ENSUREVISIBLE);
         }
     }
 }
