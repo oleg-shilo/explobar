@@ -15,6 +15,7 @@ namespace Explobar
     public class ExplorerContext
     {
         dynamic window;
+
         public dynamic Window
         {
             get => window;
@@ -186,8 +187,61 @@ namespace Explobar
 
         void AddToolbarButton(ToolbarItem info)
         {
-            var iconIndex = info.IconIndex;
-            using (var originalIcon = info.IconPath.IfEmpty(info.Path).ExtractIcon(info.IconIndex))
+            var resizedIcon = CreateButtonImage(
+                info.IconPath.IfEmpty(info.Path),
+                info.IconIndex);
+
+            Button button;
+
+            bool isStockButton = info.Path.StartsWith("{") && StockToolbarControls.Items.ContainsKey(info.Path);
+
+            if (isStockButton)
+                button = StockToolbarControls.Items[info.Path]();
+            else
+                button = new Button();
+
+            button.Width = buttonSize;
+            button.Height = buttonSize;
+            button.BackgroundImage = resizedIcon;
+            button.BackgroundImageLayout = ImageLayout.Center;
+            button.FlatStyle = FlatStyle.Flat;
+            button.BackColor = Color.Transparent;
+            button.Cursor = Cursors.Hand;
+
+            // Configure border and appearance
+            button.FlatAppearance.BorderSize = 0;
+            button.FlatAppearance.MouseOverBackColor = Color.FromArgb(64, Color.LightBlue);
+            button.FlatAppearance.MouseDownBackColor = Color.Transparent;
+
+            toolTip.SetToolTip(button, info.Tooltip.IfEmpty(info.Path.GetFileName()));
+
+            var customButton = (button as ICustomButton);
+            customButton?.OnInit(info, this.ExplorerContext);
+
+            button.Click += (x, y) =>
+            {
+                try
+                {
+                    HideToolbar();
+                    SetForegroundWindow((IntPtr)ExplorerContext.HWND);
+
+                    if (customButton != null)
+                        customButton.OnClick(this.ExplorerContext);
+                    else
+                        info.Execute(this.ExplorerContext);
+                }
+                catch (Exception e)
+                {
+                    Runtime.ShowError(e.Message);
+                }
+            };
+
+            toolbarPanel.Controls.Add(button);
+        }
+
+        Bitmap CreateButtonImage(string iconPath, int iconIndex)
+        {
+            using (var originalIcon = iconPath.ExtractIcon(iconIndex))
             {
                 int imageSize = buttonSize - imagePadding - imagePadding;
 
@@ -200,80 +254,8 @@ namespace Explobar
                         graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
                         graphics.DrawImage(originalIcon, 0, 0, imageSize, imageSize);
                     }
-
-                var button = new Button
-                {
-                    Width = buttonSize,
-                    Height = buttonSize,
-                    BackgroundImage = resizedIcon,
-                    BackgroundImageLayout = ImageLayout.Center,
-                    FlatStyle = FlatStyle.Flat,
-                    BackColor = Color.Transparent,
-                    Cursor = Cursors.Hand
-                };
-
-                // Configure border and appearance
-                button.FlatAppearance.BorderSize = 0;
-                button.FlatAppearance.MouseOverBackColor = Color.FromArgb(64, Color.LightBlue);
-                button.FlatAppearance.MouseDownBackColor = Color.Transparent;
-
-                toolTip.SetToolTip(button, info.Tooltip.IfEmpty(info.Path.GetFileName()));
-
-                button.Click += (x, y) =>
-                {
-                    HideToolbar();
-                    SetForegroundWindow((IntPtr)ExplorerContext.HWND);
-
-                    bool test = false;
-                    if (test)
-                    {
-                        // opening new tab and navigating to C:\Windows
-
-                        var tabs = Explorer.GetTabs();
-                        SentCtrlT();
-                        Thread.Sleep(100);
-
-                        var newTab = Explorer.GetTabs().Except(tabs).FirstOrDefault();
-                        if (newTab != null)
-                        {
-                            Explorer.NavigateToPath(newTab, @"C:\Windows");
-                        }
-                    }
-                    else
-                    {
-                        info.Execute(this.ExplorerContext);
-                    }
-                };
-                toolbarPanel.Controls.Add(button);
+                return resizedIcon;
             }
-        }
-
-        (Action<ExplorerContext>, Image icon, string tooltip) OpenFromClipboardCommand
-        {
-            get
-            {
-                var action = new Action<ExplorerContext>(context =>
-                {
-                    var clipboardText = Clipboard.GetText();
-                    if (!string.IsNullOrEmpty(clipboardText))
-                    {
-                        context.OpenPath(clipboardText);
-                    }
-                });
-
-                var image = SystemIcons.Information.ToBitmap();
-                return (action, image);
-            }
-        }
-
-        void SentCtrlT()
-        {
-            SetForegroundWindow((IntPtr)ExplorerContext.HWND);
-            SendKeys.Flush();
-            Thread.Sleep(10);
-            SendKeys.SendWait("^t");
-            Thread.Sleep(10);
-            SendKeys.Flush();
         }
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
@@ -322,6 +304,54 @@ namespace Explobar
                     // Ignore errors
                 }
             }
+        }
+    }
+
+    class StockToolbarControls
+    {
+        public static Dictionary<string, Func<Button>> Items = new Dictionary<string, Func<Button>>
+        {
+            { "{navigate-from-clipboard}", () => new NavigateFromClipboard() }
+        };
+    }
+
+    public interface ICustomButton
+    {
+        void OnClick(ExplorerContext context);
+
+        void OnInit(ToolbarItem item, ExplorerContext context);
+    }
+
+    class NavigateFromClipboard : Button, ICustomButton
+    {
+        public void OnClick(ExplorerContext context)
+        {
+            string newRoot = null;
+
+            var path = Clipboard.GetText()?.Trim()?.Trim('"');
+            if (path.HasText())
+            {
+                if (Directory.Exists(path))
+                    newRoot = path;
+                else if (File.Exists(path))
+                    newRoot = Path.GetDirectoryName(path);
+
+                if (newRoot.HasText())
+                {
+                    var tabs = Explorer.GetTabs();
+                    Desktop.SentCtrlT(context.HWND);
+                    Thread.Sleep(100);
+
+                    var newTab = Explorer.GetTabs().Except(tabs).FirstOrDefault();
+                    if (newTab != null)
+                        Explorer.NavigateToPath(newTab, newRoot);
+                }
+            }
+        }
+
+        public void OnInit(ToolbarItem item, ExplorerContext context)
+        {
+            // this.Text = "CB";
         }
     }
 }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace Explobar
@@ -101,6 +102,16 @@ namespace Explobar
 
         [DllImport("user32.dll")]
         static extern uint SendInput(uint nInputs, INPUT[] pInputs, int cbSize);
+
+        public static void SentCtrlT(IntPtr hWnd)
+        {
+            SetForegroundWindow(hWnd);
+            SendKeys.Flush();
+            Thread.Sleep(10);
+            SendKeys.SendWait("^t");
+            Thread.Sleep(10);
+            SendKeys.Flush();
+        }
 
         [StructLayout(LayoutKind.Sequential)]
         struct INPUT

@@ -186,7 +186,7 @@ namespace Explobar
         }
     }
 
-    class ToolbarItem
+    public class ToolbarItem
     {
         public string Icon { get; set; } = "";
         internal string IconPath => Icon.ParseIconPath().path.ResolvePath();
