@@ -132,7 +132,6 @@ namespace Explobar
                 comments.AppendLine("#");
                 comments.AppendLine("# Settings:");
                 comments.AppendLine("#   IconSize: Size of toolbar button icons in pixels (default: 24)");
-                comments.AppendLine("#   ImagePadding: Padding around icons in pixels (default: 2)");
                 comments.AppendLine("#");
                 comments.AppendLine("# Each toolbar item has the following properties:");
                 comments.AppendLine("#   Icon: Path to icon file with optional index (e.g., 'shell32.dll,314' or 'notepad.exe')");
