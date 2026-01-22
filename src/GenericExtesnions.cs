@@ -26,7 +26,7 @@ namespace Explobar
             string fullPath = Path.Combine(folder, desiredName);
 
             if (!File.Exists(fullPath) && !Directory.Exists(fullPath))
-                return desiredName;
+                return Path.Combine(folder, desiredName);
 
             // Separate name and extension
             string extension = Path.GetExtension(desiredName);
@@ -53,13 +53,13 @@ namespace Explobar
                 fullPath = Path.Combine(folder, newName);
 
                 if (!File.Exists(fullPath) && !Directory.Exists(fullPath))
-                    return newName;
+                    return Path.Combine(folder, newName);
 
                 counter++;
 
                 // Safety limit to prevent infinite loops
                 if (counter > 9999)
-                    return $"{nameWithoutExt}_{Guid.NewGuid()}{extension}";
+                    return Path.Combine(folder, $"{nameWithoutExt}_{Guid.NewGuid()}{extension}");
             }
         }
 
