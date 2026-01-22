@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Explobar;
 using static Explobar.Desktop;
 
 namespace Explobar
@@ -187,18 +188,30 @@ namespace Explobar
 
         void AddToolbarButton(ToolbarItem info)
         {
-            var resizedIcon = CreateButtonImage(
-                info.IconPath.IfEmpty(info.Path),
-                info.IconIndex);
-
             Button button;
+            Bitmap resizedIcon;
+            ICustomButton customButton = null;
+
+            string iconPath;
+            int iconIndex;
 
             bool isStockButton = info.Path.StartsWith("{") && StockToolbarControls.Items.ContainsKey(info.Path);
 
             if (isStockButton)
+            {
                 button = StockToolbarControls.Items[info.Path]();
+                customButton = (button as ICustomButton);
+                iconPath = customButton.IconPath.ExpandEnvars().IfEmpty(info.IconPath);
+                iconIndex = customButton.IconIndex;
+            }
             else
+            {
                 button = new Button();
+                iconPath = info.IconPath.IfEmpty(info.Path);
+                iconIndex = info.IconIndex;
+            }
+
+            resizedIcon = CreateButtonImage(iconPath, iconIndex);
 
             button.Width = buttonSize;
             button.Height = buttonSize;
@@ -215,7 +228,6 @@ namespace Explobar
 
             toolTip.SetToolTip(button, info.Tooltip.IfEmpty(info.Path.GetFileName()));
 
-            var customButton = (button as ICustomButton);
             customButton?.OnInit(info, this.ExplorerContext);
 
             button.Click += (x, y) =>
@@ -320,10 +332,20 @@ namespace Explobar
         void OnClick(ExplorerContext context);
 
         void OnInit(ToolbarItem item, ExplorerContext context);
+
+        int IconIndex { get; set; }
+        string IconPath { get; set; }
+
+        string Tooltip { get; set; }
     }
 
     class NavigateFromClipboard : Button, ICustomButton
     {
+        public int IconIndex { get; set; } = 260;
+        public string IconPath { get; set; } = @"%SystemRoot%\System32\shell32.dll";
+
+        public string Tooltip { get; set; } = "Open new tab from clipboard path";
+
         public void OnClick(ExplorerContext context)
         {
             string newRoot = null;

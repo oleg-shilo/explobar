@@ -1,6 +1,6 @@
 using System;
-using static System.Environment;
 using System.Collections.Generic;
+using static System.Environment;
 using System.IO;
 using System.Windows.Forms;
 
@@ -20,6 +20,8 @@ namespace Explobar
 
         public static string Combine(this SpecialFolder folder, string path, params string[] paths)
             => Path.Combine(Environment.GetFolderPath(folder), path, Path.Combine(paths));
+
+        public static string ExpandEnvars(this string text) => Environment.ExpandEnvironmentVariables(text);
 
         static Dictionary<string, string> specialFolders = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
