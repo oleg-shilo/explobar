@@ -16,10 +16,62 @@ namespace Explobar
         public static List<dynamic> GetTabs()
         {
             var shell = new Shell();
-            var explorersTabs = new List<dynamic>();        // all tabs of all explorers
-            foreach (dynamic window in shell.Windows())     // need to use foreach since LINQ does not work with dynamic
-                explorersTabs.Add(window);
-            return explorersTabs;
+            try
+            {
+                var explorersTabs = new List<dynamic>();        // all tabs of all explorers
+                foreach (dynamic window in shell.Windows())     // need to use foreach since LINQ does not work with dynamic
+                {
+                    if (!window.FullName.EndsWith("explorer.exe", StringComparison.OrdinalIgnoreCase))
+                        continue;
+                    explorersTabs.Add(window);
+                }
+                return explorersTabs;
+            }
+            finally
+            {
+                Marshal.ReleaseComObject(shell);
+            }
+        }
+        public static dynamic GetTab(string path, IntPtr hwnd)
+        {
+            var shell = new Shell();
+            try
+            {
+                // Normalize the path to handle special folders
+                string normalizedPath = path.GetSpecialFolderCLSID();
+
+                foreach (dynamic window in shell.Windows())
+                {
+                    // Only process explorer.exe windows
+                    if (!window.FullName.EndsWith("explorer.exe", StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    string windowPath = window.Document.Folder.Self.Path?.ToString();
+                    if (windowPath == null)
+                        continue;
+
+                    // Direct path match
+                    if (windowPath.Equals(normalizedPath, StringComparison.OrdinalIgnoreCase) &&
+                        (IntPtr)(long)window.HWND == hwnd)
+                        return window;
+
+                    string windowPathAsName = windowPath.GetSpecialFolderName();
+                    string normalizedPathAsName = normalizedPath.GetSpecialFolderName();
+
+                    if (windowPathAsName.Equals(normalizedPathAsName, StringComparison.OrdinalIgnoreCase))
+                        return window;
+                }
+            }
+            catch (Exception ex)
+            {
+                Runtime.Log($"Error getting tab for path {path}: {ex.Message}");
+            }
+            finally
+            {
+                Marshal.ReleaseComObject(shell);
+            }
+
+            return null;
         }
 
         public static (string root, List<string> selected, dynamic window) GetSelection()
@@ -29,7 +81,7 @@ namespace Explobar
             string root = null;
 
             var shell = new Shell();
-
+            Runtime.Log("GetSelection");
             try
             {
                 // Desktop.GetCursorPos(out Desktop.POINT cursorPos);
@@ -74,7 +126,6 @@ namespace Explobar
                         // it as "::{20D04FE0-3AEA-1069-A2D8-08002B30309D}"
                         string activeTabPath = AutomationHelper.GetExplorerRoot(tabObject);
                         activeTabPath = activeTabPath.GetSpecialFolderCLSID();
-
 
                         // Controlled by the explorer has 'Display the full path n the title bar' enabled
                         bool fullPathInTitleBar = Path.IsPathRooted(activeTabPath);
@@ -146,6 +197,28 @@ namespace Explobar
             {
                 Runtime.Log($"Error navigating to path {path}: {ex.Message}");
             }
+        }
+
+        public static void SelectItem(dynamic explorerWindow, string fullPath)
+        {
+            var folderView = explorerWindow.Document;
+            var folder = folderView.Folder;
+
+            var itemName = Path.GetFileName(fullPath);
+            var item = folder.ParseName(itemName);
+            if (item == null)
+                return;
+
+            const int SVSI_SELECT = 0x1;
+            const int SVSI_FOCUSED = 0x10;
+            const int SVSI_ENSUREVISIBLE = 0x8;
+            const int SVSI_DESELECTOTHERS = 0x4;
+
+            folderView.SelectItem(item,
+                SVSI_SELECT | SVSI_DESELECTOTHERS | SVSI_FOCUSED);
+
+            var ttt = folderView.SelectItem(item,
+                SVSI_SELECT | SVSI_FOCUSED | SVSI_ENSUREVISIBLE);
         }
     }
 }

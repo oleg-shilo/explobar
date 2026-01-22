@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
@@ -8,7 +8,9 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Explobar;
 using static Explobar.Desktop;
+using Shell32;
 
 namespace Explobar
 {
@@ -187,18 +189,30 @@ namespace Explobar
 
         void AddToolbarButton(ToolbarItem info)
         {
-            var resizedIcon = CreateButtonImage(
-                info.IconPath.IfEmpty(info.Path),
-                info.IconIndex);
-
             Button button;
+            Bitmap resizedIcon;
+            ICustomButton customButton = null;
+
+            string iconPath;
+            int iconIndex;
 
             bool isStockButton = info.Path.StartsWith("{") && StockToolbarControls.Items.ContainsKey(info.Path);
 
             if (isStockButton)
+            {
                 button = StockToolbarControls.Items[info.Path]();
+                customButton = (button as ICustomButton);
+                iconPath = customButton.IconPath.ExpandEnvars().IfEmpty(info.IconPath);
+                iconIndex = customButton.IconIndex;
+            }
             else
+            {
                 button = new Button();
+                iconPath = info.IconPath.IfEmpty(info.Path);
+                iconIndex = info.IconIndex;
+            }
+
+            resizedIcon = CreateButtonImage(iconPath, iconIndex);
 
             button.Width = buttonSize;
             button.Height = buttonSize;
@@ -215,7 +229,6 @@ namespace Explobar
 
             toolTip.SetToolTip(button, info.Tooltip.IfEmpty(info.Path.GetFileName()));
 
-            var customButton = (button as ICustomButton);
             customButton?.OnInit(info, this.ExplorerContext);
 
             button.Click += (x, y) =>
@@ -304,54 +317,6 @@ namespace Explobar
                     // Ignore errors
                 }
             }
-        }
-    }
-
-    class StockToolbarControls
-    {
-        public static Dictionary<string, Func<Button>> Items = new Dictionary<string, Func<Button>>
-        {
-            { "{navigate-from-clipboard}", () => new NavigateFromClipboard() }
-        };
-    }
-
-    public interface ICustomButton
-    {
-        void OnClick(ExplorerContext context);
-
-        void OnInit(ToolbarItem item, ExplorerContext context);
-    }
-
-    class NavigateFromClipboard : Button, ICustomButton
-    {
-        public void OnClick(ExplorerContext context)
-        {
-            string newRoot = null;
-
-            var path = Clipboard.GetText()?.Trim()?.Trim('"');
-            if (path.HasText())
-            {
-                if (Directory.Exists(path))
-                    newRoot = path;
-                else if (File.Exists(path))
-                    newRoot = Path.GetDirectoryName(path);
-
-                if (newRoot.HasText())
-                {
-                    var tabs = Explorer.GetTabs();
-                    Desktop.SentCtrlT(context.HWND);
-                    Thread.Sleep(100);
-
-                    var newTab = Explorer.GetTabs().Except(tabs).FirstOrDefault();
-                    if (newTab != null)
-                        Explorer.NavigateToPath(newTab, newRoot);
-                }
-            }
-        }
-
-        public void OnInit(ToolbarItem item, ExplorerContext context)
-        {
-            // this.Text = "CB";
         }
     }
 }

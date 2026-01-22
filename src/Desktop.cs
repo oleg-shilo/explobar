@@ -2,9 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
+using YamlDotNet.Core.Tokens;
 
 namespace Explobar
 {
@@ -35,6 +37,9 @@ namespace Explobar
                 ToolbarForm.ClearCache();
 
             var form = ToolbarForm.Create();
+
+            bool newWindow = form.ExplorerContext.Window != window;
+            Runtime.Log($"ShowToolbarForm: IsNewWindow: {newWindow}");
 
             form.ExplorerContext.RootPath = root;
             form.ExplorerContext.SelectedItems = items;
@@ -113,6 +118,38 @@ namespace Explobar
             SendKeys.Flush();
         }
 
+        // "^t" for Ctrl+T
+
+        /// <summary>
+        /// Sends the key input.
+        ///
+        /// <code language="txt">
+        /// SendKeys Notation for Common Keys:
+        /// Key         SendKeys Notation
+        /// F2	        "{F2}"
+        /// F5	        "{F5}"
+        /// Enter	    "{ENTER}" or "~"
+        /// Escape	    "{ESC}"
+        /// Tab	        "{TAB}"
+        /// Backspace	"{BACKSPACE}" or "{BS}"
+        /// Delete	    "{DELETE}" or "{DEL}"
+        /// Ctrl+C	    "^c"
+        /// Ctrl+V	    "^v"
+        /// Alt+F4	    "%{F4}"
+        /// </code>
+        /// </summary>
+        /// <param name="hWnd">The h WND.</param>
+        /// <param name="input">The input.</param>
+        public static void SentKeyInput(IntPtr hWnd, string input)
+        {
+            SetForegroundWindow(hWnd);
+            SendKeys.Flush();
+            Thread.Sleep(10);
+            SendKeys.SendWait(input);
+            Thread.Sleep(10);
+            SendKeys.Flush();
+        }
+
         [StructLayout(LayoutKind.Sequential)]
         struct INPUT
         {
@@ -128,6 +165,29 @@ namespace Explobar
             public uint dwFlags;
             public uint time;
             public IntPtr dwExtraInfo;
+        }
+
+        public const int VK_LSHIFT = 0xA0;
+        public const int VK_CONTROL = 0x11;
+
+        [DllImport("user32.dll")]
+        public static extern short GetAsyncKeyState(int vKey);
+
+        [DllImport("shell32.dll")]
+        static extern void SHChangeNotify(
+    int wEventId,
+    int uFlags,
+    IntPtr dwItem1,
+    IntPtr dwItem2);
+
+        const int SHCNE_CREATE = 0x00000002;
+        const int SHCNF_PATHW = 0x0005;
+
+        public static void NotifyFileCreated(string path)
+        {
+            SHChangeNotify(SHCNE_CREATE, SHCNF_PATHW,
+            Marshal.StringToHGlobalUni(path),
+            IntPtr.Zero);
         }
     }
 }

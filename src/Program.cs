@@ -11,12 +11,12 @@ using System.Windows.Forms;
 
 // TODO
 // buttons:
-//      create new file
-//      create new folder
-//      favorites
-//      recent folders
-//      navigate from clipboard content
-//      show selected file properties
+//      create new file (shell32.dll,2)
+//      create new folder (shell32.dll,4)
+//      favorites (shell32.dll,44)
+//      recent folders (shell32.dll,7+22*11)
+// ✅ navigate from clipboard content
+//      show selected file properties (shell32.dll,73)
 //      duplicate explorer tab in a new window
 // ✅ button separator
 
@@ -68,13 +68,12 @@ namespace Explobar
                         {
                             // foreach (var item in selection) Runtime.Log(item);
 
-
                             bool isToolbarHidden = (ToolbarForm.HideOnClosing && ToolbarForm.Instance != null);
                             Runtime.Log($"root ({(isToolbarHidden ? "unhide" : "show")}): {root}");
 
                             if (isToolbarHidden)
                             {
-                                // ShowToolbarForm will not block 
+                                // ShowToolbarForm will not block
                                 Action unhide = () => Desktop.ShowToolbarForm(root, selection, window, startMessagePump: false);
                                 ToolbarForm.Instance.Invoke(unhide);
                             }
