@@ -67,12 +67,15 @@ namespace Explobar
             Thread.Sleep(50);
             Desktop.NotifyFileCreated(path);
 
-            Explorer.SelectItem(context.Window, path);
+            // Get a fresh reference to the window to avoid RCW separation issues
+            var latestContext = context.GetFreshCopy();
+
+            Explorer.SelectItem(latestContext.Window, path);
 
             Task.Run(() =>
             {
                 Thread.Sleep(500);
-                Desktop.SentKeyInput(context.HWND, "{F2}");
+                Desktop.SentKeyInput(latestContext.HWND, "{F2}");
             });
         }
     }
@@ -97,15 +100,14 @@ namespace Explobar
             Desktop.NotifyFileCreated(path);
 
             // Get a fresh reference to the window to avoid RCW separation issues
-            // Fallback: try using the cached window
-            var tab = Explorer.GetTab(context.RootPath) ?? context.Window;
-            Explorer.SelectItem(tab, path);
+            var latestContext = context.GetFreshCopy();
+
+            Explorer.SelectItem(latestContext.Window, path);
 
             Task.Run(() =>
             {
                 Thread.Sleep(500);
-                Desktop.SentKeyInput((IntPtr)(long)tab.HWND, "{F2}");
-                // Desktop.SentKeyInput(context.HWND, "{F2}");
+                Desktop.SentKeyInput(latestContext.HWND, "{F2}");
             });
         }
     }
@@ -134,10 +136,12 @@ namespace Explobar
                     bool isCtrlPressed = (Desktop.GetAsyncKeyState(Desktop.VK_CONTROL) & 0x8000) != 0;
                     if (!isCtrlPressed)
                     {
-                        Explorer.NavigateToPath(context.Window, newRoot);
+                        var latestContext = context.GetFreshCopy();
+                        Explorer.NavigateToPath(latestContext.Window, newRoot);
                     }
                     else
                     {
+                        // no need to get the fresh copy as GetTabs() will return the fresh one anyway
                         var tabs = Explorer.GetTabs();
                         Desktop.SentKeyInput(context.HWND, "^t");
                         Thread.Sleep(100);
