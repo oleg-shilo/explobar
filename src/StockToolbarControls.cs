@@ -96,12 +96,16 @@ namespace Explobar
             Thread.Sleep(50);
             Desktop.NotifyFileCreated(path);
 
-            Explorer.SelectItem(context.Window, path);
+            // Get a fresh reference to the window to avoid RCW separation issues
+            // Fallback: try using the cached window
+            var tab = Explorer.GetTab(context.RootPath) ?? context.Window;
+            Explorer.SelectItem(tab, path);
 
             Task.Run(() =>
             {
                 Thread.Sleep(500);
-                Desktop.SentKeyInput(context.HWND, "{F2}");
+                Desktop.SentKeyInput((IntPtr)(long)tab.HWND, "{F2}");
+                // Desktop.SentKeyInput(context.HWND, "{F2}");
             });
         }
     }
