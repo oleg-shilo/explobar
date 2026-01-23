@@ -32,6 +32,7 @@ namespace Explobar
                 Marshal.ReleaseComObject(shell);
             }
         }
+
         public static dynamic GetTab(string path, IntPtr hwnd)
         {
             var shell = new Shell();

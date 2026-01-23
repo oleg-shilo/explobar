@@ -35,6 +35,23 @@ namespace Explobar
         public List<string> SelectedItems { get; set; }
     }
 
+    static class ExplorerContextExtensions
+    {
+        public static ExplorerContext GetFreshCopy(this ExplorerContext context)
+        {
+            // Fallback: try using the cached window
+            dynamic window = Explorer.GetTab(context.RootPath, context.HWND) ?? context.Window;
+            return
+                new ExplorerContext
+                {
+                    Window = window,
+                    _HWND = context.HWND,
+                    RootPath = context.RootPath,
+                    SelectedItems = context.SelectedItems
+                };
+        }
+    }
+
     public class ToolbarForm : Form
     {
         // In order to reduce flickering when showing the toolbar, there are three modes of operation:
