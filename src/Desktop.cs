@@ -39,7 +39,7 @@ namespace Explobar
             var form = ToolbarForm.Create();
 
             bool newWindow = form.ExplorerContext.Window != window;
-            Runtime.Log($"ShowToolbarForm: IsNewWindow: {newWindow}");
+            // Runtime.Log($"ShowToolbarForm: IsNewWindow: {newWindow}");
 
             form.ExplorerContext.RootPath = root;
             form.ExplorerContext.SelectedItems = items;

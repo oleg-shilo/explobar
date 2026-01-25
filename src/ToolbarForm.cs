@@ -97,6 +97,11 @@ namespace Explobar
 
         public readonly ExplorerContext ExplorerContext = new ExplorerContext();
 
+        /// <summary>
+        ///
+        /// </summary>
+        int imagePadding => (int)(buttonSize * 0.1); // 10% padding
+
         ToolTip toolTip;
 
         public ToolbarForm Init()
@@ -189,8 +194,7 @@ namespace Explobar
             return this;
         }
 
-        int buttonSize = 24;
-        int imagePadding => (int)(buttonSize * 0.1); // 10% padding
+        int buttonSize => ToolbarItems.Settings.ButtonSize;
 
         void AddToolbarGroupSeparator()
         {
@@ -244,7 +248,7 @@ namespace Explobar
             button.FlatAppearance.MouseOverBackColor = Color.FromArgb(64, Color.LightBlue);
             button.FlatAppearance.MouseDownBackColor = Color.Transparent;
 
-            toolTip.SetToolTip(button, info.Tooltip.IfEmpty(info.Path.GetFileName()));
+            toolTip.SetToolTip(button, info.Tooltip.IfEmpty(customButton?.Tooltip ?? info.Path.GetFileName()));
 
             customButton?.OnInit(info, this.ExplorerContext);
 
