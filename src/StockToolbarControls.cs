@@ -32,6 +32,7 @@ namespace Explobar
             { "{navigate-from-clipboard}", () => new NavigateFromClipboard() },
             { "{new-file}", () => new NewFile() },
             { "{new-folder}", () => new NewFolder() },
+            { "{new-tab}", () => new NewTab() },
         };
     }
 
@@ -54,7 +55,7 @@ namespace Explobar
     {
         public NewFile()
         {
-            IconIndex = 2;
+            IconIndex = 1;
             IconPath = @"%SystemRoot%\System32\shell32.dll";
             Tooltip = "Create new file";
         }
@@ -80,13 +81,36 @@ namespace Explobar
         }
     }
 
+    class NewTab : CustomButton
+    {
+        public NewTab()
+        {
+            IconIndex = 110;//209;296;45;209
+            IconPath = @"%SystemRoot%\System32\shell32.dll"; // @"%SystemRoot%\System32\wmploc.dll,11"; @"%SystemRoot%\System32\twinui,0"
+            Tooltip = "Create new tab (copy of the current tab)";
+        }
+
+        public override void OnClick(ExplorerContext context)
+        {
+            string newRoot = context.RootPath;
+
+            var tabs = Explorer.GetTabs();
+            Desktop.SentKeyInput(context.HWND, "^t");
+            Thread.Sleep(100);
+
+            var newTab = Explorer.GetTabs().Except(tabs).FirstOrDefault();
+            if (newTab != null)
+                Explorer.NavigateToPath(newTab, newRoot);
+        }
+    }
+
     class NewFolder : CustomButton
     {
         public NewFolder()
         {
             IconIndex = 4;
             IconPath = @"%SystemRoot%\System32\shell32.dll";
-            Tooltip = "Create new file";
+            Tooltip = "Create new folder";
         }
 
         public override void OnClick(ExplorerContext context)

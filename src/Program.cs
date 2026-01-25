@@ -10,9 +10,12 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 
 // TODO
+// settings:
+//     configure shortcut
+//     support shortcuts
 // buttons:
-//      create new file (shell32.dll,2)
-//      create new folder (shell32.dll,4)
+// ✅ create new file
+// ✅ create new folder
 //      favorites (shell32.dll,44)
 //      recent folders (shell32.dll,7+22*11)
 // ✅ navigate from clipboard content
