@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using static System.Environment;
 using System.IO;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace Explobar
@@ -20,6 +21,22 @@ namespace Explobar
 
         public static string Combine(this SpecialFolder folder, string path, params string[] paths)
             => Path.Combine(Environment.GetFolderPath(folder), path, Path.Combine(paths));
+
+        public static void Run(this ApartmentState state, Action action)
+        {
+            var thread = new Thread(() =>
+            {
+                try
+                {
+                    action();
+                }
+                finally
+                {
+                }
+            });
+            thread.SetApartmentState(state);
+            thread.Start();
+        }
 
         public static string NextAvailableName(this string folder, string desiredName)
         {

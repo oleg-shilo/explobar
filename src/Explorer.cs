@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -13,6 +14,29 @@ namespace Explobar
 {
     static class Explorer
     {
+        [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+        static extern bool SHObjectProperties(IntPtr hwnd, uint shopObjectType, [MarshalAs(UnmanagedType.LPWStr)] string pszObjectName, [MarshalAs(UnmanagedType.LPWStr)] string pszPropertyPage);
+
+        const uint SHOP_FILEPATH = 0x2;
+
+        public static void ShowFileProperties(string path)
+        {
+            if (string.IsNullOrEmpty(path))
+                throw new ArgumentException("Path cannot be null or empty", nameof(path));
+
+            if (!System.IO.File.Exists(path) && !System.IO.Directory.Exists(path))
+                throw new System.IO.FileNotFoundException("The specified file or directory does not exist", path);
+
+            // SHObjectProperties shows the properties dialog for the file/folder
+            // Pass IntPtr.Zero for the parent window handle, SHOP_FILEPATH for file/folder paths,
+            // the path, and null for default property page
+            if (!SHObjectProperties(IntPtr.Zero, SHOP_FILEPATH, path, null))
+            {
+                throw new Win32Exception(Marshal.GetLastWin32Error(),
+                    $"Failed to show properties for: {path}");
+            }
+        }
+
         public static List<dynamic> GetTabs()
         {
             var shell = new Shell();

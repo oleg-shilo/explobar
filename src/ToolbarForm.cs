@@ -275,7 +275,16 @@ namespace Explobar
 
         Bitmap CreateButtonImage(string iconPath, int iconIndex)
         {
-            using (var originalIcon = iconPath.ExtractIcon(iconIndex))
+            Image originalIcon = null;
+
+            var ext = Path.GetExtension(iconPath).ToLowerInvariant();
+
+            if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".bmp" || ext == ".ico" || ext == ".gif")
+                originalIcon = Image.FromFile(iconPath);
+            else
+                originalIcon = iconPath.ExtractIcon(iconIndex);
+
+            using (originalIcon)
             {
                 int imageSize = buttonSize - imagePadding - imagePadding;
 
