@@ -33,10 +33,12 @@ namespace Explobar
             { "{new-file}", () => new NewFile() },
             { "{new-folder}", () => new NewFolder() },
             { "{new-tab}", () => new NewTab() },
+            { "{props}", () => new FileProperties() },
+            { "{icons}", () => new BrowseIcons() },
         };
     }
 
-    class CustomButton : Button, ICustomButton
+    public class CustomButton : Button, ICustomButton
     {
         public int IconIndex { get; protected set; }
         public string IconPath { get; protected set; }
@@ -48,6 +50,39 @@ namespace Explobar
 
         public virtual void OnInit(ToolbarItem item, ExplorerContext context)
         {
+        }
+    }
+
+    class BrowseIcons : CustomButton
+    {
+        public BrowseIcons()
+        {
+            IconIndex = 96;
+            IconPath = @"%SystemRoot%\System32\shell32.dll";
+            Tooltip = "Show properties of the selected file/folder";
+        }
+
+        public override void OnClick(ExplorerContext context)
+            => IconBrowser.Show();
+    }
+
+    class FileProperties : CustomButton
+    {
+        public FileProperties()
+        {
+            IconIndex = 39;
+            IconPath = @"%SystemRoot%\System32\shell32.dll";
+            Tooltip = "Show properties of the selected file/folder";
+        }
+
+        public override void OnClick(ExplorerContext context)
+        {
+            string path = context.SelectedItems.FirstOrDefault();
+
+            if (path.HasText())
+                Explorer.ShowFileProperties(path);
+            else
+                Explorer.ShowFileProperties(context.RootPath);
         }
     }
 

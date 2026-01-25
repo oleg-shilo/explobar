@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 
 // using System.Reflection.Metadata;
@@ -16,6 +17,7 @@ using System.Windows.Forms;
 // buttons:
 // ✅ create new file
 // ✅ create new folder
+// ✅ create new tab
 //      favorites (shell32.dll,44)
 //      recent folders (shell32.dll,7+22*11)
 // ✅ navigate from clipboard content
@@ -33,6 +35,7 @@ namespace Explobar
         [STAThread]
         static void Main(string[] args)
         {
+            // IconBrowser.Show(); return;
             // Set up keyboard hook
             _keyboardHook = new LowLevelKeyboardHook();
             _keyboardHook.OnKeyPressed += KeyboardHook_OnKeyPressed;
