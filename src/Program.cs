@@ -18,12 +18,18 @@ using System.Windows.Forms;
 // ✅ create new file
 // ✅ create new folder
 // ✅ create new tab
-//      favorites (shell32.dll,44)
-//      recent folders (shell32.dll,7+22*11)
+// ✅ show selected file properties
 // ✅ navigate from clipboard content
-//      show selected file properties (shell32.dll,73)
-//      duplicate explorer tab in a new window
 // ✅ button separator
+//    favorites (shell32.dll,44)
+//    recent folders (shell32.dll,7+22*11)
+//    config button should pop up the menu for
+//      - edit config
+//      - explore icons
+//      - about box
+// misc:
+//    Keep history of Icon explorer navigation
+//    Tray Icon support
 
 namespace Explobar
 {
