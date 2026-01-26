@@ -23,10 +23,11 @@ using System.Windows.Forms;
 // ✅ button separator
 //    favorites (shell32.dll,44)
 //    recent folders (shell32.dll,7+22*11)
-//    config button should pop up the menu for
-//      - edit config
-//      - explore icons
-//      - about box
+// ✅ config button should pop up the menu for
+//    ✅ edit config
+//    ✅ explore icons
+//    ✅ about box
+//
 // misc:
 //    Keep history of Icon explorer navigation
 //    Tray Icon support

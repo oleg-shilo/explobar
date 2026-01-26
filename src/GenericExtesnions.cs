@@ -115,6 +115,10 @@ namespace Explobar
             return clsid;
         }
 
+        public static void HandleErrors(this object obj)
+        {
+        }
+
         public static string GetSpecialFolderCLSID(this string folderName)
         {
             if (folderName.HasText())

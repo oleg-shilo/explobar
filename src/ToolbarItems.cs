@@ -31,7 +31,7 @@ namespace Explobar
 
     static class ToolbarItems
     {
-        static string ConfigPath = SpecialFolder.ApplicationData.Combine("Explobar", "toolbar-items.yaml");
+        public static string ConfigPath = SpecialFolder.ApplicationData.Combine("Explobar", "toolbar-items.yaml");
 
         public static List<ToolbarItem> Items => LoadConfig().Items;
         public static ToolbarSettings Settings => LoadConfig().Settings;

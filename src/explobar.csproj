@@ -47,6 +47,9 @@
     <Reference Include="UIAutomationTypes" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AboutBox.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Desktop.cs" />
     <Compile Include="Explorer.cs" />
     <Compile Include="GenericExtesnions.cs" />
