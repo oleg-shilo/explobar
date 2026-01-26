@@ -13,15 +13,7 @@ namespace Explobar
     public static class ExplorerHistory
     {
         static string HistoryFilePath
-        {
-            get
-            {
-                var appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-                var folder = Path.Combine(appData, "Explobar");
-                Directory.CreateDirectory(folder);
-                return Path.Combine(folder, "explorer-history.txt");
-            }
-        }
+            => Environment.SpecialFolder.LocalApplicationData.Combine("Explobar", "explorer-history.txt");
 
         static List<string> _history = null;
         static object _lock = new object();
@@ -144,7 +136,7 @@ namespace Explobar
 
         public static void AddLocation(string path, bool silent = false)
         {
-            if (string.IsNullOrWhiteSpace(path))
+            if (path.IsEmpty() || !path.DirExists())
                 return;
 
             lock (_lock)
@@ -212,6 +204,8 @@ namespace Explobar
         {
             try
             {
+                HistoryFilePath.EnsureFileDir();
+
                 File.WriteAllLines(HistoryFilePath, _history);
             }
             catch (Exception ex)
