@@ -102,15 +102,17 @@ namespace Explobar
 
             var menu = new ContextMenuStrip();
 
-            // Add 3 sample menu items
-            menu.Items.Add("Toolbar Items Configuration", null, (s, e)
-                => Process.Start("notepad.exe", ToolbarItems.ConfigPath));
+            var configMenuItem = new ToolStripMenuItem("Toolbar Items Configuration");
+            configMenuItem.Click += (s, e) => Process.Start("notepad.exe", ToolbarItems.ConfigPath);
+            menu.Items.Add(configMenuItem);
 
-            menu.Items.Add("Preview icons", null, (s, e)
-                => IconBrowser.Show());
+            var iconsMenuItem = new ToolStripMenuItem("Preview icons");
+            iconsMenuItem.Click += (s, e) => IconBrowser.Show();
+            menu.Items.Add(iconsMenuItem);
 
-            menu.Items.Add("About", null, (s, e)
-                => AboutBox.Show());
+            var aboutMenuItem = new ToolStripMenuItem("About");
+            aboutMenuItem.Click += (s, e) => AboutBox.Show();
+            menu.Items.Add(aboutMenuItem);
 
             var toolbarForm = this.FindForm() as ToolbarForm;
             if (toolbarForm != null)
@@ -146,11 +148,14 @@ namespace Explobar
 
             foreach (string path in ExplorerHistory.GetRecentLocations())
             {
-                menu.Items.Add(Path.GetFileName(path), null, (s, e) =>
+                var menuItem = new ToolStripMenuItem(Path.GetFileName(path));
+                menuItem.ToolTipText = path;
+                menuItem.Click += (s, e) =>
                 {
                     string newRoot = path;
                     CustomButton.NavigateToPath(args.Context, newRoot);
-                });
+                };
+                menu.Items.Add(menuItem);
             }
 
             // Prevent toolbar from closing while menu is open
@@ -158,6 +163,7 @@ namespace Explobar
             if (toolbarForm != null)
             {
                 toolbarForm.SuspendMouseCheck();
+
                 menu.Closed += (s, e) =>
                 {
                     toolbarForm.ResumeMouseCheck();

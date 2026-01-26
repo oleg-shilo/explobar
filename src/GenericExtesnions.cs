@@ -19,6 +19,9 @@ namespace Explobar
 
         public static string GetPath(this SpecialFolder folder) => Environment.GetFolderPath(folder);
 
+        public static string Combine(this string folder, string path, params string[] paths)
+            => Path.Combine(folder, path, Path.Combine(paths));
+
         public static string Combine(this SpecialFolder folder, string path, params string[] paths)
             => Path.Combine(Environment.GetFolderPath(folder), path, Path.Combine(paths));
 
@@ -115,8 +118,29 @@ namespace Explobar
             return clsid;
         }
 
-        public static void HandleErrors(this object obj)
+        public static string EnsureDir(this string path)
         {
+            if (!Directory.Exists(path))
+                Directory.CreateDirectory(path);
+            return path;
+        }
+
+        public static string EnsureFileDir(this string path)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(path));
+            return path;
+        }
+
+        public static bool DirExists(this string path)
+        {
+            try
+            {
+                return Directory.Exists(path);
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         public static string GetSpecialFolderCLSID(this string folderName)

@@ -38,15 +38,7 @@ namespace Explobar
     static class IconBrowserSettings
     {
         static string SettingsFilePath
-        {
-            get
-            {
-                var appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-                var folder = Path.Combine(appData, "Explobar");
-                Directory.CreateDirectory(folder);
-                return Path.Combine(folder, "iconbrowser.settings");
-            }
-        }
+            => Environment.SpecialFolder.LocalApplicationData.Combine("Explobar", "iconbrowser-history.txt");
 
         public static string LastFilePath
         {

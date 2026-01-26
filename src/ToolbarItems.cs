@@ -32,7 +32,7 @@ namespace Explobar
 
     static class ToolbarItems
     {
-        public static string ConfigPath = SpecialFolder.ApplicationData.Combine("Explobar", "toolbar-items.yaml");
+        public static string ConfigPath = SpecialFolder.LocalApplicationData.Combine("Explobar", "toolbar-items.yaml");
 
         public static List<ToolbarItem> Items => LoadConfig().Items;
         public static ToolbarSettings Settings => LoadConfig().Settings;
@@ -114,12 +114,6 @@ namespace Explobar
 
             try
             {
-                var directory = Path.GetDirectoryName(ConfigPath);
-                if (!Directory.Exists(directory))
-                {
-                    Directory.CreateDirectory(directory);
-                }
-
                 var serializer = new SerializerBuilder()
                     .WithNamingConvention(PascalCaseNamingConvention.Instance)
                     .Build();
@@ -152,6 +146,7 @@ namespace Explobar
                 comments.AppendLine("#================================");
                 comments.AppendLine();
 
+                ConfigPath.EnsureFileDir();
                 var yamlWithComments = comments.ToString() + yaml;
                 File.WriteAllText(ConfigPath, yamlWithComments);
 

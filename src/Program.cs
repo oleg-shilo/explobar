@@ -29,8 +29,9 @@ using System.Windows.Forms;
 //    ✅ about box
 //
 // misc:
-//    Keep history of Icon explorer navigation
+// ✅ Keep history of Icon explorer navigation
 //    Tray Icon support
+//    App Singleton
 
 namespace Explobar
 {
@@ -73,8 +74,8 @@ namespace Explobar
         private static void KeyboardHook_OnKeyPressed(Keys key)
         {
             // if (key == Keys.LShiftKey && !_isProcessing)
-            // if (key == Keys.Oemtilde && !_isProcessing)
-            if (key == Keys.Escape && !_isProcessing)
+            if (key == Keys.Oemtilde && !_isProcessing)
+            // if (key == Keys.Escape && !_isProcessing)
             {
                 _isProcessing = true;
 
