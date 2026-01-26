@@ -4,14 +4,9 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using static System.Net.Mime.MediaTypeNames;
-using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-
-using Explobar;
-using Shell32;
 
 namespace Explobar
 {
@@ -45,6 +40,8 @@ namespace Explobar
             { "{icons}", () => new BrowseIcons() },
             { "{recent}", () => new RecentLocations() },
             { "{app-config}", () => new AppConfig() },
+            { "{favorites}", () => new FavoriteLocations() },
+            { "{application}", () => new FavoriteApplications() },
         };
     }
 
@@ -62,6 +59,30 @@ namespace Explobar
 
         public virtual void OnInit(ToolbarItem item, ExplorerContext context)
         {
+        }
+
+        public static void PopupMenu(Control button, ClickArgs args, Func<ContextMenuStrip> buildMenu)
+        {
+            args.DoNotHideToolbar = true;  // keep toolbar open and close it when the menu closes
+
+            var menu = buildMenu();
+
+            // Prevent toolbar from closing while menu is open
+            var toolbarForm = button.FindForm() as ToolbarForm;
+            if (toolbarForm != null)
+            {
+                toolbarForm.SuspendMouseCheck();
+
+                menu.Closed += (s, e) =>
+                {
+                    toolbarForm.ResumeMouseCheck();
+                    toolbarForm.HideToolbar();
+                };
+            }
+
+            // Position the menu below the button
+            var buttonLocation = button.PointToScreen(new System.Drawing.Point(0, button.Height));
+            menu.Show(buttonLocation);
         }
 
         public static void NavigateToPath(ExplorerContext context, string newRoot)
@@ -97,37 +118,28 @@ namespace Explobar
 
         public override void OnClick(ClickArgs args)
         {
-            // Prevent toolbar from closing while menu is open
-            args.DoNotHideToolbar = true;
-
-            var menu = new ContextMenuStrip();
-
-            var configMenuItem = new ToolStripMenuItem("Toolbar Items Configuration");
-            configMenuItem.Click += (s, e) => Process.Start("notepad.exe", ToolbarItems.ConfigPath);
-            menu.Items.Add(configMenuItem);
-
-            var iconsMenuItem = new ToolStripMenuItem("Preview icons");
-            iconsMenuItem.Click += (s, e) => IconBrowser.Show();
-            menu.Items.Add(iconsMenuItem);
-
-            var aboutMenuItem = new ToolStripMenuItem("About");
-            aboutMenuItem.Click += (s, e) => AboutBox.Show();
-            menu.Items.Add(aboutMenuItem);
-
-            var toolbarForm = this.FindForm() as ToolbarForm;
-            if (toolbarForm != null)
+            CustomButton.PopupMenu(this, args, () =>
             {
-                toolbarForm.SuspendMouseCheck();
-                menu.Closed += (s, e) =>
-                {
-                    toolbarForm.ResumeMouseCheck();
-                    toolbarForm.HideToolbar();
-                };
-            }
+                var menu = new ContextMenuStrip();
 
-            // Position the menu below the button
-            var buttonLocation = this.PointToScreen(new Point(0, this.Height));
-            menu.Show(buttonLocation);
+                var configMenuItem = new ToolStripMenuItem("Toolbar Items Configuration");
+                configMenuItem.Click += (s, e) => Process.Start("notepad.exe", ToolbarItems.ConfigPath);
+                configMenuItem.ToolTipText = "Configure toolbar buttons appearance and actions.";
+                menu.Items.Add(configMenuItem);
+
+                var iconsMenuItem = new ToolStripMenuItem("Preview icons");
+                iconsMenuItem.ToolTipText = "Browse all icons from a given file.";
+                iconsMenuItem.Click += (s, e) => IconBrowser.Show();
+                menu.Items.Add(iconsMenuItem);
+
+                menu.Items.Add(new ToolStripSeparator());
+
+                var aboutMenuItem = new ToolStripMenuItem("About");
+                aboutMenuItem.Click += (s, e) => AboutBox.Show();
+                menu.Items.Add(aboutMenuItem);
+
+                return menu;
+            });
         }
     }
 
@@ -142,38 +154,92 @@ namespace Explobar
 
         public override void OnClick(ClickArgs args)
         {
-            args.DoNotHideToolbar = true;  // keep toolbar open and close it when the menu closes
-
-            var menu = new ContextMenuStrip();
-
-            foreach (string path in ExplorerHistory.GetRecentLocations())
+            CustomButton.PopupMenu(this, args, () =>
             {
-                var menuItem = new ToolStripMenuItem(Path.GetFileName(path));
-                menuItem.ToolTipText = path;
-                menuItem.Click += (s, e) =>
-                {
-                    string newRoot = path;
-                    CustomButton.NavigateToPath(args.Context, newRoot);
-                };
-                menu.Items.Add(menuItem);
-            }
+                var menu = new ContextMenuStrip();
 
-            // Prevent toolbar from closing while menu is open
-            var toolbarForm = this.FindForm() as ToolbarForm;
-            if (toolbarForm != null)
+                foreach (string path in ExplorerHistory.GetRecentLocations())
+                {
+                    var menuItem = new ToolStripMenuItem(Path.GetFileName(path));
+                    menuItem.ToolTipText = path;
+                    menuItem.Click += (s, e) =>
+                    {
+                        string newRoot = path;
+                        CustomButton.NavigateToPath(args.Context, newRoot);
+                    };
+                    menu.Items.Add(menuItem);
+                }
+                return menu;
+            });
+        }
+    }
+
+    class FavoriteApplications : CustomButton
+    {
+        public FavoriteApplications()
+        {
+            IconIndex = 137;
+            IconPath = @"%SystemRoot%\System32\shell32.dll";
+            Tooltip = "Application Launcher";
+        }
+
+        public override void OnClick(ClickArgs args)
+        {
+            CustomButton.PopupMenu(this, args, () =>
             {
-                toolbarForm.SuspendMouseCheck();
+                var menu = new ContextMenuStrip();
 
-                menu.Closed += (s, e) =>
+                foreach (string path in ToolbarItems.Applications)
                 {
-                    toolbarForm.ResumeMouseCheck();
-                    toolbarForm.HideToolbar();
-                };
-            }
+                    var menuItem = new ToolStripMenuItem(Path.GetFileName(path));
+                    menuItem.ToolTipText = path;
+                    menuItem.Click += (s, e) =>
+                    {
+                        try
+                        {
+                            Process.Start(path);
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show("Failed to launch application.\n\n" + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
+                    };
+                    menu.Items.Add(menuItem);
+                }
+                return menu;
+            });
+        }
+    }
 
-            // Position the menu below the button
-            var buttonLocation = this.PointToScreen(new System.Drawing.Point(0, this.Height));
-            menu.Show(buttonLocation);
+    class FavoriteLocations : CustomButton
+    {
+        public FavoriteLocations()
+        {
+            IconIndex = 43;
+            IconPath = @"%SystemRoot%\System32\shell32.dll";
+            Tooltip = "Favorite locations";
+        }
+
+        public override void OnClick(ClickArgs args)
+        {
+            CustomButton.PopupMenu(this, args, () =>
+            {
+                var menu = new ContextMenuStrip();
+
+                foreach (string path in ToolbarItems.Favorites)
+                {
+                    var menuItem = new ToolStripMenuItem(Path.GetFileName(path));
+                    menuItem.ToolTipText = path;
+                    menuItem.Click += (s, e) =>
+                    {
+                        string newRoot = path;
+                        CustomButton.NavigateToPath(args.Context, newRoot);
+                    };
+                    menu.Items.Add(menuItem);
+                }
+
+                return menu;
+            });
         }
     }
 

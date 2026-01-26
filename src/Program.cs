@@ -14,15 +14,17 @@ using System.Windows.Forms;
 // settings:
 //     configure shortcut
 //     support shortcuts
+//
 // buttons:
 // ✅ create new file
-// ✅ create new folder
+// ✅ create new folder`
 // ✅ create new tab
 // ✅ show selected file properties
 // ✅ navigate from clipboard content
 // ✅ button separator
-//    favorites (shell32.dll,44)
-// ✅ recent folders (shell32.dll,7+22*11)
+// ✅ favorites
+//     apps
+// ✅ recent folders
 // ✅ config button should pop up the menu for
 //    ✅ edit config
 //    ✅ explore icons
@@ -32,6 +34,7 @@ using System.Windows.Forms;
 // ✅ Keep history of Icon explorer navigation
 //    Tray Icon support
 //    App Singleton
+//    Button default icon
 
 namespace Explobar
 {
