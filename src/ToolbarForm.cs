@@ -97,6 +97,16 @@ namespace Explobar
 
         public readonly ExplorerContext ExplorerContext = new ExplorerContext();
 
+        public void SuspendMouseCheck()
+        {
+            enableMouseCheck = false;
+        }
+
+        public void ResumeMouseCheck()
+        {
+            enableMouseCheck = true;
+        }
+
         /// <summary>
         ///
         /// </summary>
@@ -256,13 +266,15 @@ namespace Explobar
             {
                 try
                 {
-                    HideToolbar();
-                    SetForegroundWindow((IntPtr)ExplorerContext.HWND);
+                    var args = new ClickArgs { Context = this.ExplorerContext };
 
                     if (customButton != null)
-                        customButton.OnClick(this.ExplorerContext);
+                        customButton.OnClick(args);
                     else
                         info.Execute(this.ExplorerContext);
+
+                    if (!args.DoNotHideToolbar)
+                        HideToolbar();
                 }
                 catch (Exception e)
                 {
@@ -311,7 +323,7 @@ namespace Explobar
             return base.ProcessCmdKey(ref msg, keyData);
         }
 
-        void HideToolbar()
+        internal void HideToolbar()
         {
             // Runtime.Log("Stopping mouse timer");
             checkMouseTimer?.Stop();
@@ -325,6 +337,7 @@ namespace Explobar
                 // Runtime.Log("Closing toolbar");
                 this.Close();
             }
+            SetForegroundWindow((IntPtr)ExplorerContext.HWND);
         }
 
         void CheckMouseTimer_Tick(object sender, EventArgs e)

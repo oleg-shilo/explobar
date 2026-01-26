@@ -35,6 +35,48 @@ namespace Explobar
         }
     }
 
+    static class IconBrowserSettings
+    {
+        static string SettingsFilePath
+        {
+            get
+            {
+                var appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                var folder = Path.Combine(appData, "Explobar");
+                Directory.CreateDirectory(folder);
+                return Path.Combine(folder, "iconbrowser.settings");
+            }
+        }
+
+        public static string LastFilePath
+        {
+            get
+            {
+                try
+                {
+                    if (File.Exists(SettingsFilePath))
+                        return File.ReadAllText(SettingsFilePath).Trim();
+                }
+                catch
+                {
+                    // Ignore errors reading settings
+                }
+                return @"%SystemRoot%\System32\shell32.dll";
+            }
+            set
+            {
+                try
+                {
+                    File.WriteAllText(SettingsFilePath, value ?? "");
+                }
+                catch
+                {
+                    // Ignore errors writing settings
+                }
+            }
+        }
+    }
+
     public class IconBrowserForm : Form
     {
         TextBox pathTextBox;
@@ -77,8 +119,9 @@ namespace Explobar
             {
                 Location = new Point(10, 30),
                 Width = 550,
-                Text = @"%SystemRoot%\System32\shell32.dll"
+                Text = IconBrowserSettings.LastFilePath
             };
+            pathTextBox.KeyDown += PathTextBox_KeyDown;
 
             browseButton = new Button
             {
@@ -147,6 +190,15 @@ namespace Explobar
             LoadIcons();
         }
 
+        void PathTextBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+            {
+                e.SuppressKeyPress = true; // Prevent the beep sound
+                LoadIcons();
+            }
+        }
+
         void LoadIcons()
         {
             iconsPanel.Controls.Clear();
@@ -162,6 +214,9 @@ namespace Explobar
                     statusLabel.Text = $"Error: File not found: {filePath}";
                     return;
                 }
+
+                // Save the successfully loaded file path
+                IconBrowserSettings.LastFilePath = pathTextBox.Text;
 
                 var extractor = new IconExtractor(filePath);
                 int iconCount = extractor.Count;

@@ -9,8 +9,8 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("HP")]
-[assembly: AssemblyProduct("ConsoleApp29")]
-[assembly: AssemblyCopyright("Copyright © HP 2026")]
+[assembly: AssemblyProduct("Explobar")]
+[assembly: AssemblyCopyright("Copyright Oleg Shilo © 2026")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

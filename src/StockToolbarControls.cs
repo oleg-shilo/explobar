@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using static System.Net.Mime.MediaTypeNames;
@@ -8,14 +9,21 @@ using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+
 using Explobar;
 using Shell32;
 
 namespace Explobar
 {
+    public class ClickArgs
+    {
+        public ExplorerContext Context { get; set; }
+        public bool DoNotHideToolbar { get; set; }
+    }
+
     public interface ICustomButton
     {
-        void OnClick(ExplorerContext context);
+        void OnClick(ClickArgs args);
 
         void OnInit(ToolbarItem item, ExplorerContext context);
 
@@ -35,21 +43,120 @@ namespace Explobar
             { "{new-tab}", () => new NewTab() },
             { "{props}", () => new FileProperties() },
             { "{icons}", () => new BrowseIcons() },
+            { "{recent}", () => new RecentLocations() },
+            { "{app-config}", () => new AppConfig() },
         };
     }
 
     public class CustomButton : Button, ICustomButton
     {
+        // public bool DonotHideToolbarOnClick { get; protected set; }
         public int IconIndex { get; protected set; }
+
         public string IconPath { get; protected set; }
         public string Tooltip { get; protected set; }
 
-        public virtual void OnClick(ExplorerContext context)
+        public virtual void OnClick(ClickArgs args)
         {
         }
 
         public virtual void OnInit(ToolbarItem item, ExplorerContext context)
         {
+        }
+    }
+
+    class AppConfig : CustomButton
+    {
+        public AppConfig()
+        {
+            IconIndex = 314;
+            IconPath = @"%SystemRoot%\System32\shell32.dll";
+            Tooltip = "Application Configuration";
+        }
+
+        public override void OnClick(ClickArgs args)
+        {
+            // Prevent toolbar from closing while menu is open
+            args.DoNotHideToolbar = true;
+
+            var menu = new ContextMenuStrip();
+
+            // Add 3 sample menu items
+            menu.Items.Add("Toolbar Items Configuration", null, (s, e)
+                => Process.Start("notepad.exe", ToolbarItems.ConfigPath));
+
+            menu.Items.Add("Preview icons", null, (s, e)
+                => IconBrowser.Show());
+
+            menu.Items.Add("About", null, (s, e)
+                => AboutBox.Show());
+
+            var toolbarForm = this.FindForm() as ToolbarForm;
+            if (toolbarForm != null)
+            {
+                toolbarForm.SuspendMouseCheck();
+                menu.Closed += (s, e) =>
+                {
+                    toolbarForm.ResumeMouseCheck();
+                    toolbarForm.HideToolbar();
+                };
+            }
+
+            // Position the menu below the button
+            var buttonLocation = this.PointToScreen(new Point(0, this.Height));
+            menu.Show(buttonLocation);
+        }
+    }
+
+    class RecentLocations : CustomButton
+    {
+        public RecentLocations()
+        {
+            IconIndex = 316;
+            IconPath = @"%SystemRoot%\System32\shell32.dll";
+            Tooltip = "Recent locations";
+        }
+
+        public override void OnClick(ClickArgs args)
+        {
+            args.DoNotHideToolbar = true;  // keep toolbar open and close it when the menu closes
+
+            var menu = new ContextMenuStrip();
+
+            // Add 3 sample menu items
+            menu.Items.Add("Recent Location 1", null, (s, e) =>
+            {
+                // Handle first location
+                Runtime.Log("Recent Location 1 clicked");
+            });
+
+            menu.Items.Add("Recent Location 2", null, (s, e) =>
+            {
+                // Handle second location
+                Runtime.Log("Recent Location 2 clicked");
+            });
+
+            menu.Items.Add("Recent Location 3", null, (s, e) =>
+            {
+                // Handle third location
+                Runtime.Log("Recent Location 3 clicked");
+            });
+
+            // Prevent toolbar from closing while menu is open
+            var toolbarForm = this.FindForm() as ToolbarForm;
+            if (toolbarForm != null)
+            {
+                toolbarForm.SuspendMouseCheck();
+                menu.Closed += (s, e) =>
+                {
+                    toolbarForm.ResumeMouseCheck();
+                    toolbarForm.HideToolbar();
+                };
+            }
+
+            // Position the menu below the button
+            var buttonLocation = this.PointToScreen(new System.Drawing.Point(0, this.Height));
+            menu.Show(buttonLocation);
         }
     }
 
@@ -62,7 +169,7 @@ namespace Explobar
             Tooltip = "Show properties of the selected file/folder";
         }
 
-        public override void OnClick(ExplorerContext context)
+        public override void OnClick(ClickArgs args)
             => IconBrowser.Show();
     }
 
@@ -75,14 +182,14 @@ namespace Explobar
             Tooltip = "Show properties of the selected file/folder";
         }
 
-        public override void OnClick(ExplorerContext context)
+        public override void OnClick(ClickArgs args)
         {
-            string path = context.SelectedItems.FirstOrDefault();
+            string path = args.Context.SelectedItems.FirstOrDefault();
 
             if (path.HasText())
                 Explorer.ShowFileProperties(path);
             else
-                Explorer.ShowFileProperties(context.RootPath);
+                Explorer.ShowFileProperties(args.Context.RootPath);
         }
     }
 
@@ -95,16 +202,16 @@ namespace Explobar
             Tooltip = "Create new file";
         }
 
-        public override void OnClick(ExplorerContext context)
+        public override void OnClick(ClickArgs args)
         {
-            var path = context.RootPath.NextAvailableName("New Text Document.txt");
+            var path = args.Context.RootPath.NextAvailableName("New Text Document.txt");
 
             File.WriteAllText(path, "");
             Thread.Sleep(50);
             Desktop.NotifyFileCreated(path);
 
             // Get a fresh reference to the window to avoid RCW separation issues
-            var latestContext = context.GetFreshCopy();
+            var latestContext = args.Context.GetFreshCopy();
 
             Explorer.SelectItem(latestContext.Window, path);
 
@@ -125,12 +232,12 @@ namespace Explobar
             Tooltip = "Create new tab (copy of the current tab)";
         }
 
-        public override void OnClick(ExplorerContext context)
+        public override void OnClick(ClickArgs args)
         {
-            string newRoot = context.RootPath;
+            string newRoot = args.Context.RootPath;
 
             var tabs = Explorer.GetTabs();
-            Desktop.SentKeyInput(context.HWND, "^t");
+            Desktop.SentKeyInput(args.Context.HWND, "^t");
             Thread.Sleep(100);
 
             var newTab = Explorer.GetTabs().Except(tabs).FirstOrDefault();
@@ -148,18 +255,18 @@ namespace Explobar
             Tooltip = "Create new folder";
         }
 
-        public override void OnClick(ExplorerContext context)
+        public override void OnClick(ClickArgs args)
         {
             // Possible error: COM object that has been separated from Its underlying RCW cannot be used.
 
-            var path = context.RootPath.NextAvailableName("New Folder");
+            var path = args.Context.RootPath.NextAvailableName("New Folder");
 
             Directory.CreateDirectory(path);
             Thread.Sleep(50);
             Desktop.NotifyFileCreated(path);
 
             // Get a fresh reference to the window to avoid RCW separation issues
-            var latestContext = context.GetFreshCopy();
+            var latestContext = args.Context.GetFreshCopy();
 
             Explorer.SelectItem(latestContext.Window, path);
 
@@ -178,7 +285,7 @@ namespace Explobar
 
         public string Tooltip { get; set; } = "Open new tab from clipboard path";
 
-        public void OnClick(ExplorerContext context)
+        public void OnClick(ClickArgs args)
         {
             string newRoot = null;
 
@@ -195,14 +302,14 @@ namespace Explobar
                     bool isCtrlPressed = (Desktop.GetAsyncKeyState(Desktop.VK_CONTROL) & 0x8000) != 0;
                     if (!isCtrlPressed)
                     {
-                        var latestContext = context.GetFreshCopy();
+                        var latestContext = args.Context.GetFreshCopy();
                         Explorer.NavigateToPath(latestContext.Window, newRoot);
                     }
                     else
                     {
                         // no need to get the fresh copy as GetTabs() will return the fresh one anyway
                         var tabs = Explorer.GetTabs();
-                        Desktop.SentKeyInput(context.HWND, "^t");
+                        Desktop.SentKeyInput(args.Context.HWND, "^t");
                         Thread.Sleep(100);
 
                         var newTab = Explorer.GetTabs().Except(tabs).FirstOrDefault();
