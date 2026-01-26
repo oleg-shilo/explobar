@@ -52,6 +52,7 @@
     </Compile>
     <Compile Include="Desktop.cs" />
     <Compile Include="Explorer.cs" />
+    <Compile Include="ExplorerHistory.cs" />
     <Compile Include="GenericExtesnions.cs" />
     <Compile Include="IconBrowserForm.cs" />
     <Compile Include="IconExtractor\IconExtractor.cs" />

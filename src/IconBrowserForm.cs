@@ -97,6 +97,9 @@ namespace Explobar
             this.Size = new Size(800, 600);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.MinimumSize = new Size(400, 300);
+            this.AllowDrop = true;
+            this.DragEnter += Form_DragEnter;
+            this.DragDrop += Form_DragDrop;
 
             toolTip = new ToolTip();
 
@@ -119,9 +122,12 @@ namespace Explobar
             {
                 Location = new Point(10, 30),
                 Width = 550,
-                Text = IconBrowserSettings.LastFilePath
+                Text = IconBrowserSettings.LastFilePath,
+                AllowDrop = true
             };
             pathTextBox.KeyDown += PathTextBox_KeyDown;
+            pathTextBox.DragEnter += Form_DragEnter;
+            pathTextBox.DragDrop += Form_DragDrop;
 
             browseButton = new Button
             {
@@ -196,6 +202,41 @@ namespace Explobar
             {
                 e.SuppressKeyPress = true; // Prevent the beep sound
                 LoadIcons();
+            }
+        }
+
+        void Form_DragEnter(object sender, DragEventArgs e)
+        {
+            // Check if the dragged data contains file(s)
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                e.Effect = DragDropEffects.Copy;
+            }
+            else
+            {
+                e.Effect = DragDropEffects.None;
+            }
+        }
+
+        void Form_DragDrop(object sender, DragEventArgs e)
+        {
+            try
+            {
+                // Get the file paths from the drag-drop data
+                string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
+                if (files != null && files.Length > 0)
+                {
+                    // Use the first file
+                    string filePath = files[0];
+                    pathTextBox.Text = filePath;
+                    LoadIcons();
+                }
+            }
+            catch (Exception ex)
+            {
+                statusLabel.Text = $"Error: {ex.Message}";
+                MessageBox.Show(this, $"Error loading file:\n{ex.Message}", "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 

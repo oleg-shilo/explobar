@@ -194,8 +194,13 @@ namespace Explobar
                     root = explorerWindow?.Document?.Folder?.Self?.Path?.ToString();
 
                     if (root != null)
+                    {
+                        // Track location in history
+                        ExplorerHistory.AddLocation(root);
+
                         foreach (FolderItem item in explorerWindow.Document.SelectedItems())
                             selectedPaths.Add(item.Path);
+                    }
 
                     break;
                 }

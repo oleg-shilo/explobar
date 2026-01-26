@@ -22,7 +22,7 @@ using System.Windows.Forms;
 // ✅ navigate from clipboard content
 // ✅ button separator
 //    favorites (shell32.dll,44)
-//    recent folders (shell32.dll,7+22*11)
+// ✅ recent folders (shell32.dll,7+22*11)
 // ✅ config button should pop up the menu for
 //    ✅ edit config
 //    ✅ explore icons
@@ -42,7 +42,9 @@ namespace Explobar
         [STAThread]
         static void Main(string[] args)
         {
-            // IconBrowser.Show(); return;
+            // Start monitoring Explorer windows for history
+            ExplorerHistory.StartMonitoring();
+
             // Set up keyboard hook
             _keyboardHook = new LowLevelKeyboardHook();
             _keyboardHook.OnKeyPressed += KeyboardHook_OnKeyPressed;
@@ -56,10 +58,16 @@ namespace Explobar
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+
+            // Handle application exit
+            Application.ApplicationExit += (s, e) =>
+            {
+                ExplorerHistory.StopMonitoring();
+                _keyboardHook?.UnhookKeyboard();
+            };
+
             // Keep the application running
             Application.Run();
-
-            _keyboardHook?.UnhookKeyboard();
         }
 
         private static void KeyboardHook_OnKeyPressed(Keys key)
