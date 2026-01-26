@@ -233,8 +233,8 @@ namespace Explobar
             {
                 button = StockToolbarControls.Items[info.Path]();
                 customButton = (button as ICustomButton);
-                iconPath = customButton.IconPath.ExpandEnvars().IfEmpty(info.IconPath);
-                iconIndex = customButton.IconIndex;
+                iconPath = info.IconPath.IfEmpty(customButton.IconPath.ExpandEnvars());
+                iconIndex = info.IconIndex == 0 ? customButton.IconIndex : 0;
             }
             else
             {

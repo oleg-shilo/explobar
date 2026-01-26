@@ -20,6 +20,8 @@ namespace Explobar
     class ToolbarConfig
     {
         public ToolbarSettings Settings { get; set; } = new ToolbarSettings();
+        public List<string> Favorites { get; set; } = new List<string>();
+        public List<string> Applications { get; set; } = new List<string>();
         public List<ToolbarItem> Items { get; set; } = new List<ToolbarItem>();
     }
 
@@ -36,6 +38,8 @@ namespace Explobar
 
         public static List<ToolbarItem> Items => LoadConfig().Items;
         public static ToolbarSettings Settings => LoadConfig().Settings;
+        public static List<string> Favorites => LoadConfig().Favorites;
+        public static List<string> Applications => LoadConfig().Applications;
 
         static DateTime configFileTimestamp = DateTime.MinValue;
         static ToolbarConfig currentConfig = null;
@@ -107,7 +111,13 @@ namespace Explobar
                 Settings = new ToolbarSettings
                 {
                     ButtonSize = 24,
-                    // ImagePadding = 2
+                    HistorySize = 10
+                },
+                Favorites = new List<string>
+                {
+                    Environment.GetFolderPath(SpecialFolder.Desktop),
+                    Environment.GetFolderPath(SpecialFolder.MyDocuments),
+                    Environment.GetFolderPath(SpecialFolder.UserProfile)
                 },
                 Items = GetDefaultItems()
             };
@@ -123,11 +133,18 @@ namespace Explobar
                 // Add comments at the start of the file
                 var comments = new StringBuilder();
                 comments.AppendLine("# Explobar Toolbar Configuration");
-                comments.AppendLine("# This file defines the toolbar settings and items displayed when pressing Left Shift in Windows Explorer");
+                comments.AppendLine("# This file defines the toolbar settings and items displayed when pressing Escape in Windows Explorer");
                 comments.AppendLine("#");
                 comments.AppendLine("# Settings:");
                 comments.AppendLine("#   ButtonSize: Size of toolbar button icons in pixels (default: 24)");
-                comments.AppendLine("#   HistorySize: Maximum number of recently visited locations to remember (default: 20)");
+                comments.AppendLine("#   HistorySize: Maximum number of recently visited locations to remember (default: 10)");
+                comments.AppendLine("#");
+                comments.AppendLine("# Favorites:");
+                comments.AppendLine("#   List of favorite folder paths that appear in the Favorites menu");
+                comments.AppendLine("#   You can add any valid folder path (supports environment variables like %UserProfile%)");
+                comments.AppendLine("#   Example:");
+                comments.AppendLine("#     - C:\\Projects");
+                comments.AppendLine("#     - %UserProfile%\\Downloads");
                 comments.AppendLine("#");
                 comments.AppendLine("# Each toolbar item has the following properties:");
                 comments.AppendLine("#   Icon: Path to icon file with optional index (e.g., 'shell32.dll,314' or 'notepad.exe')");
