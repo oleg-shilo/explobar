@@ -63,6 +63,27 @@ namespace Explobar
         public virtual void OnInit(ToolbarItem item, ExplorerContext context)
         {
         }
+
+        public static void NavigateToPath(ExplorerContext context, string newRoot)
+        {
+            bool isCtrlPressed = (Desktop.GetAsyncKeyState(Desktop.VK_CONTROL) & 0x8000) != 0;
+            if (!isCtrlPressed)
+            {
+                var latestContext = context.GetFreshCopy();
+                Explorer.NavigateToPath(latestContext.Window, newRoot);
+            }
+            else
+            {
+                // no need to get the fresh copy as GetTabs() will return the fresh one anyway
+                var tabs = Explorer.GetTabs();
+                Desktop.SentKeyInput(context.HWND, "^t");
+                Thread.Sleep(100);
+
+                var newTab = Explorer.GetTabs().Except(tabs).FirstOrDefault();
+                if (newTab != null)
+                    Explorer.NavigateToPath(newTab, newRoot);
+            }
+        }
     }
 
     class AppConfig : CustomButton
@@ -123,24 +144,14 @@ namespace Explobar
 
             var menu = new ContextMenuStrip();
 
-            // Add 3 sample menu items
-            menu.Items.Add("Recent Location 1", null, (s, e) =>
+            foreach (string path in ExplorerHistory.GetRecentLocations())
             {
-                // Handle first location
-                Runtime.Log("Recent Location 1 clicked");
-            });
-
-            menu.Items.Add("Recent Location 2", null, (s, e) =>
-            {
-                // Handle second location
-                Runtime.Log("Recent Location 2 clicked");
-            });
-
-            menu.Items.Add("Recent Location 3", null, (s, e) =>
-            {
-                // Handle third location
-                Runtime.Log("Recent Location 3 clicked");
-            });
+                menu.Items.Add(Path.GetFileName(path), null, (s, e) =>
+                {
+                    string newRoot = path;
+                    CustomButton.NavigateToPath(args.Context, newRoot);
+                });
+            }
 
             // Prevent toolbar from closing while menu is open
             var toolbarForm = this.FindForm() as ToolbarForm;
@@ -177,8 +188,8 @@ namespace Explobar
     {
         public FileProperties()
         {
-            IconIndex = 39;
-            IconPath = @"%SystemRoot%\System32\shell32.dll";
+            IconIndex = 1;//39;
+            IconPath = @"%SystemRoot%\System32\sud.dll";
             Tooltip = "Show properties of the selected file/folder";
         }
 
@@ -227,8 +238,10 @@ namespace Explobar
     {
         public NewTab()
         {
-            IconIndex = 110;//209;296;45;209
-            IconPath = @"%SystemRoot%\System32\shell32.dll"; // @"%SystemRoot%\System32\wmploc.dll,11"; @"%SystemRoot%\System32\twinui,0"
+            // IconIndex = 110;//209;296;45;209
+            IconIndex = 0;
+            // IconPath = @"%SystemRoot%\System32\shell32.dll"; // @"%SystemRoot%\System32\wmploc.dll,11"; @"%SystemRoot%\System32\twinui,0"
+            IconPath = @"%SystemRoot%\System32\twinui.dll";
             Tooltip = "Create new tab (copy of the current tab)";
         }
 
@@ -297,32 +310,12 @@ namespace Explobar
                 else if (File.Exists(path))
                     newRoot = Path.GetDirectoryName(path);
 
-                if (newRoot.HasText())
-                {
-                    bool isCtrlPressed = (Desktop.GetAsyncKeyState(Desktop.VK_CONTROL) & 0x8000) != 0;
-                    if (!isCtrlPressed)
-                    {
-                        var latestContext = args.Context.GetFreshCopy();
-                        Explorer.NavigateToPath(latestContext.Window, newRoot);
-                    }
-                    else
-                    {
-                        // no need to get the fresh copy as GetTabs() will return the fresh one anyway
-                        var tabs = Explorer.GetTabs();
-                        Desktop.SentKeyInput(args.Context.HWND, "^t");
-                        Thread.Sleep(100);
-
-                        var newTab = Explorer.GetTabs().Except(tabs).FirstOrDefault();
-                        if (newTab != null)
-                            Explorer.NavigateToPath(newTab, newRoot);
-                    }
-                }
+                CustomButton.NavigateToPath(args.Context, newRoot);
             }
         }
 
         public void OnInit(ToolbarItem item, ExplorerContext context)
         {
-            // this.Text = "CB";
         }
     }
 }

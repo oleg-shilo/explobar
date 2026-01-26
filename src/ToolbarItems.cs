@@ -26,6 +26,7 @@ namespace Explobar
     class ToolbarSettings
     {
         public int ButtonSize { get; set; } = 24;
+        public int HistorySize { get; set; } = 10;
         // public int ImagePadding { get; set; } = 2;
     }
 
@@ -131,7 +132,8 @@ namespace Explobar
                 comments.AppendLine("# This file defines the toolbar settings and items displayed when pressing Left Shift in Windows Explorer");
                 comments.AppendLine("#");
                 comments.AppendLine("# Settings:");
-                comments.AppendLine("#   IconSize: Size of toolbar button icons in pixels (default: 24)");
+                comments.AppendLine("#   ButtonSize: Size of toolbar button icons in pixels (default: 24)");
+                comments.AppendLine("#   HistorySize: Maximum number of recently visited locations to remember (default: 20)");
                 comments.AppendLine("#");
                 comments.AppendLine("# Each toolbar item has the following properties:");
                 comments.AppendLine("#   Icon: Path to icon file with optional index (e.g., 'shell32.dll,314' or 'notepad.exe')");
