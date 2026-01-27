@@ -180,6 +180,17 @@ namespace Explobar
         {
             var items = new List<ToolbarItem>
             {
+                new ToolbarItem() { Path = "{new-tab}" },
+                new ToolbarItem() { Path = "{navigate-from-clipboard}" },
+                new ToolbarItem() { Path = "{separator}" },
+                new ToolbarItem() { Path = "{new-file}" },
+                new ToolbarItem() { Path = "{new-folder}" },
+                new ToolbarItem() { Path = "{separator}" },
+                new ToolbarItem() { Path = "{recent}" },
+                new ToolbarItem() { Path = "{props}" },
+                new ToolbarItem() { Path = "{favorites}" },
+                new ToolbarItem() { Path = "{application}" },
+                new ToolbarItem() { Path = "{separator}" },
                 new ToolbarItem()
                 {
                     Icon = @"%SystemRoot%\System32\cmd.exe",
@@ -191,9 +202,11 @@ namespace Explobar
                 {
                     Icon = @"%SystemRoot%\System32\shell32.dll,314",
                     Path = "notepad.exe",
-                    Arguments = @"%AppData%\Explobar\toolbar-items.yaml",
-                    Tooltip = "Open configuration"
-                }
+                    Arguments = "%f%",
+                    Tooltip = "Open in notepad"
+                },
+                new ToolbarItem() { Path = "{separator}" },
+                new ToolbarItem() { Path = "{app-config}" },
             };
             return items;
         }

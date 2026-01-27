@@ -76,7 +76,7 @@ namespace Explobar
                 menu.Closed += (s, e) =>
                 {
                     toolbarForm.ResumeMouseCheck();
-                    toolbarForm.HideToolbar();
+                    // toolbarForm.HideToolbar();
                 };
             }
 
@@ -280,7 +280,7 @@ namespace Explobar
     {
         public NewFile()
         {
-            IconIndex = 1;
+            IconIndex = 0;// 1;
             IconPath = @"%SystemRoot%\System32\shell32.dll";
             Tooltip = "Create new file";
         }
