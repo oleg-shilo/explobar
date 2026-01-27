@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
+
 
 // using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
@@ -82,32 +84,33 @@ namespace Explobar
             {
                 _isProcessing = true;
 
+                Profiler.Start();
                 // Execute on a new STA thread to avoid COM issues
                 var thread = new Thread(() =>
                 {
                     try
                     {
                         (var root, var selection, var window) = Explorer.GetSelection();
+                        Profiler.Call();
 
                         if (root != null)
                         {
-                            // foreach (var item in selection) Runtime.Log(item);
-
                             bool isToolbarHidden = (ToolbarForm.HideOnClosing && ToolbarForm.Instance != null);
-                            Runtime.Log($"root ({(isToolbarHidden ? "unhide" : "show")}): {root}");
 
                             if (isToolbarHidden)
                             {
-                                // ShowToolbarForm will not block
-                                Action unhide = () => Desktop.ShowToolbarForm(root, selection, window, startMessagePump: false);
+                                // ShowToolbarForm will not block because we're unhiding an existing form (createNew: false)
+                                Action unhide = () => Desktop.ShowToolbarForm(root, selection, window, createNew: false);
                                 ToolbarForm.Instance.Invoke(unhide);
                             }
                             else
                             {
                                 // ShowToolbarForm will block until the form is closed
-                                Desktop.ShowToolbarForm(root, selection, window, startMessagePump: true);
+                                Desktop.ShowToolbarForm(root, selection, window, createNew: true);
                             }
                         }
+                        else
+                            Profiler.Reset();
                     }
                     finally
                     {

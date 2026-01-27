@@ -57,38 +57,24 @@ namespace Explobar
         // In order to reduce flickering when showing the toolbar, there are three modes of operation:
         //
         // 1. Normal mode: create a new instance each time the toolbar is shown
-        // 2. Hot loading mode: prepare the next instance in advance and reuse it to reduce flickering
-        // 3. Hidden mode: keep the form hidden when not in use
+        // 2. Hidden mode: keep the form hidden when not in use
         //
-        // #3 gives the best user experience and requires #2 to be disabled.
+        // #2 gives the best user experience and requires #2 to be disabled.
 
-        static bool useHotLoading = false;
         public static bool HideOnClosing = true;
-
-        static ToolbarForm nextInstance = null;
-
         public static ToolbarForm Instance = null;
 
-        public static void ClearCache() => nextInstance = null;
-
+        public static void ResetInstance()
+        {
+            Instance?.Close();
+            Instance?.Dispose();
+            Instance = null;
+        }
         public static ToolbarForm Create()
         {
             // To avoid flickering, we create the next instance in advance and reuse it
-            if (useHotLoading)
-            {
-                var result = nextInstance ?? new ToolbarForm().Init();
-
-                // Despite the next instance initialization being blocking (called in the same thread),
-                // the performance benefit is still visible. And we also avoid cross-thread issues of using another thread.
-                nextInstance = new ToolbarForm();
-                nextInstance.Init();
-
-                return result;
-            }
-            else
-            {
-                return new ToolbarForm().Init();
-            }
+            Profiler.Call();
+            return new ToolbarForm().Init();
         }
 
         System.Windows.Forms.Timer checkMouseTimer;
@@ -159,41 +145,23 @@ namespace Explobar
                 checkMouseTimer.Tick += CheckMouseTimer_Tick;
             }
 
-            this.Shown += (s, e) =>
+            this.VisibleChanged += (s, e) =>
             {
-                Instance = this;
-                SetWindowPos(this.Handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
-                this.Activate();
-                Task.Run(() =>
-                {
-                    Thread.Sleep(1000);
-                    try
-                    {
-                        this.BeginInvoke((Action)(() =>
-                        {
-                            enableMouseCheck = true;
-                            checkMouseTimer?.Start();
-                            // Runtime.Log("Started mouse check timer");
-                        }));
-                    }
-                    catch
-                    {
-                        // Ignore errors
-                    }
-                });
+                if (this.Visible)
+                    OnVisible();
             };
 
             this.FormClosing += (s, e) =>
             {
                 if (HideOnClosing)
                 {
-                    // Runtime.Log("Hiding toolbar instead of closing");
+                    Runtime.Log("Hiding toolbar instead of closing");
                     e.Cancel = true;
                     this.Hide();
                 }
                 else
                 {
-                    // Runtime.Log("Disposing toolbar");
+                    Runtime.Log("Disposing toolbar");
                     checkMouseTimer?.Stop();
                     checkMouseTimer?.Dispose();
                     toolTip?.Dispose();
@@ -201,9 +169,42 @@ namespace Explobar
                 }
             };
 
+            Profiler.Call();
             return this;
         }
 
+        public ToolbarForm OnVisible()
+        {
+            SetForegroundWindow(this.ExplorerContext.HWND);
+
+            Instance = this;
+            this.BringToFront();
+            this.Activate();
+
+            SetWindowPos(this.Handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+            SetForegroundWindow(this.Handle);
+
+            Task.Run(() =>
+            {
+                Thread.Sleep(700);
+                try
+                {
+                    this.BeginInvoke((Action)(() =>
+                    {
+                        enableMouseCheck = true;
+                        checkMouseTimer?.Start();
+                        // Runtime.Log("Started mouse check timer");
+                    }));
+                }
+                catch
+                {
+                    // Ignore errors
+                }
+            });
+
+            Profiler.Call();
+            return this;
+        }
         int buttonSize => ToolbarItems.Settings.ButtonSize;
 
         void AddToolbarGroupSeparator()

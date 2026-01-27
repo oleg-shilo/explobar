@@ -24,7 +24,7 @@ namespace Explobar
         {
             get
             {
-                lock (_lock)
+                // lock (_lock)
                 {
                     if (_history == null)
                         LoadHistory();
@@ -161,7 +161,7 @@ namespace Explobar
 
         public static List<string> GetRecentLocations(int count = -1)
         {
-            lock (_lock)
+            // lock (_lock)
             {
                 if (count <= 0)
                     return new List<string>(History);
