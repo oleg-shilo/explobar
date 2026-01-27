@@ -31,15 +31,14 @@ namespace Explobar
 
         public const uint GA_ROOT = 2;
 
-        public static void ShowToolbarForm(string root, List<string> items, dynamic window, bool startMessagePump)
+        public static void ShowToolbarForm(string root, List<string> items, dynamic window, bool createNew)
         {
             if (!ToolbarItems.IsConfigUpToDate)
-                ToolbarForm.ClearCache();
+                ToolbarForm.ResetInstance();
 
-            var form = ToolbarForm.Create();
-
-            bool newWindow = form.ExplorerContext.Window != window;
-            // Runtime.Log($"ShowToolbarForm: IsNewWindow: {newWindow}");
+            var form = createNew ?
+                ToolbarForm.Create() :
+                ToolbarForm.Instance ?? ToolbarForm.Create();
 
             form.ExplorerContext.RootPath = root;
             form.ExplorerContext.SelectedItems = items;
@@ -65,12 +64,8 @@ namespace Explobar
 
             // Show the form and bring it to front
             form.Show();
-            form.BringToFront();
-            form.Activate();
-            SetForegroundWindow(form.Handle);
-            SetWindowPos(form.Handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
 
-            if (startMessagePump)
+            if (createNew)
                 Application.Run(form);
         }
 

@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
-using static System.Environment;
+using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Windows.Forms;
+using static System.Environment;
 
 namespace Explobar
 {
@@ -154,6 +156,40 @@ namespace Explobar
         }
     }
 
+    static class Profiler
+    {
+        static Stopwatch _sw = null;
+        static Stopwatch sw
+        {
+            get
+            {
+                if (_sw == null)
+                {
+                    _sw = Stopwatch.StartNew();
+                    prevCall = 0;
+                    Console.WriteLine("> Profiler start");
+                }
+                return _sw;
+            }
+        }
+
+        static long prevCall = 0;
+        public static void Reset()
+        {
+            _sw = null;
+        }
+
+        public static void Start([CallerMemberName] string source = null)
+        {
+            Reset();
+            var dummy = sw; // force creation of _sw
+        }
+        public static void Call(string context = null, [CallerMemberName] string source = null)
+        {
+            Console.WriteLine($"> {(context ?? "...")} ({source}): since-prev: {sw.ElapsedMilliseconds - prevCall}, since-start: {sw.ElapsedMilliseconds}");
+            prevCall = sw.ElapsedMilliseconds;
+        }
+    }
     static class Runtime
     {
         public static Action<string> ShowWarning = (message) => showMessage(message, MessageBoxIcon.Warning);
@@ -171,7 +207,7 @@ namespace Explobar
 
         static void log(string message)
         {
-            Console.WriteLine("[Explobar] " + message);
+            // Console.WriteLine("[Explobar] " + message);
         }
     }
 }
