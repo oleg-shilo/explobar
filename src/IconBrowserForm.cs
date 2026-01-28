@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -38,28 +39,35 @@ namespace Explobar
     static class IconBrowserSettings
     {
         static string SettingsFilePath
-            => Environment.SpecialFolder.LocalApplicationData.Combine("Explobar", "iconbrowser-history.txt");
+        {
+            get => Environment.SpecialFolder.LocalApplicationData.Combine("Explobar", "iconbrowser-history.txt").EnsureFileDir();
+        }
 
-        public static string LastFilePath
+        public static List<string> RecentFiles
         {
             get
             {
                 try
                 {
                     if (File.Exists(SettingsFilePath))
-                        return File.ReadAllText(SettingsFilePath).Trim();
+                    {
+                        return File.ReadAllLines(SettingsFilePath)
+                            .Where(line => !string.IsNullOrWhiteSpace(line))
+                            .Take(10) // Keep last 10 files
+                            .ToList();
+                    }
                 }
                 catch
                 {
                     // Ignore errors reading settings
                 }
-                return @"%SystemRoot%\System32\shell32.dll";
+                return new List<string> { @"%SystemRoot%\System32\shell32.dll" };
             }
             set
             {
                 try
                 {
-                    File.WriteAllText(SettingsFilePath, value ?? "");
+                    File.WriteAllLines(SettingsFilePath, value ?? new List<string>());
                 }
                 catch
                 {
@@ -67,11 +75,28 @@ namespace Explobar
                 }
             }
         }
+
+        public static void AddRecentFile(string filePath)
+        {
+            var recent = RecentFiles;
+
+            // Remove if already exists
+            recent.Remove(filePath);
+
+            // Add to front
+            recent.Insert(0, filePath);
+
+            // Keep only last 10
+            if (recent.Count > 10)
+                recent = recent.Take(10).ToList();
+
+            RecentFiles = recent;
+        }
     }
 
     public class IconBrowserForm : Form
     {
-        TextBox pathTextBox;
+        ComboBox pathComboBox;
         Button browseButton;
         Button loadButton;
         FlowLayoutPanel iconsPanel;
@@ -110,16 +135,27 @@ namespace Explobar
                 AutoSize = true
             };
 
-            pathTextBox = new TextBox
+            pathComboBox = new ComboBox
             {
                 Location = new Point(10, 30),
                 Width = 550,
-                Text = IconBrowserSettings.LastFilePath,
+                DropDownStyle = ComboBoxStyle.DropDown,
                 AllowDrop = true
             };
-            pathTextBox.KeyDown += PathTextBox_KeyDown;
-            pathTextBox.DragEnter += Form_DragEnter;
-            pathTextBox.DragDrop += Form_DragDrop;
+
+            // Load recent files into combobox
+            foreach (var file in IconBrowserSettings.RecentFiles)
+            {
+                pathComboBox.Items.Add(file);
+            }
+
+            if (pathComboBox.Items.Count > 0)
+                pathComboBox.SelectedIndex = 0;
+
+            pathComboBox.KeyDown += PathComboBox_KeyDown;
+            pathComboBox.SelectionChangeCommitted += PathComboBox_SelectionChangeCommitted;
+            pathComboBox.DragEnter += Form_DragEnter;
+            pathComboBox.DragDrop += Form_DragDrop;
 
             browseButton = new Button
             {
@@ -139,7 +175,7 @@ namespace Explobar
             };
             loadButton.Click += LoadButton_Click;
 
-            topPanel.Controls.AddRange(new Control[] { label, pathTextBox, browseButton, loadButton });
+            topPanel.Controls.AddRange(new Control[] { label, pathComboBox, browseButton, loadButton });
 
             // Status bar
             statusLabel = new Label
@@ -175,9 +211,23 @@ namespace Explobar
                 dialog.Filter = "Executable Files (*.exe;*.dll)|*.exe;*.dll|All Files (*.*)|*.*";
                 dialog.Title = "Select File to Extract Icons";
 
+                // Set initial directory to the folder of the current file
+                try
+                {
+                    string currentPath = pathComboBox.Text.ExpandEnvars();
+                    if (!string.IsNullOrEmpty(currentPath) && File.Exists(currentPath))
+                    {
+                        dialog.InitialDirectory = Path.GetDirectoryName(currentPath);
+                    }
+                }
+                catch
+                {
+                    // Ignore errors, dialog will use default directory
+                }
+
                 if (dialog.ShowDialog() == DialogResult.OK)
                 {
-                    pathTextBox.Text = dialog.FileName;
+                    pathComboBox.Text = dialog.FileName;
                     LoadIcons();
                 }
             }
@@ -188,13 +238,23 @@ namespace Explobar
             LoadIcons();
         }
 
-        void PathTextBox_KeyDown(object sender, KeyEventArgs e)
+        void PathComboBox_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Enter)
             {
                 e.SuppressKeyPress = true; // Prevent the beep sound
                 LoadIcons();
             }
+        }
+
+        void PathComboBox_SelectionChangeCommitted(object sender, EventArgs e)
+        {
+            // Automatically load icons when user selects from the dropdown
+            Task.Run(() =>
+            {
+                Thread.Sleep(100); // Small delay to ensure UI updates
+                this.Invoke((Action)(() => LoadIcons()));
+            });
         }
 
         void Form_DragEnter(object sender, DragEventArgs e)
@@ -220,7 +280,7 @@ namespace Explobar
                 {
                     // Use the first file
                     string filePath = files[0];
-                    pathTextBox.Text = filePath;
+                    pathComboBox.Text = filePath;
                     LoadIcons();
                 }
             }
@@ -234,22 +294,32 @@ namespace Explobar
 
         void LoadIcons()
         {
+            iconsPanel.SuspendLayout(); // Suspend layout to prevent flickering
             iconsPanel.Controls.Clear();
             statusLabel.Text = "Loading...";
             Application.DoEvents();
 
             try
             {
-                string filePath = pathTextBox.Text.ExpandEnvars();
+                string filePath = pathComboBox.Text.ExpandEnvars();
 
                 if (!File.Exists(filePath))
                 {
                     statusLabel.Text = $"Error: File not found: {filePath}";
+                    iconsPanel.ResumeLayout();
                     return;
                 }
 
-                // Save the successfully loaded file path
-                IconBrowserSettings.LastFilePath = pathTextBox.Text;
+                // Save to recent files
+                IconBrowserSettings.AddRecentFile(pathComboBox.Text);
+
+                // Update combobox items
+                if (!pathComboBox.Items.Contains(pathComboBox.Text))
+                {
+                    pathComboBox.Items.Insert(0, pathComboBox.Text);
+                    if (pathComboBox.Items.Count > 10)
+                        pathComboBox.Items.RemoveAt(pathComboBox.Items.Count - 1);
+                }
 
                 var extractor = new IconExtractor(filePath);
                 int iconCount = extractor.Count;
@@ -257,6 +327,7 @@ namespace Explobar
                 if (iconCount == 0)
                 {
                     statusLabel.Text = "No icons found in file";
+                    iconsPanel.ResumeLayout();
                     return;
                 }
 
@@ -285,6 +356,10 @@ namespace Explobar
                 statusLabel.Text = $"Error: {ex.Message}";
                 MessageBox.Show(this, $"Error loading icons:\n{ex.Message}", "Error",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                iconsPanel.ResumeLayout(true); // Resume layout and perform pending layout
             }
         }
 
@@ -376,6 +451,4 @@ namespace Explobar
             public int Index { get; set; }
         }
     }
-
-    // Helper to launch the icon browser
 }

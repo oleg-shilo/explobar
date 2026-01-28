@@ -14,6 +14,7 @@ namespace Explobar
     {
         public ExplorerContext Context { get; set; }
         public bool DoNotHideToolbar { get; set; }
+        public ToolbarForm Toolbar { get; set; }
     }
 
     public interface ICustomButton
@@ -166,11 +167,13 @@ namespace Explobar
                     menuItem.ToolTipText = path;
                     menuItem.Click += (s, e) =>
                     {
-                        string newRoot = path;
+                        string newRoot = path.ExpandEnvars();
                         if (Directory.Exists(newRoot))
                             CustomButton.NavigateToPath(args.Context, newRoot);
                         else
                             Runtime.ShowWarning("The selected item path is not a valid folder path.");
+
+                        args.Toolbar.HideToolbar();
                     };
                     menu.Items.Add(menuItem);
                 }
@@ -209,6 +212,8 @@ namespace Explobar
                         {
                             Runtime.ShowWarning("Failed to launch application.\n\n" + ex.Message);
                         }
+
+                        args.Toolbar.HideToolbar();
                     };
                     menu.Items.Add(menuItem);
                 }
@@ -241,12 +246,13 @@ namespace Explobar
                     menuItem.ToolTipText = path;
                     menuItem.Click += (s, e) =>
                     {
-                        string newRoot = path;
-
+                        string newRoot = path.ExpandEnvars();
                         if (Directory.Exists(newRoot))
                             CustomButton.NavigateToPath(args.Context, newRoot);
                         else
                             Runtime.ShowWarning("The selected item path is not a valid folder path.");
+
+                        args.Toolbar.HideToolbar();
                     };
                     menu.Items.Add(menuItem);
                 }
@@ -387,7 +393,7 @@ namespace Explobar
         {
             string newRoot = null;
 
-            var path = Clipboard.GetText()?.Trim()?.Trim('"');
+            var path = Clipboard.GetText()?.Trim()?.Trim('"')?.ExpandEnvars();
             if (path.HasText())
             {
                 if (Directory.Exists(path))
