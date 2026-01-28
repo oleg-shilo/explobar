@@ -14,7 +14,7 @@ using System.Windows.Forms;
 
 // TODO
 // settings:
-//     ✅ configure shortcut
+// ✅ configure shortcut
 //     support shortcuts
 //
 // buttons:
@@ -36,7 +36,7 @@ using System.Windows.Forms;
 // ✅ Keep history of Icon explorer navigation
 //    Tray Icon support
 //    App Singleton
-//    Button default icon
+// ✅ Button default icon
 
 namespace Explobar
 {
