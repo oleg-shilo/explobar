@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 
-
 // using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -42,8 +41,8 @@ namespace Explobar
 {
     internal class Program
     {
-        private static UserInputMonitor _inputMonitor;
-        private static bool _isProcessing = false;
+        static UserInputMonitor _inputMonitor;
+        static bool _isProcessing = false;
 
         [STAThread]
         static void Main(string[] args)
@@ -78,7 +77,7 @@ namespace Explobar
             Application.Run();
         }
 
-        private static void InputMonitor_OnShortcutPressed(Keys key)
+        static void InputMonitor_OnShortcutPressed(Keys key)
         {
             if (_isProcessing)
                 return;
