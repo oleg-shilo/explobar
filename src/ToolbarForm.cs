@@ -321,7 +321,7 @@ namespace Explobar
             {
                 try
                 {
-                    var clickArgs = new ClickArgs { Context = this.ExplorerContext };
+                    var clickArgs = new ClickArgs { Context = this.ExplorerContext, Toolbar = this };
 
                     if (customButton != null)
                         customButton.OnClick(clickArgs);
@@ -384,7 +384,7 @@ namespace Explobar
             return base.ProcessCmdKey(ref msg, keyData);
         }
 
-        internal void HideToolbar()
+        public void HideToolbar()
         {
             // Runtime.Log("Stopping mouse timer");
             checkMouseTimer?.Stop();
