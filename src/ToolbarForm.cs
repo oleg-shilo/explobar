@@ -71,12 +71,14 @@ namespace Explobar
             else
                 return null;
         }
+
         public static void ResetInstance()
         {
             Instance?.Close();
             Instance?.Dispose();
             Instance = null;
         }
+
         public static ToolbarForm Preheat()
         {
             // To avoid flickering, we create the next instance in advance and reuse it
@@ -85,11 +87,11 @@ namespace Explobar
                 Instance = new ToolbarForm().Init();
             return Instance;
         }
+
         public bool IsInitializedButHidden()
         {
             return ToolbarForm.HideOnClosing && !this.Visible && this.IsHandleCreated;
         }
-
 
         public static ToolbarForm Create()
         {
@@ -235,6 +237,7 @@ namespace Explobar
             Profiler.Log();
             return this;
         }
+
         int buttonSize => ToolbarItems.Settings.ButtonSize;
 
         void AddToolbarGroupSeparator()
@@ -248,7 +251,9 @@ namespace Explobar
             };
             toolbarPanel.Controls.Add(separator);
         }
+
         public static Bitmap DefaultIcon => (Bitmap)@"%SystemRoot%\System32\imageres.dll".ExpandEnvars().ExtractIcon(231);
+
         void AddToolbarButton(ToolbarItem info)
         {
             Button button;
@@ -289,6 +294,25 @@ namespace Explobar
             button.FlatAppearance.MouseOverBackColor = Color.FromArgb(64, Color.LightBlue);
             button.FlatAppearance.MouseDownBackColor = Color.Transparent;
 
+            // Add dropdown indicator for expandable buttons
+            if (customButton is CustomButton cb && cb.IsExpandabe)
+            {
+                button.Paint += (s, e) =>
+                {
+                    // Draw ComboBox-style dropdown indicator in bottom-right corner
+                    int indicatorSize = 7;
+                    int margin = 0;
+
+                    Rectangle indicatorRect = new Rectangle(
+                        button.Width - margin - indicatorSize,
+                        button.Height - margin - indicatorSize,
+                        indicatorSize,
+                        indicatorSize
+                                                           );
+                    DrawExpandIndicator(e.Graphics, indicatorRect);
+                };
+            }
+
             toolTip.SetToolTip(button, info.Tooltip.IfEmpty(customButton?.Tooltip ?? info.Path.GetFileName()));
 
             customButton?.OnInit(info, this.ExplorerContext);
@@ -297,15 +321,18 @@ namespace Explobar
             {
                 try
                 {
-                    var args = new ClickArgs { Context = this.ExplorerContext };
+                    var clickArgs = new ClickArgs { Context = this.ExplorerContext };
 
                     if (customButton != null)
-                        customButton.OnClick(args);
+                        customButton.OnClick(clickArgs);
                     else
                         info.Execute(this.ExplorerContext);
 
-                    if (!args.DoNotHideToolbar)
+                    if (!clickArgs.DoNotHideToolbar)
+                    {
                         HideToolbar();
+                        SetForegroundWindow((IntPtr)ExplorerContext.HWND);
+                    }
                 }
                 catch (Exception e)
                 {
@@ -393,6 +420,28 @@ namespace Explobar
                 {
                     // Ignore errors
                 }
+            }
+        }
+
+        void DrawExpandIndicator(Graphics graphics, Rectangle rect)
+        {
+            graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+
+            // Draw a small downward arrow
+            int centerX = rect.X + rect.Width / 2;
+            int centerY = rect.Y + rect.Height / 2;
+            int arrowSize = 3;
+
+            Point[] arrow = new Point[]
+            {
+                new Point(centerX - arrowSize, centerY - 1),
+                new Point(centerX + arrowSize, centerY - 1),
+                new Point(centerX, centerY + arrowSize - 1)
+            };
+            using (var pen = new Pen(Color.FromArgb(96, 96, 96), 1.5f))
+            {
+                graphics.DrawLine(pen, arrow[0], arrow[2]);
+                graphics.DrawLine(pen, arrow[1], arrow[2]);
             }
         }
     }
