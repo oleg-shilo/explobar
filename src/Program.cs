@@ -36,6 +36,10 @@ using System.Windows.Forms;
 //    Tray Icon support
 //    App Singleton
 // ✅ Button default icon
+// ✅ Profiler
+//     app icon
+//     taskbar icon for Icon Browser
+//     recent for Icon Browser
 
 namespace Explobar
 {

@@ -52,6 +52,7 @@ namespace Explobar
 
         public string IconPath { get; protected set; }
         public string Tooltip { get; protected set; }
+        public bool IsExpandabe { get; protected set; }
 
         public virtual void OnClick(ClickArgs args)
         {
@@ -150,6 +151,7 @@ namespace Explobar
             IconIndex = 316;
             IconPath = @"%SystemRoot%\System32\shell32.dll";
             Tooltip = "Recent locations";
+            IsExpandabe = true; // indicates that this button shows a dropdown menu
         }
 
         public override void OnClick(ClickArgs args)
@@ -165,7 +167,10 @@ namespace Explobar
                     menuItem.Click += (s, e) =>
                     {
                         string newRoot = path;
-                        CustomButton.NavigateToPath(args.Context, newRoot);
+                        if (Directory.Exists(newRoot))
+                            CustomButton.NavigateToPath(args.Context, newRoot);
+                        else
+                            Runtime.ShowWarning("The selected item path is not a valid folder path.");
                     };
                     menu.Items.Add(menuItem);
                 }
@@ -181,6 +186,7 @@ namespace Explobar
             IconIndex = 137;
             IconPath = @"%SystemRoot%\System32\shell32.dll";
             Tooltip = "Application Launcher";
+            IsExpandabe = true; // indicates that this button shows a dropdown menu
         }
 
         public override void OnClick(ClickArgs args)
@@ -201,7 +207,7 @@ namespace Explobar
                         }
                         catch (Exception ex)
                         {
-                            MessageBox.Show("Failed to launch application.\n\n" + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            Runtime.ShowWarning("Failed to launch application.\n\n" + ex.Message);
                         }
                     };
                     menu.Items.Add(menuItem);
@@ -215,9 +221,12 @@ namespace Explobar
     {
         public FavoriteLocations()
         {
-            IconIndex = 43;
-            IconPath = @"%SystemRoot%\System32\shell32.dll";
+            IconIndex = 19;
+            IconPath = @"%SystemRoot%\System32\ieframe.dll";
+            // IconIndex = 43;
+            // IconPath = @"%SystemRoot%\System32\shell32.dll";
             Tooltip = "Favorite locations";
+            IsExpandabe = true; // indicates that this button shows a dropdown menu
         }
 
         public override void OnClick(ClickArgs args)
@@ -233,7 +242,11 @@ namespace Explobar
                     menuItem.Click += (s, e) =>
                     {
                         string newRoot = path;
-                        CustomButton.NavigateToPath(args.Context, newRoot);
+
+                        if (Directory.Exists(newRoot))
+                            CustomButton.NavigateToPath(args.Context, newRoot);
+                        else
+                            Runtime.ShowWarning("The selected item path is not a valid folder path.");
                     };
                     menu.Items.Add(menuItem);
                 }
@@ -382,7 +395,10 @@ namespace Explobar
                 else if (File.Exists(path))
                     newRoot = Path.GetDirectoryName(path);
 
-                CustomButton.NavigateToPath(args.Context, newRoot);
+                if (newRoot != null)
+                    CustomButton.NavigateToPath(args.Context, newRoot);
+                else
+                    Runtime.ShowWarning("The clipboard does not contain a valid file or folder path.");
             }
         }
 
