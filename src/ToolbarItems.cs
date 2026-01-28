@@ -29,7 +29,7 @@ namespace Explobar
     {
         public int ButtonSize { get; set; } = 24;
         public int HistorySize { get; set; } = 10;
-        // public int ImagePadding { get; set; } = 2;
+        public string ShortcutKey { get; set; } = "Shift+Escape";
     }
 
     static class ToolbarItems
@@ -111,13 +111,19 @@ namespace Explobar
                 Settings = new ToolbarSettings
                 {
                     ButtonSize = 24,
-                    HistorySize = 10
+                    HistorySize = 10,
+                    ShortcutKey = "Shift+Escape"
                 },
                 Favorites = new List<string>
                 {
-                    Environment.GetFolderPath(SpecialFolder.Desktop),
-                    Environment.GetFolderPath(SpecialFolder.MyDocuments),
-                    Environment.GetFolderPath(SpecialFolder.UserProfile)
+                    SpecialFolder.Desktop.GetPath(),
+                    SpecialFolder.MyDocuments.GetPath(),
+                    SpecialFolder.UserProfile.GetPath()
+                },
+                Applications = new List<string>
+                {
+                    "notepad.exe",
+                    "calc.exe"
                 },
                 Items = GetDefaultItems()
             };
@@ -129,15 +135,24 @@ namespace Explobar
                     .Build();
 
                 var yaml = serializer.Serialize(result);
+                yaml = yaml
+                    .Replace($"  Arguments: ''{NewLine}", "")
+                    .Replace($"  WorkingDir: ''{NewLine}", "")
+                    .Replace($"  Icon: ''{NewLine}", "")
+                    .Replace($"  Tooltip: ''{NewLine}", "");
 
                 // Add comments at the start of the file
                 var comments = new StringBuilder();
                 comments.AppendLine("# Explobar Toolbar Configuration");
-                comments.AppendLine("# This file defines the toolbar settings and items displayed when pressing Escape in Windows Explorer");
+                comments.AppendLine("# This file defines the toolbar settings and items displayed when pressing the configured shortcut in Windows Explorer");
                 comments.AppendLine("#");
                 comments.AppendLine("# Settings:");
                 comments.AppendLine("#   ButtonSize: Size of toolbar button icons in pixels (default: 24)");
                 comments.AppendLine("#   HistorySize: Maximum number of recently visited locations to remember (default: 10)");
+                comments.AppendLine("#   ShortcutKey: Keyboard key combination to trigger the toolbar (default: Shift+Escape)");
+                comments.AppendLine("#                Valid values: Escape, F1-F12, OemTilde, Shift+Escape, Ctrl+F1, Alt+F2, etc.");
+                comments.AppendLine("#                Supported modifiers: Shift, Ctrl, Alt (can be combined with +)");
+                comments.AppendLine("#                Examples: 'F1', 'Shift+F1', 'Ctrl+Alt+F12', 'OemTilde' (~)");
                 comments.AppendLine("#");
                 comments.AppendLine("# Favorites:");
                 comments.AppendLine("#   List of favorite folder paths that appear in the Favorites menu");
@@ -146,7 +161,26 @@ namespace Explobar
                 comments.AppendLine("#     - C:\\Projects");
                 comments.AppendLine("#     - %UserProfile%\\Downloads");
                 comments.AppendLine("#");
-                comments.AppendLine("# Each toolbar item has the following properties:");
+                comments.AppendLine("# Applications:");
+                comments.AppendLine("#   List of application paths that appear in the Applications menu");
+                comments.AppendLine("#   Example:");
+                comments.AppendLine("#     - C:\\Program Files\\Notepad++\\notepad++.exe");
+                comments.AppendLine("#     - %ProgramFiles%\\Git\\git-bash.exe");
+                comments.AppendLine("#");
+                comments.AppendLine("# Stock Toolbar Buttons (built-in functionality):");
+                comments.AppendLine("#   {new-tab}         - Opens a new Explorer tab");
+                comments.AppendLine("#   {new-file}        - Creates a new text file in the current directory");
+                comments.AppendLine("#   {new-folder}      - Creates a new folder in the current directory");
+                comments.AppendLine("#   {from-clipboard}  - Navigates to path from clipboard (Ctrl+click opens in new tab)");
+                comments.AppendLine("#   {recent}          - Shows dropdown menu of recently visited folders");
+                comments.AppendLine("#   {favorites}       - Shows dropdown menu of favorite folders (defined above)");
+                comments.AppendLine("#   {application}     - Shows dropdown menu of applications (defined above)");
+                comments.AppendLine("#   {props}           - Opens properties dialog for selected file/folder");
+                comments.AppendLine("#   {separator}       - Adds a visual separator between toolbar items");
+                comments.AppendLine("#   {app-config}      - Shows configuration menu (Edit Config, Icon Explorer, About)");
+                comments.AppendLine("#");
+                comments.AppendLine("# Custom Toolbar Items:");
+                comments.AppendLine("#   Each custom toolbar item has the following properties:");
                 comments.AppendLine("#   Icon: Path to icon file with optional index (e.g., 'shell32.dll,314' or 'notepad.exe')");
                 comments.AppendLine("#   Path: Executable or application to launch");
                 comments.AppendLine("#   Arguments: Command line arguments (supports placeholders)");
@@ -154,12 +188,15 @@ namespace Explobar
                 comments.AppendLine("#   Tooltip: Tooltip text shown on hover");
                 comments.AppendLine("#");
                 comments.AppendLine("# Available placeholders:");
-                comments.AppendLine("#   %f% - First selected file (unquoted)");
-                comments.AppendLine("#   %c% - Current directory (unquoted)");
-                comments.AppendLine("#   %<environment-variable>% - Application data folder");
+                comments.AppendLine("#   %f% - First selected file (quoted)");
+                comments.AppendLine("#   %c% - Current directory (quoted)");
+                comments.AppendLine("#   %<environment-variable>% - Any environment variable (e.g., %UserProfile%, %SystemRoot%)");
                 comments.AppendLine("#");
-                comments.AppendLine("# To add a separator between toolbar items, use:");
-                comments.AppendLine("#   Path: '{separator}'");
+                comments.AppendLine("# Example custom toolbar item:");
+                comments.AppendLine("#   - Icon: '%SystemRoot%\\System32\\shell32.dll,314'");
+                comments.AppendLine("#     Path: 'notepad.exe'");
+                comments.AppendLine("#     Arguments: '%f%'");
+                comments.AppendLine("#     Tooltip: 'Open in Notepad'");
                 comments.AppendLine("#================================");
                 comments.AppendLine();
 
@@ -181,7 +218,7 @@ namespace Explobar
             var items = new List<ToolbarItem>
             {
                 new ToolbarItem() { Path = "{new-tab}" },
-                new ToolbarItem() { Path = "{navigate-from-clipboard}" },
+                new ToolbarItem() { Path = "{from-clipboard}" },
                 new ToolbarItem() { Path = "{separator}" },
                 new ToolbarItem() { Path = "{new-file}" },
                 new ToolbarItem() { Path = "{new-folder}" },
@@ -214,12 +251,12 @@ namespace Explobar
 
     public class ToolbarItem
     {
-        public string Icon { get; set; } = "";
-        internal string IconPath => Icon.ParseIconPath().path.ResolvePath();
-        internal int IconIndex => Icon.ParseIconPath().index;
         public string Path { get; set; } = "";
         public string Arguments { get; set; } = "";
         public string WorkingDir { get; set; } = "";
+        public string Icon { get; set; } = "";
+        internal string IconPath => Icon.ParseIconPath().path.ResolvePath();
+        internal int IconIndex => Icon.ParseIconPath().index;
         public string Tooltip { get; set; } = "";
     }
 

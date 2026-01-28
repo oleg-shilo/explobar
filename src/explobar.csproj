@@ -64,6 +64,7 @@
     <Compile Include="ToolbarForm.cs" />
     <Compile Include="ToolbarItems.cs" />
     <Compile Include="UserInputListener.cs" />
+    <Compile Include="UserInputMonitor.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
