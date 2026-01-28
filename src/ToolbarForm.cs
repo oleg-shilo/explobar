@@ -248,7 +248,7 @@ namespace Explobar
             };
             toolbarPanel.Controls.Add(separator);
         }
-
+        public static Bitmap DefaultIcon => (Bitmap)@"%SystemRoot%\System32\imageres.dll".ExpandEnvars().ExtractIcon(231);
         void AddToolbarButton(ToolbarItem info)
         {
             Button button;
@@ -265,7 +265,7 @@ namespace Explobar
                 button = StockToolbarControls.Items[info.Path]();
                 customButton = (button as ICustomButton);
                 iconPath = info.IconPath.IfEmpty(customButton.IconPath.ExpandEnvars());
-                iconIndex = info.IconIndex == 0 ? customButton.IconIndex : 0;
+                iconIndex = info.IconPath.IsEmpty() ? customButton.IconIndex : info.IconIndex;
             }
             else
             {
@@ -326,6 +326,9 @@ namespace Explobar
                 originalIcon = Image.FromFile(iconPath);
             else
                 originalIcon = iconPath.ExtractIcon(iconIndex);
+
+            if (originalIcon == null)
+                originalIcon = DefaultIcon;
 
             using (originalIcon)
             {

@@ -32,7 +32,7 @@ namespace Explobar
     {
         public static Dictionary<string, Func<Button>> Items = new Dictionary<string, Func<Button>>
         {
-            { "{navigate-from-clipboard}", () => new NavigateFromClipboard() },
+            { "{from-clipboard}", () => new NavigateFromClipboard() },
             { "{new-file}", () => new NewFile() },
             { "{new-folder}", () => new NewFolder() },
             { "{new-tab}", () => new NewTab() },

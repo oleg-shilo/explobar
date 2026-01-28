@@ -14,7 +14,7 @@ using System.Windows.Forms;
 
 // TODO
 // settings:
-//     configure shortcut
+//     ✅ configure shortcut
 //     support shortcuts
 //
 // buttons:
@@ -42,7 +42,7 @@ namespace Explobar
 {
     internal class Program
     {
-        private static LowLevelKeyboardHook _keyboardHook;
+        private static UserInputMonitor _inputMonitor;
         private static bool _isProcessing = false;
 
         [STAThread]
@@ -51,10 +51,10 @@ namespace Explobar
             // Start monitoring Explorer windows for history
             ExplorerHistory.StartMonitoring();
 
-            // Set up keyboard hook
-            _keyboardHook = new LowLevelKeyboardHook();
-            _keyboardHook.OnKeyPressed += KeyboardHook_OnKeyPressed;
-            _keyboardHook.HookKeyboard();
+            // Set up input monitoring
+            _inputMonitor = new UserInputMonitor();
+            _inputMonitor.OnShortcutPressed += InputMonitor_OnShortcutPressed;
+            _inputMonitor.Start();
 
             Task.Run(() =>
             {
@@ -69,7 +69,7 @@ namespace Explobar
             Application.ApplicationExit += (s, e) =>
             {
                 ExplorerHistory.StopMonitoring();
-                _keyboardHook?.UnhookKeyboard();
+                _inputMonitor?.Stop();
             };
 
             ToolbarForm.Preheat();
@@ -78,53 +78,51 @@ namespace Explobar
             Application.Run();
         }
 
-        private static void KeyboardHook_OnKeyPressed(Keys key)
+        private static void InputMonitor_OnShortcutPressed(Keys key)
         {
-            // if (key == Keys.LShiftKey && !_isProcessing)
-            // if (key == Keys.Oemtilde && !_isProcessing)
-            if (key == Keys.Escape && !_isProcessing)
+            if (_isProcessing)
+                return;
+
+            _isProcessing = true;
+
+            Profiler.Start();
+            // Execute on a new STA thread to avoid COM issues
+            var thread = new Thread(() =>
             {
-                _isProcessing = true;
-
-                Profiler.Start();
-                // Execute on a new STA thread to avoid COM issues
-                var thread = new Thread(() =>
+                try
                 {
-                    try
+                    (var root, var selection, var window) = Explorer.GetSelection();
+                    Profiler.Log();
+
+                    if (root != null)
                     {
-                        (var root, var selection, var window) = Explorer.GetSelection();
-                        Profiler.Log();
+                        bool isToolbarHidden = (ToolbarForm.Instance?.IsInitializedButHidden() == true);
 
-                        if (root != null)
+                        if (isToolbarHidden)
                         {
-                            bool isToolbarHidden = (ToolbarForm.Instance?.IsInitializedButHidden() == true);
-
-                            if (isToolbarHidden)
-                            {
-                                // ShowToolbarForm will not block because we're unhiding an existing form (createNew: false)
-                                Action unhide = () => Desktop.ShowToolbarForm(root, selection, window, createNew: false);
-                                ToolbarForm.Instance.Invoke(unhide);
-                            }
-                            else
-                            {
-                                // ShowToolbarForm will block until the form is closed
-                                Desktop.ShowToolbarForm(root, selection, window, createNew: true);
-                            }
+                            // ShowToolbarForm will not block because we're unhiding an existing form (createNew: false)
+                            Action unhide = () => Desktop.ShowToolbarForm(root, selection, window, createNew: false);
+                            ToolbarForm.Instance.Invoke(unhide);
                         }
                         else
-                            Profiler.Reset();
+                        {
+                            // ShowToolbarForm will block until the form is closed
+                            Desktop.ShowToolbarForm(root, selection, window, createNew: true);
+                        }
                     }
-                    finally
-                    {
-                        _isProcessing = false;
-                    }
-                });
-                thread.SetApartmentState(ApartmentState.STA);
-                thread.Start();
-
-                if (ToolbarForm.HideOnClosing)
+                    else
+                        Profiler.Reset();
+                }
+                finally
+                {
                     _isProcessing = false;
-            }
+                }
+            });
+            thread.SetApartmentState(ApartmentState.STA);
+            thread.Start();
+
+            if (ToolbarForm.HideOnClosing)
+                _isProcessing = false;
         }
     }
 }
