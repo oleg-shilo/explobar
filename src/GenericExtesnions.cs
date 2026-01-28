@@ -158,6 +158,11 @@ namespace Explobar
 
     static class Profiler
     {
+        static void WriteLine(string message)
+        {
+            Console.WriteLine(message);
+        }
+
         static Stopwatch _sw = null;
         static Stopwatch sw
         {
@@ -167,7 +172,7 @@ namespace Explobar
                 {
                     _sw = Stopwatch.StartNew();
                     prevCall = 0;
-                    Console.WriteLine("> Profiler start");
+                    Profiler.WriteLine("> Profiler start");
                 }
                 return _sw;
             }
@@ -184,12 +189,13 @@ namespace Explobar
             Reset();
             var dummy = sw; // force creation of _sw
         }
-        public static void Call(string context = null, [CallerMemberName] string source = null)
+        public static void Log(string context = null, [CallerMemberName] string source = null)
         {
-            Console.WriteLine($"> {(context ?? "...")} ({source}): since-prev: {sw.ElapsedMilliseconds - prevCall}, since-start: {sw.ElapsedMilliseconds}");
+            Profiler.WriteLine($">   {source} ({(context ?? "...")}): since-prev: {sw.ElapsedMilliseconds - prevCall}, since-start: {sw.ElapsedMilliseconds}");
             prevCall = sw.ElapsedMilliseconds;
         }
     }
+
     static class Runtime
     {
         public static Action<string> ShowWarning = (message) => showMessage(message, MessageBoxIcon.Warning);

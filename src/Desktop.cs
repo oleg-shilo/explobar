@@ -38,7 +38,7 @@ namespace Explobar
 
             var form = createNew ?
                 ToolbarForm.Create() :
-                ToolbarForm.Instance ?? ToolbarForm.Create();
+                ToolbarForm.GetInstance() ?? ToolbarForm.Create();
 
             form.ExplorerContext.RootPath = root;
             form.ExplorerContext.SelectedItems = items;

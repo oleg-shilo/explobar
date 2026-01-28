@@ -64,17 +64,45 @@ namespace Explobar
         public static bool HideOnClosing = true;
         public static ToolbarForm Instance = null;
 
+        public static ToolbarForm GetInstance()
+        {
+            if (Instance != null && Instance.lastLoadedConfiguration == ToolbarItems.configFileTimestamp)
+                return Instance;
+            else
+                return null;
+        }
         public static void ResetInstance()
         {
             Instance?.Close();
             Instance?.Dispose();
             Instance = null;
         }
+        public static ToolbarForm Preheat()
+        {
+            // To avoid flickering, we create the next instance in advance and reuse it
+            Profiler.Log();
+            if (Instance == null || Instance.lastLoadedConfiguration != ToolbarItems.configFileTimestamp)
+                Instance = new ToolbarForm().Init();
+            return Instance;
+        }
+        public bool IsInitializedButHidden()
+        {
+            return ToolbarForm.HideOnClosing && !this.Visible && this.IsHandleCreated;
+        }
+
+
         public static ToolbarForm Create()
         {
             // To avoid flickering, we create the next instance in advance and reuse it
-            Profiler.Call();
-            return new ToolbarForm().Init();
+            Profiler.Log();
+
+            ToolbarForm result = null;
+            if (Instance != null && !Instance.IsHandleCreated)
+            {
+                Profiler.Log("using preheated");
+                result = GetInstance(); // there is a preheated instance that was not shown yet
+            }
+            return result ?? new ToolbarForm().Init();
         }
 
         System.Windows.Forms.Timer checkMouseTimer;
@@ -99,6 +127,7 @@ namespace Explobar
         int imagePadding => (int)(buttonSize * 0.1); // 10% padding
 
         ToolTip toolTip;
+        public DateTime lastLoadedConfiguration = DateTime.MinValue;
 
         public ToolbarForm Init()
         {
@@ -169,7 +198,8 @@ namespace Explobar
                 }
             };
 
-            Profiler.Call();
+            this.lastLoadedConfiguration = ToolbarItems.configFileTimestamp;
+            Profiler.Log();
             return this;
         }
 
@@ -202,7 +232,7 @@ namespace Explobar
                 }
             });
 
-            Profiler.Call();
+            Profiler.Log();
             return this;
         }
         int buttonSize => ToolbarItems.Settings.ButtonSize;

@@ -72,6 +72,8 @@ namespace Explobar
                 _keyboardHook?.UnhookKeyboard();
             };
 
+            ToolbarForm.Preheat();
+
             // Keep the application running
             Application.Run();
         }
@@ -91,11 +93,11 @@ namespace Explobar
                     try
                     {
                         (var root, var selection, var window) = Explorer.GetSelection();
-                        Profiler.Call();
+                        Profiler.Log();
 
                         if (root != null)
                         {
-                            bool isToolbarHidden = (ToolbarForm.HideOnClosing && ToolbarForm.Instance != null);
+                            bool isToolbarHidden = (ToolbarForm.Instance?.IsInitializedButHidden() == true);
 
                             if (isToolbarHidden)
                             {

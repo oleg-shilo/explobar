@@ -41,7 +41,7 @@ namespace Explobar
         public static List<string> Favorites => LoadConfig().Favorites;
         public static List<string> Applications => LoadConfig().Applications;
 
-        static DateTime configFileTimestamp = DateTime.MinValue;
+        public static DateTime configFileTimestamp = DateTime.MinValue;
         static ToolbarConfig currentConfig = null;
 
         public static bool IsConfigUpToDate
