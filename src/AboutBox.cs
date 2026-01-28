@@ -13,7 +13,7 @@ namespace Explobar
             InitializeComponent();
         }
 
-        private void InitializeComponent()
+        void InitializeComponent()
         {
             this.Text = "About Explobar";
             this.FormBorderStyle = FormBorderStyle.FixedDialog;

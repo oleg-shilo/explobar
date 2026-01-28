@@ -36,13 +36,13 @@ namespace TsudaKageyu
 {
     public static class IconUtil
     {
-        private delegate byte[] GetIconDataDelegate(Icon icon);
+        delegate byte[] GetIconDataDelegate(Icon icon);
 
         static GetIconDataDelegate getIconData;
 
         static IconUtil()
         {
-            // Create a dynamic method to access Icon.iconData private field.
+            // Create a dynamic method to access Icon.iconData field.
 
             var dm = new DynamicMethod(
                 "GetIconData", typeof(byte[]), new Type[] { typeof(Icon) }, typeof(Icon));
@@ -182,7 +182,7 @@ namespace TsudaKageyu
             throw new ArgumentException("The icon is corrupt. Couldn't read the header.", "icon");
         }
 
-        private static byte[] GetIconData(Icon icon)
+        static byte[] GetIconData(Icon icon)
         {
             var data = getIconData(icon);
             if (data != null)

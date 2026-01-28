@@ -42,19 +42,19 @@ namespace TsudaKageyu
 
         // Flags for LoadLibraryEx().
 
-        private const uint LOAD_LIBRARY_AS_DATAFILE = 0x00000002;
+        const uint LOAD_LIBRARY_AS_DATAFILE = 0x00000002;
 
         // Resource types for EnumResourceNames().
 
-        private readonly static IntPtr RT_ICON = (IntPtr)3;
-        private readonly static IntPtr RT_GROUP_ICON = (IntPtr)14;
+        readonly static IntPtr RT_ICON = (IntPtr)3;
+        readonly static IntPtr RT_GROUP_ICON = (IntPtr)14;
 
-        private const int MAX_PATH = 260;
+        const int MAX_PATH = 260;
 
         ////////////////////////////////////////////////////////////////////////
         // Fields
 
-        private byte[][] iconData = null;   // Binary data of each icon.
+        byte[][] iconData = null;   // Binary data of each icon.
 
         ////////////////////////////////////////////////////////////////////////
         // Public properties
@@ -65,7 +65,7 @@ namespace TsudaKageyu
         public string FileName
         {
             get;
-            private set;
+            set;
         }
 
         /// <summary>
@@ -135,7 +135,7 @@ namespace TsudaKageyu
             outputStream.Write(data, 0, data.Length);
         }
 
-        private void Initialize(string fileName)
+        void Initialize(string fileName)
         {
             if (fileName == null)
                 throw new ArgumentNullException("fileName");
@@ -216,7 +216,7 @@ namespace TsudaKageyu
             }
         }
 
-        private byte[] GetDataFromResource(IntPtr hModule, IntPtr type, IntPtr name)
+        byte[] GetDataFromResource(IntPtr hModule, IntPtr type, IntPtr name)
         {
             // Load the binary data from the specified resource.
 
@@ -242,7 +242,7 @@ namespace TsudaKageyu
             return buf;
         }
 
-        private string GetFileName(IntPtr hModule)
+        string GetFileName(IntPtr hModule)
         {
             // Alternative to GetModuleFileName() for the module loaded with
             // LOAD_LIBRARY_AS_DATAFILE option.

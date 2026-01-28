@@ -6,11 +6,11 @@ namespace Explobar
 {
     class UserInputMonitor
     {
-        private LowLevelKeyboardHook _keyboardHook;
-        private Keys _configuredKey = Keys.Escape;
-        private bool _requireShift = true;
-        private bool _requireCtrl = false;
-        private bool _requireAlt = false;
+        LowLevelKeyboardHook _keyboardHook;
+        Keys _configuredKey = Keys.Escape;
+        bool _requireShift = true;
+        bool _requireCtrl = false;
+        bool _requireAlt = false;
 
         public event Action<Keys> OnShortcutPressed;
 
@@ -31,7 +31,7 @@ namespace Explobar
             _keyboardHook = null;
         }
 
-        private void KeyboardHook_OnKeyPressed(Keys key)
+        void KeyboardHook_OnKeyPressed(Keys key)
         {
             // Reload configured key if config changed
             if (!ToolbarItems.IsConfigUpToDate)
@@ -45,7 +45,7 @@ namespace Explobar
             }
         }
 
-        private void ParseShortcutKey(string keyConfig)
+        void ParseShortcutKey(string keyConfig)
         {
             // Reset modifiers
             _requireShift = false;
@@ -113,7 +113,7 @@ namespace Explobar
             }
         }
 
-        private bool AreModifiersPressed()
+        bool AreModifiersPressed()
         {
             bool shiftPressed = (Desktop.GetAsyncKeyState(Desktop.VK_SHIFT) & 0x8000) != 0;
             bool ctrlPressed = (Desktop.GetAsyncKeyState(Desktop.VK_CONTROL) & 0x8000) != 0;
