@@ -1,11 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
+using static System.Environment;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Windows.Forms;
-using static System.Environment;
 
 namespace Explobar
 {
@@ -164,6 +165,7 @@ namespace Explobar
         }
 
         static Stopwatch _sw = null;
+
         static Stopwatch sw
         {
             get
@@ -179,6 +181,7 @@ namespace Explobar
         }
 
         static long prevCall = 0;
+
         public static void Reset()
         {
             _sw = null;
@@ -189,6 +192,7 @@ namespace Explobar
             Reset();
             var dummy = sw; // force creation of _sw
         }
+
         public static void Log(string context = null, [CallerMemberName] string source = null)
         {
             Profiler.WriteLine($">   {source} ({(context ?? "...")}): since-prev: {sw.ElapsedMilliseconds - prevCall}, since-start: {sw.ElapsedMilliseconds}");
@@ -202,14 +206,29 @@ namespace Explobar
         public static Action<string> ShowError = (message) => showMessage(message, MessageBoxIcon.Error);
         public static Action<string> Log = log;
 
+        static Icon _icon;
+
+        public static Icon AppIcon
+        {
+            get
+            {
+                if (_icon == null)
+                {
+                    var image = (Bitmap)System.Reflection.Assembly.GetExecutingAssembly().Location.ExtractIcon(0);
+                    _icon = Icon.FromHandle(image.GetHicon());
+                }
+                return _icon;
+            }
+        }
+
         static void showMessage(string message, MessageBoxIcon icon = MessageBoxIcon.None)
-            => MessageBox.Show(
-                   new Form
-                   {
-                       TopMost = true,
-                       StartPosition = FormStartPosition.CenterScreen
-                   },
-                   message, "Explobar", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        => MessageBox.Show(
+                                      new Form
+                                      {
+                                          TopMost = true,
+                                          StartPosition = FormStartPosition.CenterScreen
+                                      },
+                                      message, "Explobar", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 
         static void log(string message)
         {

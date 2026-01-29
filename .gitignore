@@ -58,3 +58,4 @@ nunit-*.xml
 *.7z
 /src/MigrationBackup/59c5cec2/explobar
 .veracode
+/src/logo

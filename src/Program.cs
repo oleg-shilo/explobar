@@ -18,7 +18,7 @@ using System.Windows.Forms;
 //
 // buttons:
 // ✅ create new file
-// ✅ create new folder`
+// ✅ create new folder
 // ✅ create new tab
 // ✅ show selected file properties
 // ✅ navigate from clipboard content
@@ -39,7 +39,7 @@ using System.Windows.Forms;
 // ✅ Profiler
 //     app icon
 //     taskbar icon for Icon Browser
-//     recent for Icon Browser
+// ✅  recent for Icon Browser
 
 namespace Explobar
 {
@@ -47,38 +47,72 @@ namespace Explobar
     {
         static UserInputMonitor _inputMonitor;
         static bool _isProcessing = false;
+        static Mutex _singleInstanceMutex;
 
         [STAThread]
         static void Main(string[] args)
         {
-            // Start monitoring Explorer windows for history
-            ExplorerHistory.StartMonitoring();
+            // Single instance check
+            bool createdNew;
+            _singleInstanceMutex = new Mutex(true, "Global\\Explobar_E8F4A3B2_SingleInstance", out createdNew);
 
-            // Set up input monitoring
-            _inputMonitor = new UserInputMonitor();
-            _inputMonitor.OnShortcutPressed += InputMonitor_OnShortcutPressed;
-            _inputMonitor.Start();
-
-            Task.Run(() =>
+            if (!createdNew)
             {
-                Console.ReadLine();
-                Application.Exit();
-            });
+                // Another instance is already running
+                MessageBox.Show("Explobar is already running.", "Explobar",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
 
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
-
-            // Handle application exit
-            Application.ApplicationExit += (s, e) =>
+            try
             {
-                ExplorerHistory.StopMonitoring();
-                _inputMonitor?.Stop();
-            };
+                // Start monitoring Explorer windows for history
+                ExplorerHistory.StartMonitoring();
 
-            ToolbarForm.Preheat();
+                // Set up input monitoring
+                _inputMonitor = new UserInputMonitor();
+                _inputMonitor.OnShortcutPressed += InputMonitor_OnShortcutPressed;
+                _inputMonitor.Start();
 
-            // Keep the application running
-            Application.Run();
+                // Task.Run(() =>
+                // {
+                //     Console.ReadLine();
+                //     Application.Exit();
+                // });
+
+                Application.EnableVisualStyles();
+                Application.SetCompatibleTextRenderingDefault(false);
+
+                // Handle application exit
+                Application.ApplicationExit += (s, e) =>
+                {
+                    ExplorerHistory.StopMonitoring();
+                    _inputMonitor?.Stop();
+
+                    // Release and dispose mutex
+                    try
+                    {
+                        _singleInstanceMutex?.ReleaseMutex();
+                    }
+                    catch { }
+                    _singleInstanceMutex?.Dispose();
+                };
+
+                ToolbarForm.Preheat();
+
+                // Keep the application running
+                Application.Run();
+            }
+            finally
+            {
+                // Ensure mutex is released on any exit path
+                try
+                {
+                    _singleInstanceMutex?.ReleaseMutex();
+                }
+                catch { }
+                _singleInstanceMutex?.Dispose();
+            }
         }
 
         static void InputMonitor_OnShortcutPressed(Keys key)

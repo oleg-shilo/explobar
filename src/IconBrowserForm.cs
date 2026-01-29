@@ -117,6 +117,7 @@ namespace Explobar
             this.AllowDrop = true;
             this.DragEnter += Form_DragEnter;
             this.DragDrop += Form_DragDrop;
+            this.Icon = Runtime.AppIcon;
 
             toolTip = new ToolTip();
 
