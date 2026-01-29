@@ -32,13 +32,13 @@ using System.Windows.Forms;
 //    ✅ about box
 //
 // misc:
-// ✅ Keep history of Icon explorer navigation
-//    Tray Icon support
-//    App Singleton
-// ✅ Button default icon
-// ✅ Profiler
-//     app icon
-//     taskbar icon for Icon Browser
+// ✅  Keep history of Icon explorer navigation
+// ✅  Tray Icon support
+// ✅  App Singleton
+// ✅  Button default icon
+// ✅  Profiler
+// ✅  app icon
+// ✅  taskbar icon for Icon Browser
 // ✅  recent for Icon Browser
 
 namespace Explobar
@@ -52,13 +52,11 @@ namespace Explobar
         [STAThread]
         static void Main(string[] args)
         {
-            // Single instance check
             bool createdNew;
-            _singleInstanceMutex = new Mutex(true, "Global\\Explobar_E8F4A3B2_SingleInstance", out createdNew);
+            _singleInstanceMutex = new Mutex(true, "Global\\Explobar_SingleInstance", out createdNew);
 
             if (!createdNew)
             {
-                // Another instance is already running
                 MessageBox.Show("Explobar is already running.", "Explobar",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
@@ -66,30 +64,23 @@ namespace Explobar
 
             try
             {
-                // Start monitoring Explorer windows for history
-                ExplorerHistory.StartMonitoring();
+                ExplorerHistory.StartMonitoring(); // for history
 
-                // Set up input monitoring
                 _inputMonitor = new UserInputMonitor();
                 _inputMonitor.OnShortcutPressed += InputMonitor_OnShortcutPressed;
                 _inputMonitor.Start();
 
-                // Task.Run(() =>
-                // {
-                //     Console.ReadLine();
-                //     Application.Exit();
-                // });
-
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
 
-                // Handle application exit
+                AppNotify.Setup();
+
                 Application.ApplicationExit += (s, e) =>
                 {
                     ExplorerHistory.StopMonitoring();
                     _inputMonitor?.Stop();
+                    AppNotify.Dispose();
 
-                    // Release and dispose mutex
                     try
                     {
                         _singleInstanceMutex?.ReleaseMutex();
@@ -100,12 +91,10 @@ namespace Explobar
 
                 ToolbarForm.Preheat();
 
-                // Keep the application running
                 Application.Run();
             }
             finally
             {
-                // Ensure mutex is released on any exit path
                 try
                 {
                     _singleInstanceMutex?.ReleaseMutex();
