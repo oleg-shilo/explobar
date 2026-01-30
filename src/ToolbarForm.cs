@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using static System.Collections.Specialized.BitVector32;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -208,20 +209,23 @@ namespace Explobar
 
             this.FormClosing += (s, e) =>
             {
-                if (HideOnClosing)
+                this.InUIThread(() =>
                 {
-                    Runtime.Log("Hiding toolbar instead of closing");
-                    e.Cancel = true;
-                    this.Hide();
-                }
-                else
-                {
-                    Runtime.Log("Disposing toolbar");
-                    checkMouseTimer?.Stop();
-                    checkMouseTimer?.Dispose();
-                    toolTip?.Dispose();
-                    Instance = null;
-                }
+                    if (HideOnClosing)
+                    {
+                        Runtime.Log("Hiding toolbar instead of closing");
+                        e.Cancel = true;
+                        this.Hide();
+                    }
+                    else
+                    {
+                        Runtime.Log("Disposing toolbar");
+                        checkMouseTimer?.Stop();
+                        checkMouseTimer?.Dispose();
+                        toolTip?.Dispose();
+                        Instance = null;
+                    }
+                });
             };
 
             this.lastLoadedConfiguration = ToolbarItems.configFileTimestamp;

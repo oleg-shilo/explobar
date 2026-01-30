@@ -132,6 +132,7 @@ namespace Explobar
                     IntPtr windowHandle = new IntPtr(tabObject.HWND);
 
                     bool hasMouseOver = windowHandle == rootWindowUnderMouse;
+                    bool hasFocus = windowHandle == foregroundWindow;
 
                     // Only process if the window has mouse over
                     if (!hasMouseOver)
