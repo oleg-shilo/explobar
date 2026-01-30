@@ -1,7 +1,6 @@
-﻿using Explobar;
-using Shell32;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using static System.Collections.Specialized.BitVector32;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -10,14 +9,18 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Explobar;
 using static Explobar.Desktop;
-using static System.Collections.Specialized.BitVector32;
+using Shell32;
 
 namespace Explobar
 {
     public class ExplorerContext
     {
-        public ExplorerContext() { }
+        public ExplorerContext()
+        {
+        }
+
         public ExplorerContext(string root, List<string> selection, dynamic window)
         {
             RootPath = root;
@@ -152,6 +155,16 @@ namespace Explobar
             this.AutoSize = true;
             this.AutoSizeMode = AutoSizeMode.GrowAndShrink;
 
+            // Handle Escape key to hide toolbar
+            this.KeyDown += (s, e) =>
+            {
+                if (e.KeyCode == Keys.Escape)
+                {
+                    HideToolbar();
+                    e.Handled = true;
+                }
+            };
+
             toolTip = new ToolTip
             {
                 AutoPopDelay = 5000,
@@ -196,20 +209,23 @@ namespace Explobar
 
             this.FormClosing += (s, e) =>
             {
-                if (HideOnClosing)
+                this.InUIThread(() =>
                 {
-                    Runtime.Log("Hiding toolbar instead of closing");
-                    e.Cancel = true;
-                    this.Hide();
-                }
-                else
-                {
-                    Runtime.Log("Disposing toolbar");
-                    checkMouseTimer?.Stop();
-                    checkMouseTimer?.Dispose();
-                    toolTip?.Dispose();
-                    Instance = null;
-                }
+                    if (HideOnClosing)
+                    {
+                        Runtime.Log("Hiding toolbar instead of closing");
+                        e.Cancel = true;
+                        this.Hide();
+                    }
+                    else
+                    {
+                        Runtime.Log("Disposing toolbar");
+                        checkMouseTimer?.Stop();
+                        checkMouseTimer?.Dispose();
+                        toolTip?.Dispose();
+                        Instance = null;
+                    }
+                });
             };
 
             this.lastLoadedConfiguration = ToolbarItems.configFileTimestamp;

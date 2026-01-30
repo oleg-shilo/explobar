@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace Explobar
@@ -117,6 +118,13 @@ namespace Explobar
                 LoadToolbarShortcuts();
             }
 
+            // If toolbar is visible and user presses Escape, hide it
+            if (key == Keys.Escape && ToolbarForm.Instance != null && ToolbarForm.Instance.Visible)
+            {
+                ToolbarForm.Instance.BeginInvoke((Action)(() => ToolbarForm.Instance.HideToolbar()));
+                return;
+            }
+
             // Check for main shortcut
             if (key == _configuredKey && AreModifiersPressed())
             {
@@ -168,12 +176,16 @@ namespace Explobar
                         var button = factory();
                         if (button is ICustomButton customButton)
                         {
+                            // Desktop.SetForegroundWindow(context.HWND);
+                            // Thread.Sleep(100);
                             customButton.OnClick(new ClickArgs { Context = context });
                         }
                     }
                 }
                 else
                 {
+                    // Desktop.SetForegroundWindow(context.HWND);
+                    // Thread.Sleep(100);
                     // Handle custom executables
                     item.Execute(context);
                 }

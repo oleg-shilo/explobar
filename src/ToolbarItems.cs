@@ -190,6 +190,7 @@ namespace Explobar
                 comments.AppendLine("#   Tooltip: Tooltip text shown on hover");
                 comments.AppendLine("#   Shortcut: Keyboard shortcut to trigger this item (e.g., 'Ctrl+N', 'Shift+F1')");
                 comments.AppendLine("#             Uses same format as ShortcutKey setting");
+                comments.AppendLine("#             Uses PowerToys if you need to solve conflicts with the Windows system shortcuts");
                 comments.AppendLine("#   Hidden: Set to true to hide button from toolbar (useful for shortcut-only items)");
                 comments.AppendLine("#           Default: false");
                 comments.AppendLine("#");
