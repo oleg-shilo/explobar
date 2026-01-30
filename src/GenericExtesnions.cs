@@ -28,6 +28,8 @@ namespace Explobar
         public static string Combine(this SpecialFolder folder, string path, params string[] paths)
             => Path.Combine(Environment.GetFolderPath(folder), path, Path.Combine(paths));
 
+        public static void InUIThread(this Control control, Action action) => control.Invoke(action);
+
         public static void Run(this ApartmentState state, Action action)
         {
             var thread = new Thread(() =>

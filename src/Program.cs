@@ -12,9 +12,10 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 
 // TODO
+//     Allow scripted buttons
 // settings:
 // ✅ configure shortcut
-//     support shortcuts
+// ✅ support shortcuts
 //
 // buttons:
 // ✅ create new file
@@ -37,7 +38,7 @@ using System.Windows.Forms;
 // ✅  App Singleton
 // ✅  Button default icon
 // ✅  Profiler
-//     Shortcut in tooltip
+// ✅  Shortcut in tooltip
 // ✅  app icon
 // ✅  taskbar icon for Icon Browser
 // ✅  recent for Icon Browser
@@ -53,12 +54,6 @@ namespace Explobar
         [STAThread]
         static void Main(string[] args)
         {
-            // var ttt = System.Reflection.Assembly.GetExecutingAssembly().Location.ExtractIcon(0, 256);
-
-            // Console.Error.WriteLine(ttt.Width);
-            // return;
-
-
             bool createdNew;
             _singleInstanceMutex = new Mutex(true, "Global\\Explobar_SingleInstance", out createdNew);
 
@@ -120,7 +115,7 @@ namespace Explobar
 
             Profiler.Start();
             // Execute on a new STA thread to avoid COM issues
-            var thread = new Thread(() =>
+            ApartmentState.STA.Run(() =>
             {
                 try
                 {
@@ -151,8 +146,6 @@ namespace Explobar
                     _isProcessing = false;
                 }
             });
-            thread.SetApartmentState(ApartmentState.STA);
-            thread.Start();
 
             if (ToolbarForm.HideOnClosing)
                 _isProcessing = false;
