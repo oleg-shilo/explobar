@@ -47,7 +47,11 @@ namespace Explobar
             contextMenu.Items.Add(new ToolStripSeparator());
 
             var exitItem = new ToolStripMenuItem("Exit");
-            exitItem.Click += (s, e) => Application.Exit();
+            exitItem.Click += (s, e) =>
+            {
+                ToolbarForm.HideOnClosing = false;
+                Application.Exit();
+            };
             contextMenu.Items.Add(exitItem);
 
             _trayIcon.ContextMenuStrip = contextMenu;

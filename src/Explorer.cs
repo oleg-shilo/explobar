@@ -17,6 +17,9 @@ namespace Explobar
         [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
         static extern bool SHObjectProperties(IntPtr hwnd, uint shopObjectType, [MarshalAs(UnmanagedType.LPWStr)] string pszObjectName, [MarshalAs(UnmanagedType.LPWStr)] string pszPropertyPage);
 
+        [DllImport("user32.dll")]
+        static extern IntPtr GetForegroundWindow();
+
         const uint SHOP_FILEPATH = 0x2;
 
         public static void ShowFileProperties(string path)
@@ -109,10 +112,12 @@ namespace Explobar
             Runtime.Log("GetSelection");
             try
             {
-                // Desktop.GetCursorPos(out Desktop.POINT cursorPos);
+                // Get the window under mouse
                 IntPtr windowUnderMouse = Desktop.WindowFromPoint(Cursor.Position);
-
                 IntPtr rootWindowUnderMouse = Desktop.GetAncestor(windowUnderMouse, Desktop.GA_ROOT);
+
+                // Get the foreground window (the one with focus)
+                IntPtr foregroundWindow = GetForegroundWindow();
 
                 var explorersTabs = new List<dynamic>();        // all tabs of all explorers
                 foreach (dynamic window in shell.Windows())     // need to use foreach since LINQ does not work with dynamic
@@ -120,15 +125,16 @@ namespace Explobar
 
                 foreach (dynamic tabObject in explorersTabs)
                 {
+                    if (!tabObject.FullName.EndsWith("explorer.exe", StringComparison.OrdinalIgnoreCase))
+                        continue;
+
                     // all tabs of a given explorer window share the same HWND but have different COM objects (tabObject)
                     IntPtr windowHandle = new IntPtr(tabObject.HWND);
 
                     bool hasMouseOver = windowHandle == rootWindowUnderMouse;
 
+                    // Only process if the window has mouse over
                     if (!hasMouseOver)
-                        continue;
-
-                    if (!tabObject.FullName.EndsWith("explorer.exe", StringComparison.OrdinalIgnoreCase))
                         continue;
 
                     if (tabObject.Document == null)
@@ -141,50 +147,9 @@ namespace Explobar
                     bool supportWin11Tabs = true;
                     if (thisExplorerTabs.Count > 1 && supportWin11Tabs)
                     {
-                        // At this point we have identified the target explorer tabObject.
-                        // The problem is that in Windows 11, if the explorer tabObject has multiple tabs,
-                        // the Document.Folder.Self.Path returns the path of the first tab, not the active tab.
-                        // Thus, we need to use UI Automation to find the active tab and get its path.
-                        // And then we need to find the tabObject that matches that path.
-
-                        // Use UI Automation returns tab name like "This PC" but the explorer window object has
-                        // it as "::{20D04FE0-3AEA-1069-A2D8-08002B30309D}"
-                        string activeTabPath = AutomationHelper.GetExplorerRoot(tabObject);
-                        activeTabPath = activeTabPath.GetSpecialFolderCLSID();
-
-                        // Controlled by the explorer has 'Display the full path n the title bar' enabled
-                        bool fullPathInTitleBar = Path.IsPathRooted(activeTabPath);
-
-                        List<dynamic> matchingTabs;
-
-                        if (fullPathInTitleBar)
-                            matchingTabs = thisExplorerTabs.Where(x => x.Document.Folder.Self.Path == activeTabPath).ToList();
-                        else
-                            matchingTabs = thisExplorerTabs.Where(x => x.Document.Folder.Self.Path.ToString().EndsWith(activeTabPath)).ToList();
-
-                        if (matchingTabs.Count > 1)
-                        {
-                            var i = 1;
-
-                            var errorMessage = $"Warning: Multiple matching tabs found for path '{activeTabPath}':\n\n" +
-                                string.Join("\n", matchingTabs.Select(x => $"{i++}: {(x.Document.Folder.Self.Path as string).GetSpecialFolderName()}".Trim())) + "\n\n" +
-                                "Due to the Windows Explorer API limitations it's impossible to detect which one is active.\n\n" +
-                                "You can minimize the chances of this error by enabling folder options 'Display the full path in the title bar'.\n\n" +
-                                "Please close duplicate tabs and try again.";
-                            Runtime.ShowWarning(errorMessage);
-
-                            break;
-                        }
-
-                        explorerWindow = matchingTabs.FirstOrDefault();
-
-                        if (explorerWindow == null) // we could not match (e.g. it was special folder)
-                        {
-                            var firstSpecialFolder = explorersTabs
-                                .FirstOrDefault(x => x.Document.Folder.Self.Path.ToString().StartsWith("::{"));
-
-                            explorerWindow = firstSpecialFolder;
-                        }
+                        explorerWindow = ResolveActiveTabInMultiTabWindow(tabObject, thisExplorerTabs, explorersTabs);
+                        if (explorerWindow == null)
+                            break; // Error was shown to user
                     }
                     else
                     {
@@ -215,6 +180,56 @@ namespace Explobar
             }
 
             return (root, selectedPaths, explorerWindow);
+        }
+
+        static dynamic ResolveActiveTabInMultiTabWindow(dynamic tabObject, List<dynamic> thisExplorerTabs, List<dynamic> explorersTabs)
+        {
+            // At this point we have identified the target explorer window.
+            // The problem is that in Windows 11, if the explorer window has multiple tabs,
+            // the Document.Folder.Self.Path returns the path of the first tab, not the active tab.
+            // Thus, we need to use UI Automation to find the active tab and get its path.
+            // And then we need to find the tab object that matches that path.
+
+            // Use UI Automation returns tab name like "This PC" but the explorer window object has
+            // it as "::{20D04FE0-3AEA-1069-A2D8-08002B30309D}"
+            string activeTabPath = AutomationHelper.GetExplorerRoot(tabObject);
+            activeTabPath = activeTabPath.GetSpecialFolderCLSID();
+
+            // Controlled by the explorer has 'Display the full path in the title bar' enabled
+            bool fullPathInTitleBar = Path.IsPathRooted(activeTabPath);
+
+            List<dynamic> matchingTabs;
+
+            if (fullPathInTitleBar)
+                matchingTabs = thisExplorerTabs.Where(x => x.Document.Folder.Self.Path == activeTabPath).ToList();
+            else
+                matchingTabs = thisExplorerTabs.Where(x => x.Document.Folder.Self.Path.ToString().EndsWith(activeTabPath)).ToList();
+
+            if (matchingTabs.Count > 1)
+            {
+                var i = 1;
+
+                var errorMessage = $"Warning: Multiple matching tabs found for path '{activeTabPath}':\n\n" +
+                    string.Join("\n", matchingTabs.Select(x => $"{i++}: {(x.Document.Folder.Self.Path as string).GetSpecialFolderName()}".Trim())) + "\n\n" +
+                    "Due to the Windows Explorer API limitations it's impossible to detect which one is active.\n\n" +
+                    "You can minimize the chances of this error by enabling folder options 'Display the full path in the title bar'.\n\n" +
+                    "Please close duplicate tabs and try again.";
+                Runtime.ShowWarning(errorMessage);
+
+                return null; // Signal error
+            }
+
+            dynamic explorerWindow = matchingTabs.FirstOrDefault();
+
+            if (explorerWindow == null) // we could not match (e.g. it was special folder)
+            {
+                var firstSpecialFolder = explorersTabs
+                    .FirstOrDefault(x => x.Document.Folder.Self.Path.ToString().StartsWith("::{"));
+
+                explorerWindow = firstSpecialFolder;
+            }
+
+            return explorerWindow;
         }
 
         public static void NavigateToPath(dynamic explorerWindow, string path)
