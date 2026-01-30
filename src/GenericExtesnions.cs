@@ -207,6 +207,7 @@ namespace Explobar
         public static Action<string> Log = log;
 
         static Icon _icon;
+        static Bitmap _logo;
 
         public static Icon AppIcon
         {
@@ -214,10 +215,22 @@ namespace Explobar
             {
                 if (_icon == null)
                 {
-                    var image = (Bitmap)System.Reflection.Assembly.GetExecutingAssembly().Location.ExtractIcon(0);
+                    var image = (Bitmap)System.Reflection.Assembly.GetExecutingAssembly().Location.ExtractIcon(0, 48);
                     _icon = Icon.FromHandle(image.GetHicon());
                 }
                 return _icon;
+            }
+        }
+
+        public static Bitmap AppLogo
+        {
+            get
+            {
+                if (_logo == null)
+                {
+                    _logo = (Bitmap)System.Reflection.Assembly.GetExecutingAssembly().Location.ExtractIcon(0, 256);
+                }
+                return _logo;
             }
         }
 
@@ -232,7 +245,7 @@ namespace Explobar
 
         static void log(string message)
         {
-            // Console.WriteLine("[Explobar] " + message);
+            Console.WriteLine("[Explobar] " + message);
         }
     }
 }

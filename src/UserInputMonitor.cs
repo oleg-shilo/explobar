@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
 
@@ -12,12 +13,18 @@ namespace Explobar
         bool _requireCtrl = false;
         bool _requireAlt = false;
 
+        // Toolbar item shortcuts
+        Dictionary<string, ToolbarItem> _shortcuts = new Dictionary<string, ToolbarItem>();
+
         public event Action<Keys> OnShortcutPressed;
 
         public void Start()
         {
             // Load configured shortcut key
             ParseShortcutKey(ToolbarItems.Settings.ShortcutKey);
+
+            // Load toolbar item shortcuts
+            LoadToolbarShortcuts();
 
             // Set up keyboard hook
             _keyboardHook = new LowLevelKeyboardHook();
@@ -31,17 +38,149 @@ namespace Explobar
             _keyboardHook = null;
         }
 
+        void LoadToolbarShortcuts()
+        {
+            _shortcuts.Clear();
+
+            foreach (var item in ToolbarItems.Items)
+            {
+                if (!string.IsNullOrWhiteSpace(item.Shortcut))
+                {
+                    var key = NormalizeShortcut(item.Shortcut);
+                    if (!_shortcuts.ContainsKey(key))
+                    {
+                        _shortcuts[key] = item;
+                        Runtime.Log($"Registered shortcut: {item.Shortcut} for {item.Path}");
+                    }
+                    else
+                    {
+                        Runtime.Log($"Warning: Duplicate shortcut '{item.Shortcut}' ignored for {item.Path}");
+                    }
+                }
+            }
+        }
+
+        string NormalizeShortcut(string shortcut)
+        {
+            // Parse and normalize the shortcut to a consistent format
+            var parts = shortcut.Split('+').Select(p => p.Trim()).ToArray();
+            var modifiers = new List<string>();
+            var mainKey = "";
+
+            foreach (var part in parts)
+            {
+                if (part.Equals("Shift", StringComparison.OrdinalIgnoreCase))
+                    modifiers.Add("Shift");
+                else if (part.Equals("Ctrl", StringComparison.OrdinalIgnoreCase) ||
+                         part.Equals("Control", StringComparison.OrdinalIgnoreCase))
+                    modifiers.Add("Ctrl");
+                else if (part.Equals("Alt", StringComparison.OrdinalIgnoreCase))
+                    modifiers.Add("Alt");
+                else
+                    mainKey = part;
+            }
+
+            // Sort modifiers for consistent key
+            modifiers.Sort();
+
+            if (modifiers.Count > 0)
+                return string.Join("+", modifiers) + "+" + mainKey;
+            else
+                return mainKey;
+        }
+
+        string GetCurrentShortcut(Keys key)
+        {
+            var modifiers = new List<string>();
+
+            if ((Desktop.GetAsyncKeyState(Desktop.VK_SHIFT) & 0x8000) != 0)
+                modifiers.Add("Shift");
+            if ((Desktop.GetAsyncKeyState(Desktop.VK_CONTROL) & 0x8000) != 0)
+                modifiers.Add("Ctrl");
+            if ((Desktop.GetAsyncKeyState(Desktop.VK_MENU) & 0x8000) != 0)
+                modifiers.Add("Alt");
+
+            modifiers.Sort();
+
+            if (modifiers.Count > 0)
+                return string.Join("+", modifiers) + "+" + key.ToString();
+            else
+                return key.ToString();
+        }
+
         void KeyboardHook_OnKeyPressed(Keys key)
         {
             // Reload configured key if config changed
             if (!ToolbarItems.IsConfigUpToDate)
             {
                 ParseShortcutKey(ToolbarItems.Settings.ShortcutKey);
+                LoadToolbarShortcuts();
             }
 
+            // Check for main shortcut
             if (key == _configuredKey && AreModifiersPressed())
             {
                 OnShortcutPressed?.Invoke(key);
+                return;
+            }
+
+            // Check for toolbar item shortcuts
+            var currentShortcut = GetCurrentShortcut(key);
+            // Runtime.Log($"Checking shortcut: {currentShortcut}");
+
+            if (_shortcuts.TryGetValue(currentShortcut, out ToolbarItem item))
+            {
+                Runtime.Log($"Shortcut triggered: {currentShortcut}");
+
+                // Get current explorer context
+                var thread = new System.Threading.Thread(() =>
+                {
+                    try
+                    {
+                        Profiler.Log($"Processing: {currentShortcut}");
+                        (var root, var selection, var window) = Explorer.GetSelection();
+                        if (root != null)
+                        {
+                            var context = new ExplorerContext(root, selection, window);
+                            ExecuteToolbarItem(item, context);
+                        }
+                        Profiler.Log($"Processed: {currentShortcut}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Runtime.Log($"Error executing shortcut: {ex.Message}");
+                    }
+                });
+                thread.SetApartmentState(System.Threading.ApartmentState.STA);
+                thread.Start();
+            }
+        }
+
+        void ExecuteToolbarItem(ToolbarItem item, ExplorerContext context)
+        {
+            try
+            {
+                // Handle stock buttons
+                if (item.Path.StartsWith("{") && item.Path.EndsWith("}"))
+                {
+                    if (StockToolbarControls.Items.TryGetValue(item.Path, out var factory))
+                    {
+                        var button = factory();
+                        if (button is ICustomButton customButton)
+                        {
+                            customButton.OnClick(new ClickArgs { Context = context });
+                        }
+                    }
+                }
+                else
+                {
+                    // Handle custom executables
+                    item.Execute(context);
+                }
+            }
+            catch (Exception ex)
+            {
+                Runtime.Log($"Error executing toolbar item: {ex.Message}");
             }
         }
 

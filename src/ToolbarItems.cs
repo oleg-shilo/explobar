@@ -139,6 +139,8 @@ namespace Explobar
                     .Replace($"  Arguments: ''{NewLine}", "")
                     .Replace($"  WorkingDir: ''{NewLine}", "")
                     .Replace($"  Icon: ''{NewLine}", "")
+                    .Replace($"  Shortcut: ''{NewLine}", "")
+                    .Replace($"  Hidden: false{NewLine}", "")
                     .Replace($"  Tooltip: ''{NewLine}", "");
 
                 // Add comments at the start of the file
@@ -186,6 +188,10 @@ namespace Explobar
                 comments.AppendLine("#   Arguments: Command line arguments (supports placeholders)");
                 comments.AppendLine("#   WorkingDir: Working directory for the application");
                 comments.AppendLine("#   Tooltip: Tooltip text shown on hover");
+                comments.AppendLine("#   Shortcut: Keyboard shortcut to trigger this item (e.g., 'Ctrl+N', 'Shift+F1')");
+                comments.AppendLine("#             Uses same format as ShortcutKey setting");
+                comments.AppendLine("#   Hidden: Set to true to hide button from toolbar (useful for shortcut-only items)");
+                comments.AppendLine("#           Default: false");
                 comments.AppendLine("#");
                 comments.AppendLine("# Available placeholders:");
                 comments.AppendLine("#   %f% - First selected file (quoted)");
@@ -197,6 +203,12 @@ namespace Explobar
                 comments.AppendLine("#     Path: 'notepad.exe'");
                 comments.AppendLine("#     Arguments: '%f%'");
                 comments.AppendLine("#     Tooltip: 'Open in Notepad'");
+                comments.AppendLine("#     Shortcut: 'Ctrl+N'");
+                comments.AppendLine("#");
+                comments.AppendLine("# Example shortcut-only item (no toolbar button):");
+                comments.AppendLine("#   - Path: 'calc.exe'");
+                comments.AppendLine("#     Shortcut: 'Ctrl+Alt+C'");
+                comments.AppendLine("#     Hidden: true");
                 comments.AppendLine("#================================");
                 comments.AppendLine();
 
@@ -240,7 +252,8 @@ namespace Explobar
                     Icon = @"%SystemRoot%\System32\shell32.dll,314",
                     Path = "notepad.exe",
                     Arguments = "%f%",
-                    Tooltip = "Open in notepad"
+                    Tooltip = "Open in notepad",
+                    Shortcut = "Ctrl+Alt+N"
                 },
                 new ToolbarItem() { Path = "{separator}" },
                 new ToolbarItem() { Path = "{app-config}" },
@@ -255,9 +268,12 @@ namespace Explobar
         public string Arguments { get; set; } = "";
         public string WorkingDir { get; set; } = "";
         public string Icon { get; set; } = "";
+        public string Tooltip { get; set; } = "";
+        public string Shortcut { get; set; } = "";
+        public bool Hidden { get; set; } = false;
+
         internal string IconPath => Icon.ParseIconPath().path.ResolvePath();
         internal int IconIndex => Icon.ParseIconPath().index;
-        public string Tooltip { get; set; } = "";
     }
 
     static class ToolbarExtesnions
@@ -272,6 +288,12 @@ namespace Explobar
                     return;
 
                 var firstItem = selectedItems.FirstOrDefault() ?? "";
+
+                if (info.Arguments.Contains("%f%") && firstItem.IsEmpty())
+                {
+                    Runtime.ShowWarning("Please select the item in the explorer view to be passed to the command.");
+                    return;
+                }
 
                 var args = info.Arguments?
                     .Replace("%f%", $"\"{firstItem}\"")
@@ -295,19 +317,42 @@ namespace Explobar
             }
         }
 
-        public static Image ExtractIcon(this string iconPath, int iconIndex)
+        public static Image ExtractIcon(this string iconPath, int iconIndex, int iconSize = 0)
         {
             try
             {
                 if (iconPath.IsEmpty())
                     return null;
 
-                using (var icon = new IconExtractor(iconPath).GetIcon(iconIndex))
-                {
-                    if (icon == null)
-                        return null;
+                var extractor = new IconExtractor(iconPath);
 
-                    // Convert icon to bitmap and return a copy
+                if (iconIndex >= extractor.Count)
+                    return null;
+
+                var icon = extractor.GetIcon(iconIndex);
+                if (icon == null)
+                    return null;
+
+                // If a specific size is requested, try to get that size
+                if (iconSize > 0)
+                {
+                    try
+                    {
+                        using (icon)
+                        using (var sizedIcon = new Icon(icon, iconSize, iconSize))
+                        {
+                            return new Bitmap(sizedIcon.ToBitmap());
+                        }
+                    }
+                    catch
+                    {
+                        // If the requested size is not available, fall through to default
+                    }
+                }
+
+                // Return the icon at its default size
+                using (icon)
+                {
                     return new Bitmap(icon.ToBitmap());
                 }
             }
@@ -360,12 +405,12 @@ namespace Explobar
             var searchLocations = new[]
             {
                 CurrentDirectory,
-                GetFolderPath(SpecialFolder.Windows),
-                GetFolderPath(SpecialFolder.System),
-                GetFolderPath(SpecialFolder.SystemX86),
-                GetFolderPath(SpecialFolder.ProgramFiles),
-                GetFolderPath(SpecialFolder.ProgramFilesX86),
-                Path.Combine(GetFolderPath(SpecialFolder.LocalApplicationData), "Microsoft", "WindowsApps")
+                SpecialFolder.Windows.GetPath(),
+                SpecialFolder.System.GetPath(),
+                SpecialFolder.SystemX86.GetPath(),
+                SpecialFolder.ProgramFiles.GetPath(),
+                SpecialFolder.ProgramFilesX86.GetPath(),
+                SpecialFolder.LocalApplicationData.Combine("Microsoft", "WindowsApps")
             };
 
             // Search in standard locations
