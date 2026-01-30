@@ -20,7 +20,7 @@ namespace Explobar
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.StartPosition = FormStartPosition.CenterScreen;
-            this.ClientSize = new Size(400, 200);
+            this.ClientSize = new Size(400, 240);
             this.BackColor = Color.White;
             this.Padding = new Padding(20);
             this.TopMost = true;
@@ -71,7 +71,7 @@ namespace Explobar
                     Font = new Font("Segoe UI", 8F),
                     ForeColor = Color.Gray,
                     AutoSize = true,
-                    Location = new Point(20, 125)
+                    Location = new Point(20, 135)
                 };
                 this.Controls.Add(lblCopyright);
             }
@@ -82,7 +82,7 @@ namespace Explobar
                 Text = "Visit GitHub Repository",
                 Font = new Font("Segoe UI", 9F),
                 AutoSize = true,
-                Location = new Point(20, 150)
+                Location = new Point(20, 165)
             };
             linkGitHub.LinkClicked += (s, e) =>
             {
@@ -97,13 +97,23 @@ namespace Explobar
             };
             this.Controls.Add(linkGitHub);
 
+            // App logo/icon (moved to right side, 128x128)
+            var picLogo = new PictureBox
+            {
+                Image = Runtime.AppLogo,
+                SizeMode = PictureBoxSizeMode.Zoom,
+                Size = new Size(128, 128),
+                Location = new Point(252, 20)
+            };
+            this.Controls.Add(picLogo);
+
             // OK button
             var btnOK = new Button
             {
                 Text = "OK",
                 DialogResult = DialogResult.OK,
                 Size = new Size(75, 30),
-                Location = new Point(305, 150),
+                Location = new Point(305, 195),
                 FlatStyle = FlatStyle.System
             };
             this.Controls.Add(btnOK);

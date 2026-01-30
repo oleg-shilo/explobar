@@ -116,6 +116,7 @@ namespace Explobar
             IconIndex = 314;
             IconPath = @"%SystemRoot%\System32\shell32.dll";
             Tooltip = "Application Configuration";
+            IsExpandabe = true;
         }
 
         public override void OnClick(ClickArgs args)

@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Explobar;
+using Shell32;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
@@ -8,14 +10,21 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Explobar;
 using static Explobar.Desktop;
-using Shell32;
+using static System.Collections.Specialized.BitVector32;
 
 namespace Explobar
 {
     public class ExplorerContext
     {
+        public ExplorerContext() { }
+        public ExplorerContext(string root, List<string> selection, dynamic window)
+        {
+            RootPath = root;
+            SelectedItems = selection;
+            Window = window;
+        }
+
         dynamic window;
 
         public dynamic Window
@@ -164,6 +173,9 @@ namespace Explobar
 
             foreach (var item in ToolbarItems.Items)
             {
+                if (item.Hidden)
+                    continue; // Skip hidden items - they're only accessible via shortcuts
+
                 if (item.Path == "{separator}")
                     AddToolbarGroupSeparator();
                 else
@@ -313,7 +325,11 @@ namespace Explobar
                 };
             }
 
-            toolTip.SetToolTip(button, info.Tooltip.IfEmpty(customButton?.Tooltip ?? info.Path.GetFileName()));
+            // Build tooltip text with shortcut if available
+            string tooltipText = info.Tooltip.IfEmpty(customButton?.Tooltip ?? info.Path.GetFileName());
+            if (info.Shortcut.HasText())
+                tooltipText += Environment.NewLine + "Shortcut: " + info.Shortcut;
+            toolTip.SetToolTip(button, tooltipText);
 
             customButton?.OnInit(info, this.ExplorerContext);
 

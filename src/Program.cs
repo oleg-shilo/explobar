@@ -37,6 +37,7 @@ using System.Windows.Forms;
 // ✅  App Singleton
 // ✅  Button default icon
 // ✅  Profiler
+//     Shortcut in tooltip
 // ✅  app icon
 // ✅  taskbar icon for Icon Browser
 // ✅  recent for Icon Browser
@@ -52,6 +53,12 @@ namespace Explobar
         [STAThread]
         static void Main(string[] args)
         {
+            // var ttt = System.Reflection.Assembly.GetExecutingAssembly().Location.ExtractIcon(0, 256);
+
+            // Console.Error.WriteLine(ttt.Width);
+            // return;
+
+
             bool createdNew;
             _singleInstanceMutex = new Mutex(true, "Global\\Explobar_SingleInstance", out createdNew);
 
