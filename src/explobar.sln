@@ -5,6 +5,8 @@ VisualStudioVersion = 18.2.11408.102
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "explobar", "explobar.csproj", "{B20BCA5C-B689-43EC-83D3-500946901A86}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CustomPlugins", "..\CustomPlugins\CustomPlugins.csproj", "{50A6334A-4D40-488F-AF78-ABDF02822A71}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{B20BCA5C-B689-43EC-83D3-500946901A86}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B20BCA5C-B689-43EC-83D3-500946901A86}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B20BCA5C-B689-43EC-83D3-500946901A86}.Release|Any CPU.Build.0 = Release|Any CPU
+		{50A6334A-4D40-488F-AF78-ABDF02822A71}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{50A6334A-4D40-488F-AF78-ABDF02822A71}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{50A6334A-4D40-488F-AF78-ABDF02822A71}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{50A6334A-4D40-488F-AF78-ABDF02822A71}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

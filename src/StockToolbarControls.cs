@@ -109,6 +109,24 @@ namespace Explobar
         }
     }
 
+    class MisconfiguredButton : CustomButton
+    {
+        string buttonPath;
+
+        public MisconfiguredButton(string buttonPath)
+        {
+            this.buttonPath = buttonPath;
+            IconIndex = 219;
+            IconPath = @"%SystemRoot%\System32\shell32.dll";
+            Tooltip = "Invalid custom button";
+        }
+
+        public override void OnClick(ClickArgs args)
+        {
+            Runtime.ShowWarning($"This custom button is misconfigured and cannot be used.\nButton path: {this.buttonPath}");
+        }
+    }
+
     class AppConfig : CustomButton
     {
         public AppConfig()

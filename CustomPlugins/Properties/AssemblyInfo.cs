@@ -5,12 +5,12 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("Explobar")]
+[assembly: AssemblyTitle("CustomPlugins")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Oleg Shilo")]
-[assembly: AssemblyProduct("Explobar")]
-[assembly: AssemblyCopyright("Copyright Oleg Shilo © 2026")]
+[assembly: AssemblyProduct("Explobar - CustomPlugins")]
+[assembly: AssemblyCopyright("Copyright © HP 2026")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("b20bca5c-b689-43ec-83d3-500946901a86")]
+[assembly: Guid("50a6334a-4d40-488f-af78-abdf02822a71")]
 
 // Version information for an assembly consists of the following four values:
 //
