@@ -44,7 +44,7 @@ namespace Explobar
         public IntPtr HWND => _HWND;
         public IntPtr _HWND;
         public string RootPath { get; set; }
-        public List<string> SelectedItems { get; set; }
+        public List<string> SelectedItems { get; set; } = new List<string>();
     }
 
     static class ExplorerContextExtensions

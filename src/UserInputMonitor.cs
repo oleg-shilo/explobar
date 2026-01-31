@@ -8,6 +8,17 @@ namespace Explobar
 {
     class UserInputMonitor
     {
+        static UserInputMonitor _inputMonitor;
+
+        public static void StartMonitor(Action<Keys> handler)
+        {
+            _inputMonitor = new UserInputMonitor();
+            _inputMonitor.OnShortcutPressed += handler;
+            _inputMonitor.Start();
+        }
+
+        public static void StopMonitor() => _inputMonitor?.Stop();
+
         LowLevelKeyboardHook _keyboardHook;
         Keys _configuredKey = Keys.Escape;
         bool _requireShift = true;
@@ -140,27 +151,47 @@ namespace Explobar
             {
                 Runtime.Log($"Shortcut triggered: {currentShortcut}");
 
-                // Get current explorer context
-                var thread = new System.Threading.Thread(() =>
+                // Execute on a separate thread
+                ApartmentState.STA.Run(() =>
                 {
                     try
                     {
                         Profiler.Log($"Processing: {currentShortcut}");
-                        (var root, var selection, var window) = Explorer.GetSelection();
-                        if (root != null)
+
+                        ExplorerContext context = null;
+
+                        // Only get Explorer context if not system-wide
+                        if (!item.SystemWide)
                         {
-                            var context = new ExplorerContext(root, selection, window);
-                            ExecuteToolbarItem(item, context);
+                            (var root, var selection, var window) = Explorer.GetSelection();
+                            if (root != null)
+                            {
+                                context = new ExplorerContext(root, selection, window);
+                            }
+                            else
+                            {
+                                Runtime.Log($"No Explorer window found for shortcut: {currentShortcut}");
+                                return;
+                            }
                         }
+                        else
+                        {
+                            // Create empty context for system-wide shortcuts
+                            context = new ExplorerContext();
+                        }
+
+                        ExecuteToolbarItem(item, context);
                         Profiler.Log($"Processed: {currentShortcut}");
                     }
                     catch (Exception ex)
                     {
                         Runtime.Log($"Error executing shortcut: {ex.Message}");
                     }
+                    finally
+                    {
+                        Profiler.Reset();
+                    }
                 });
-                thread.SetApartmentState(System.Threading.ApartmentState.STA);
-                thread.Start();
             }
         }
 

@@ -141,6 +141,7 @@ namespace Explobar
                     .Replace($"  Icon: ''{NewLine}", "")
                     .Replace($"  Shortcut: ''{NewLine}", "")
                     .Replace($"  Hidden: false{NewLine}", "")
+                    .Replace($"  SystemWide: false{NewLine}", "")
                     .Replace($"  Tooltip: ''{NewLine}", "");
 
                 // Add comments at the start of the file
@@ -193,6 +194,10 @@ namespace Explobar
                 comments.AppendLine("#             Use PowerToys if you need to resolve conflicts with the Windows system shortcuts");
                 comments.AppendLine("#   Hidden: Set to true to hide button from toolbar (useful for shortcut-only items)");
                 comments.AppendLine("#           Default: false");
+                comments.AppendLine("#   SystemWide: Set to true to make shortcut work system-wide (doesn't require Explorer focus)");
+                comments.AppendLine("#               When true, %c% and %f% placeholders will be empty");
+                comments.AppendLine("#               Useful for launching applications from anywhere");
+                comments.AppendLine("#               Default: false");
                 comments.AppendLine("#");
                 comments.AppendLine("# Available placeholders:");
                 comments.AppendLine("#   %f% - First selected file (quoted)");
@@ -272,6 +277,7 @@ namespace Explobar
         public string Tooltip { get; set; } = "";
         public string Shortcut { get; set; } = "";
         public bool Hidden { get; set; } = false;
+        public bool SystemWide { get; set; } = false;
 
         internal string IconPath => Icon.ParseIconPath().path.ResolvePath();
         internal int IconIndex => Icon.ParseIconPath().index;
@@ -288,7 +294,7 @@ namespace Explobar
                 if (info.Path.IsEmpty() || !File.Exists(info.Path))
                     return;
 
-                var firstItem = selectedItems.FirstOrDefault() ?? "";
+                var firstItem = selectedItems?.FirstOrDefault() ?? "";
 
                 if (info.Arguments.Contains("%f%") && firstItem.IsEmpty())
                 {
