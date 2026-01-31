@@ -310,7 +310,34 @@ namespace Explobar
                     Arguments = args,
                     WorkingDirectory = workDir
                 };
-                Process.Start(startInfo);
+
+                var process = Process.Start(startInfo);
+
+                // Set focus to the process window
+                if (process != null)
+                {
+                    Task.Run(() =>
+                    {
+                        try
+                        {
+                            // Wait for the process to create its main window (up to 2 seconds)
+                            if (process.WaitForInputIdle(2000))
+                            {
+                                // Give the window a moment to fully initialize
+                                Thread.Sleep(100);
+
+                                if (process.MainWindowHandle != IntPtr.Zero)
+                                {
+                                    Desktop.SetForegroundWindow(process.MainWindowHandle);
+                                }
+                            }
+                        }
+                        catch
+                        {
+                            // Ignore errors - some processes don't have a UI or can't be accessed
+                        }
+                    });
+                }
             }
             catch
             {
