@@ -45,65 +45,62 @@ using System.Windows.Forms;
 
 namespace Explobar
 {
+    static class SingleInstanceApp
+    {
+        static Mutex _singleInstanceMutex;
+
+        public static bool AnotherInstanceDetected()
+        {
+            bool createdNew;
+            _singleInstanceMutex = new Mutex(true, "Global\\Explobar_SingleInstance", out createdNew);
+            return !createdNew;
+        }
+
+        public static void Clear()
+        {
+            try
+            {
+                _singleInstanceMutex?.ReleaseMutex();
+            }
+            catch { }
+            _singleInstanceMutex?.Dispose();
+        }
+    }
+
     internal class Program
     {
-        static UserInputMonitor _inputMonitor;
         static bool _isProcessing = false;
-        static Mutex _singleInstanceMutex;
 
         [STAThread]
         static void Main(string[] args)
         {
-            bool createdNew;
-            _singleInstanceMutex = new Mutex(true, "Global\\Explobar_SingleInstance", out createdNew);
-
-            if (!createdNew)
+            if (SingleInstanceApp.AnotherInstanceDetected())
             {
-                MessageBox.Show("Explobar is already running.", "Explobar",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                Runtime.ShowError("Explobar is already running.");
                 return;
             }
 
-            try
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+
+            ExplorerHistory.StartMonitor();
+            UserInputMonitor.StartMonitor(InputMonitor_OnShortcutPressed);
+            AppNotify.Setup();
+
+            Application.ApplicationExit += (s, e) =>
             {
-                ExplorerHistory.StartMonitoring(); // for history
+                ExplorerHistory.StopMonitor();
+                UserInputMonitor.StopMonitor();
+                AppNotify.Dispose();
+                SingleInstanceApp.Clear();
+            };
 
-                _inputMonitor = new UserInputMonitor();
-                _inputMonitor.OnShortcutPressed += InputMonitor_OnShortcutPressed;
-                _inputMonitor.Start();
+            ToolbarForm.Preheat();
+            Profiler.Reset();
 
-                Application.EnableVisualStyles();
-                Application.SetCompatibleTextRenderingDefault(false);
+            Application.Run();
 
-                AppNotify.Setup();
-
-                Application.ApplicationExit += (s, e) =>
-                {
-                    ExplorerHistory.StopMonitoring();
-                    _inputMonitor?.Stop();
-                    AppNotify.Dispose();
-
-                    try
-                    {
-                        _singleInstanceMutex?.ReleaseMutex();
-                    }
-                    catch { }
-                    _singleInstanceMutex?.Dispose();
-                };
-
-                ToolbarForm.Preheat();
-
-                Application.Run();
-            }
-            finally
-            {
-                try
-                {
-                    _singleInstanceMutex?.ReleaseMutex();
-                }
-                catch { }
-                _singleInstanceMutex?.Dispose();
-            }
+            SingleInstanceApp.Clear();
         }
 
         static void InputMonitor_OnShortcutPressed(Keys key)
@@ -114,8 +111,8 @@ namespace Explobar
             _isProcessing = true;
 
             Profiler.Start();
-            // Execute on a new STA thread to avoid COM issues
-            ApartmentState.STA.Run(() =>
+
+            ApartmentState.STA.Run(() => // Execute on a new STA thread to avoid COM issues
             {
                 try
                 {

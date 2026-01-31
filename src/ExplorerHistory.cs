@@ -33,7 +33,7 @@ namespace Explobar
             }
         }
 
-        public static void StartMonitoring()
+        public static void StartMonitor()
         {
             if (_monitorThread != null)
                 return;
@@ -57,7 +57,7 @@ namespace Explobar
             Runtime.Log("Explorer history monitoring started");
         }
 
-        public static void StopMonitoring()
+        public static void StopMonitor()
         {
             _monitorThread.Abort();
             _monitorThread = null;
