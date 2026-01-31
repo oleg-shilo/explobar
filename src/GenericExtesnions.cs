@@ -18,6 +18,17 @@ namespace Explobar
 
         public static bool HasText(this string text) => !string.IsNullOrEmpty(text);
 
+        public static bool EndsWithEither(this string text, params string[] pattern)
+        {
+            foreach (var p in pattern)
+                if (p.HasText())
+                {
+                    if (text.EndsWith(p, StringComparison.OrdinalIgnoreCase))
+                        return true;
+                }
+            return false;
+        }
+
         public static string GetFileName(this string path) => Path.GetFileName(path);
 
         public static string GetPath(this SpecialFolder folder) => Environment.GetFolderPath(folder);

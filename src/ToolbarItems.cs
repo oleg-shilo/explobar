@@ -182,6 +182,25 @@ namespace Explobar
                 comments.AppendLine("#   {separator}       - Adds a visual separator between toolbar items");
                 comments.AppendLine("#   {app-config}      - Shows configuration menu (Edit Config, Icon Explorer, About)");
                 comments.AppendLine("#");
+                comments.AppendLine("# Plugin Buttons (custom .NET assemblies):");
+                comments.AppendLine("#   Path can point to a .dll file containing a class that:");
+                comments.AppendLine("#   - Implements ICustomButton interface");
+                comments.AppendLine("#   - Inherits from System.Windows.Forms.Button");
+                comments.AppendLine("#   ");
+                comments.AppendLine("#   Format: 'path\\to\\assembly.dll' or 'path\\to\\assembly.dll,ClassName'");
+                comments.AppendLine("#   ");
+                comments.AppendLine("#   If class name is not specified, the first matching type is loaded");
+                comments.AppendLine("#   If class name is specified, that specific class is loaded");
+                comments.AppendLine("#   ");
+                comments.AppendLine("#   Examples:");
+                comments.AppendLine("#     - Path: 'C:\\Plugins\\MyCustomButtons.dll'");
+                comments.AppendLine("#       Icon: 'shell32.dll,42'");
+                comments.AppendLine("#       Tooltip: 'First button in assembly'");
+                comments.AppendLine("#     ");
+                comments.AppendLine("#     - Path: 'C:\\Plugins\\MyCustomButtons.dll,FolderContentButton'");
+                comments.AppendLine("#       Icon: 'shell32.dll,43'");
+                comments.AppendLine("#       Tooltip: 'Specific button from assembly'");
+                comments.AppendLine("#");
                 comments.AppendLine("# Custom Toolbar Items:");
                 comments.AppendLine("#   Each custom toolbar item has the following properties:");
                 comments.AppendLine("#   Icon: Path to icon file with optional index (e.g., 'shell32.dll,314' or 'notepad.exe')");
@@ -481,4 +500,3 @@ namespace Explobar
             return path;
         }
     }
-}
