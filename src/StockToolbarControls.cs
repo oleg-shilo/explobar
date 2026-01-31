@@ -125,21 +125,27 @@ namespace Explobar
             {
                 var menu = new ContextMenuStrip();
 
-                var configMenuItem = new ToolStripMenuItem("Toolbar Items Configuration");
-                configMenuItem.Click += (s, e) => Process.Start("notepad.exe", ToolbarItems.ConfigPath);
-                configMenuItem.ToolTipText = "Configure toolbar buttons appearance and actions.";
-                menu.Items.Add(configMenuItem);
+                void addMenuItem(string text, string tooltip, Action onClick)
+                {
+                    var menuItem = new ToolStripMenuItem(text);
+                    menuItem.ToolTipText = tooltip;
+                    menuItem.Click += (s, e) => onClick();
+                    menu.Items.Add(menuItem);
+                }
 
-                var iconsMenuItem = new ToolStripMenuItem("Preview icons");
-                iconsMenuItem.ToolTipText = "Browse all icons from a given file.";
-                iconsMenuItem.Click += (s, e) => IconBrowser.Show();
-                menu.Items.Add(iconsMenuItem);
+                addMenuItem("Toolbar Items Configuration", "Configure toolbar buttons appearance and actions.",
+                            () => Process.Start("notepad.exe", ToolbarItems.ConfigPath));
+
+                addMenuItem("Preview icons", "Browse all icons from a given file.",
+                            IconBrowser.Show);
+
+                addMenuItem("Show/Hide Console", "Toggle visibility of the application console.",
+                            ConsoleManager.Toggle);
 
                 menu.Items.Add(new ToolStripSeparator());
 
-                var aboutMenuItem = new ToolStripMenuItem("About");
-                aboutMenuItem.Click += (s, e) => AboutBox.Show();
-                menu.Items.Add(aboutMenuItem);
+                addMenuItem("About", "",
+                            AboutBox.Show);
 
                 return menu;
             });

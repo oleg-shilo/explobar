@@ -250,4 +250,26 @@ namespace Explobar
             Console.WriteLine("[Explobar] " + message);
         }
     }
+
+    static class SingleInstanceApp
+    {
+        static Mutex _singleInstanceMutex;
+
+        public static bool AnotherInstanceDetected()
+        {
+            bool createdNew;
+            _singleInstanceMutex = new Mutex(true, "Global\\Explobar_SingleInstance", out createdNew);
+            return !createdNew;
+        }
+
+        public static void Clear()
+        {
+            try
+            {
+                _singleInstanceMutex?.ReleaseMutex();
+            }
+            catch { }
+            _singleInstanceMutex?.Dispose();
+        }
+    }
 }

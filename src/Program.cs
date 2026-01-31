@@ -45,35 +45,13 @@ using System.Windows.Forms;
 
 namespace Explobar
 {
-    static class SingleInstanceApp
-    {
-        static Mutex _singleInstanceMutex;
-
-        public static bool AnotherInstanceDetected()
-        {
-            bool createdNew;
-            _singleInstanceMutex = new Mutex(true, "Global\\Explobar_SingleInstance", out createdNew);
-            return !createdNew;
-        }
-
-        public static void Clear()
-        {
-            try
-            {
-                _singleInstanceMutex?.ReleaseMutex();
-            }
-            catch { }
-            _singleInstanceMutex?.Dispose();
-        }
-    }
-
     internal class Program
     {
-        static bool _isProcessing = false;
-
         [STAThread]
         static void Main(string[] args)
         {
+            ConsoleManager.AllocateHidden();
+
             if (SingleInstanceApp.AnotherInstanceDetected())
             {
                 Runtime.ShowError("Explobar is already running.");
@@ -83,8 +61,8 @@ namespace Explobar
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
+            UserInputMonitor.StartMonitor(OnShortcutPressed);
             ExplorerHistory.StartMonitor();
-            UserInputMonitor.StartMonitor(InputMonitor_OnShortcutPressed);
             AppNotify.Setup();
 
             Application.ApplicationExit += (s, e) =>
@@ -92,6 +70,7 @@ namespace Explobar
                 ExplorerHistory.StopMonitor();
                 UserInputMonitor.StopMonitor();
                 AppNotify.Dispose();
+                ConsoleManager.Hide();
                 SingleInstanceApp.Clear();
             };
 
@@ -103,7 +82,9 @@ namespace Explobar
             SingleInstanceApp.Clear();
         }
 
-        static void InputMonitor_OnShortcutPressed(Keys key)
+        static bool _isProcessing = false;
+
+        static void OnShortcutPressed(Keys key)
         {
             if (_isProcessing)
                 return;
