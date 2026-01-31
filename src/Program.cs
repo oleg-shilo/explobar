@@ -50,7 +50,9 @@ namespace Explobar
         [STAThread]
         static void Main(string[] args)
         {
-            ConsoleManager.AllocateHidden();
+            // ConsoleHelper.AttachConsole();
+
+            // Console.WriteLine("Hello from WinForms 👋");
 
             if (SingleInstanceApp.AnotherInstanceDetected())
             {
@@ -60,6 +62,11 @@ namespace Explobar
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+
+            ConsoleManager.AllocateHidden();
+
+            if (ToolbarItems.Settings.ShowConsoleAtStartup)
+                ConsoleManager.Show();
 
             UserInputMonitor.StartMonitor(OnShortcutPressed);
             ExplorerHistory.StartMonitor();

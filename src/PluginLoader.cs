@@ -8,17 +8,6 @@ namespace Explobar
 {
     static class PluginLoader
     {
-        public static Button LoadCustomButtonFromAssembly(string buttonFilePath)
-        {
-            var (assemblyPath, className) = PluginLoader.ParsePluginPath(buttonFilePath);
-            var result = (Button)PluginLoader.LoadCustomButton(assemblyPath, className);
-
-            if (result == null)
-                Runtime.Log($"Failed to load button: {buttonFilePath}");
-
-            return result;
-        }
-
         public static ICustomButton LoadCustomButton(string assemblyPath, string className = null)
         {
             try
@@ -32,73 +21,62 @@ namespace Explobar
                     return null;
                 }
 
-                // Check if it's a .NET assembly file name
-                if (!assemblyPath.EndsWithEither(".dll", ".exe"))
+                // Check if it's a .NET assembly
+                if (!assemblyPath.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
                 {
                     return null;
                 }
 
-                Runtime.Log($"Loading plugin from: {assemblyPath}" + (className != null ? $", class: {className}" : ""));
+                Runtime.Log($"Loading plugin from: {assemblyPath}" +
+                    (className != null ? $", class: {className}" : ""));
 
                 // Load the assembly
                 var assembly = Assembly.LoadFrom(assemblyPath);
 
                 // Find all types implementing ICustomButton
-                var buttonClasses = assembly.GetTypes()
+                var buttonTypes = assembly.GetTypes()
                     .Where(t => typeof(ICustomButton).IsAssignableFrom(t)
-                                && !t.IsInterface
-                                && !t.IsAbstract
-                                && typeof(Button).IsAssignableFrom(t))
+                           && !t.IsInterface
+                              && !t.IsAbstract
+                              && typeof(Button).IsAssignableFrom(t))
                     .ToList();
 
-                if (!buttonClasses.Any())
+                if (!buttonTypes.Any())
                 {
                     Runtime.Log($"No ICustomButton implementation found in: {assemblyPath}");
                     return null;
                 }
 
-                Type buttonClass;
+                Type buttonType;
 
                 // If class name is specified, find that specific type
-                if (className.HasText())
+                if (!string.IsNullOrWhiteSpace(className))
                 {
-                    buttonClass = buttonClasses.FirstOrDefault(t =>
+                    buttonType = buttonTypes.FirstOrDefault(t =>
                         t.Name.Equals(className, StringComparison.OrdinalIgnoreCase) ||
                         t.FullName.Equals(className, StringComparison.OrdinalIgnoreCase));
 
-                    if (buttonClass == null)
+                    if (buttonType == null)
                     {
-                        Runtime.Log($"Class '{className}' not found in {assemblyPath}. Available types: {string.Join(", ", buttonClasses.Select(t => t.Name))}");
+                        Runtime.Log($"Class '{className}' not found in {assemblyPath}. Available types: {string.Join(", ", buttonTypes.Select(t => t.Name))}");
                         return null;
                     }
                 }
                 else
                 {
                     // Use first type found
-                    buttonClass = buttonClasses[0];
+                    buttonType = buttonTypes[0];
 
-                    if (buttonClasses.Count > 1)
+                    if (buttonTypes.Count > 1)
                     {
-                        Runtime.Log($"Warning: Multiple ICustomButton implementations found in {assemblyPath}, using first one: {buttonClass.FullName}. Available: {string.Join(", ", buttonClasses.Select(t => t.Name))}");
+                        Runtime.Log($"Warning: Multiple ICustomButton implementations found in {assemblyPath}, using first one: {buttonType.FullName}. Available: {string.Join(", ", buttonTypes.Select(t => t.Name))}");
                     }
                 }
 
                 // Instantiate the type
-                var instance = Activator.CreateInstance(buttonClass);
+                var instance = Activator.CreateInstance(buttonType);
 
-                if (instance == null)
-                {
-                    Runtime.Log($"Failed to load plugin button from: {assemblyPath}");
-                    return null;
-                }
-
-                if (!(instance is Button))
-                {
-                    Runtime.Log($"Plugin does not inherit from Button: {assemblyPath}");
-                    return null;
-                }
-
-                Runtime.Log($"Successfully loaded plugin: {buttonClass.FullName}");
+                Runtime.Log($"Successfully loaded plugin: {buttonType.FullName}");
 
                 return instance as ICustomButton;
             }
@@ -113,6 +91,13 @@ namespace Explobar
         {
             if (string.IsNullOrWhiteSpace(path))
                 return (null, null);
+
+            // Remove curly brackets if present
+            path = path.Trim();
+            if (path.StartsWith("{") && path.EndsWith("}"))
+            {
+                path = path.Substring(1, path.Length - 2).Trim();
+            }
 
             // Check if path contains comma-separated class name
             var parts = path.Split(new[] { ',' }, 2);
@@ -130,12 +115,27 @@ namespace Explobar
             if (string.IsNullOrWhiteSpace(path))
                 return false;
 
+            // Must be enclosed in curly brackets
+            path = path.Trim();
+            if (!path.StartsWith("{") || !path.EndsWith("}"))
+                return false;
+
             // Parse to get assembly path (before comma)
             var (assemblyPath, _) = ParsePluginPath(path);
 
+            if (string.IsNullOrWhiteSpace(assemblyPath))
+                return false;
+
             var expanded = assemblyPath.ExpandEnvars().ResolvePath();
-            return expanded.EndsWithEither(".dll", ".exe")
+            return expanded.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)
                 && File.Exists(expanded);
+        }
+
+        public static Button LoadCustomButtonFromAssembly(string path)
+        {
+            var (assemblyPath, className) = ParsePluginPath(path);
+            var customButton = LoadCustomButton(assemblyPath, className);
+            return customButton as Button;
         }
     }
 }
