@@ -18,9 +18,12 @@ namespace Explobar
 
         public static bool HasText(this string text) => !string.IsNullOrEmpty(text);
 
-        public static bool EndsWithEither(this string text, params string[] pattern)
+        public static bool EndsWithEither(this string text, params string[] patterns)
         {
-            foreach (var p in pattern)
+            if (text.IsEmpty())
+                return false;
+
+            foreach (var p in patterns)
                 if (p.HasText())
                 {
                     if (text.EndsWith(p, StringComparison.OrdinalIgnoreCase))

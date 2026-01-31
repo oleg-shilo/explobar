@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Oleg Shilo")]
 [assembly: AssemblyProduct("Explobar - CustomPlugins")]
-[assembly: AssemblyCopyright("Copyright © HP 2026")]
+[assembly: AssemblyCopyright("Copyright © Oleg Shilo 2026")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

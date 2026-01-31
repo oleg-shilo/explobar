@@ -291,8 +291,8 @@ namespace Explobar
             string iconPath;
             int iconIndex;
 
-            bool isStockButton = info.Path.StartsWith("{") && StockToolbarControls.Items.ContainsKey(info.Path);
-            bool isPluginButton = PluginLoader.IsPluginAssembly(info.Path);
+            bool isStockButton = info.Path.StartsWith("{") && info.Path.EndsWith("}") && StockToolbarControls.Items.ContainsKey(info.Path);
+            bool isPluginButton = !isStockButton && PluginLoader.IsPluginAssembly(info.Path);
 
             if (isStockButton || isPluginButton) // both implement ICustomButton
             {

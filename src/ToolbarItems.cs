@@ -30,6 +30,7 @@ namespace Explobar
         public int ButtonSize { get; set; } = 24;
         public int HistorySize { get; set; } = 10;
         public string ShortcutKey { get; set; } = "Shift+Escape";
+        public bool ShowConsoleAtStartup { get; set; } = false;
     }
 
     static class ToolbarItems
@@ -156,6 +157,8 @@ namespace Explobar
                 comments.AppendLine("#                Valid values: Escape, F1-F12, OemTilde, Shift+Escape, Ctrl+F1, Alt+F2, etc.");
                 comments.AppendLine("#                Supported modifiers: Shift, Ctrl, Alt (can be combined with +)");
                 comments.AppendLine("#                Examples: 'F1', 'Shift+F1', 'Ctrl+Alt+F12', 'OemTilde' (~)");
+                comments.AppendLine("#   ShowConsoleAtStartup: Show debug console window on application startup (default: false)");
+                comments.AppendLine("#                         Console can be toggled later via tray icon or toolbar menu");
                 comments.AppendLine("#");
                 comments.AppendLine("# Favorites:");
                 comments.AppendLine("#   List of favorite folder paths that appear in the Favorites menu");
@@ -181,25 +184,6 @@ namespace Explobar
                 comments.AppendLine("#   {props}           - Opens properties dialog for selected file/folder");
                 comments.AppendLine("#   {separator}       - Adds a visual separator between toolbar items");
                 comments.AppendLine("#   {app-config}      - Shows configuration menu (Edit Config, Icon Explorer, About)");
-                comments.AppendLine("#");
-                comments.AppendLine("# Plugin Buttons (custom .NET assemblies):");
-                comments.AppendLine("#   Path can point to a .dll file containing a class that:");
-                comments.AppendLine("#   - Implements ICustomButton interface");
-                comments.AppendLine("#   - Inherits from System.Windows.Forms.Button");
-                comments.AppendLine("#   ");
-                comments.AppendLine("#   Format: 'path\\to\\assembly.dll' or 'path\\to\\assembly.dll,ClassName'");
-                comments.AppendLine("#   ");
-                comments.AppendLine("#   If class name is not specified, the first matching type is loaded");
-                comments.AppendLine("#   If class name is specified, that specific class is loaded");
-                comments.AppendLine("#   ");
-                comments.AppendLine("#   Examples:");
-                comments.AppendLine("#     - Path: 'C:\\Plugins\\MyCustomButtons.dll'");
-                comments.AppendLine("#       Icon: 'shell32.dll,42'");
-                comments.AppendLine("#       Tooltip: 'First button in assembly'");
-                comments.AppendLine("#     ");
-                comments.AppendLine("#     - Path: 'C:\\Plugins\\MyCustomButtons.dll,FolderContentButton'");
-                comments.AppendLine("#       Icon: 'shell32.dll,43'");
-                comments.AppendLine("#       Tooltip: 'Specific button from assembly'");
                 comments.AppendLine("#");
                 comments.AppendLine("# Custom Toolbar Items:");
                 comments.AppendLine("#   Each custom toolbar item has the following properties:");
@@ -234,6 +218,25 @@ namespace Explobar
                 comments.AppendLine("#   - Path: 'calc.exe'");
                 comments.AppendLine("#     Shortcut: 'Ctrl+Alt+C'");
                 comments.AppendLine("#     Hidden: true");
+                comments.AppendLine("#");
+                comments.AppendLine("# Plugin Buttons (custom .NET assemblies):");
+                comments.AppendLine("#   Path must be enclosed in curly brackets and point to a .dll file containing a class that:");
+                comments.AppendLine("#   - Implements ICustomButton interface");
+                comments.AppendLine("#   - Inherits from System.Windows.Forms.Button");
+                comments.AppendLine("#   ");
+                comments.AppendLine("#   Format: '{path\\to\\assembly.dll}' or '{path\\to\\assembly.dll,ClassName}'");
+                comments.AppendLine("#   ");
+                comments.AppendLine("#   If class name is not specified, the first matching type is loaded");
+                comments.AppendLine("#   If class name is specified, that specific class is loaded");
+                comments.AppendLine("#   ");
+                comments.AppendLine("#   Examples:");
+                comments.AppendLine("#     - Path: '{C:\\Plugins\\MyCustomButtons.dll}'");
+                comments.AppendLine("#     ");
+                comments.AppendLine("#     - Path: '{C:\\Plugins\\MyCustomButtons.dll,FolderContentButton}'");
+                comments.AppendLine("#       Icon: 'shell32.dll,43'");
+                comments.AppendLine("#       Tooltip: 'Specific button from assembly'");
+                comments.AppendLine("#     ");
+                comments.AppendLine("#");
                 comments.AppendLine("#================================");
                 comments.AppendLine();
 
@@ -500,3 +503,4 @@ namespace Explobar
             return path;
         }
     }
+}

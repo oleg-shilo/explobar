@@ -51,8 +51,6 @@ namespace Explobar
 
         public static void Allocate()
         {
-            // ConsoleHelper.AttachConsole();
-            // return;
             // Try to attach to an existing console (e.g., if launched from CMD)
             if (!AttachConsole(ATTACH_PARENT_PROCESS))
             {
