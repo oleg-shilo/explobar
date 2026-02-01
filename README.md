@@ -6,31 +6,37 @@ A keyboard-driven toolbar extension for Windows Explorer that eliminates the fri
 
 Windows Explorer offers virtually no customization beyond appearance. When you need to open a terminal, launch an editor, or run a script on files you're viewing, you face constant friction: copying paths, switching windows, typing commands, or navigating through nested context menus. Every action requires multiple intermediate steps that break your flow.
 
+While brilliant tools like QTTabBar have extended Windows functionality dramatically, they have become increasingly fragile due to being tightly coupled with Explorer internals. Microsoft's dramatic changes to these internals in Windows 11 have rendered QTTabBar (and similar tools) unreliable. Thus in some cases QTTabBar is unable to even start.
+
 ## The Solution
 
-Explobar provides immediate access to your productivity tools right where you work—in Explorer. Press a keyboard shortcut, and a toolbar appears at your cursor with instant access to any command, application, or custom action. No copying paths. No switching windows. No mouse hunting. Just navigation → selection → action.
+Explobar provides immediate access to your productivity tools right where you work - in Explorer. Press a keyboard shortcut, and a toolbar appears at your cursor with instant access to any command, application, or custom action. No copying paths. No switching windows. No mouse hunting. Just navigation → selection → action.
 
 ## Key Principles
 
 **Zero Friction UX**
+
 - Tools appear instantly where your focus is
 - Selected files and current folder are automatically available
 - Single keypress or click executes any action
 - No intermediate steps between thought and execution
 
 **Customization for Everyone**
+
 - **Simple:** Edit a YAML file to add buttons and shortcuts
 - **Powerful:** Write .NET plugins for complex workflows
 - Both approaches work together seamlessly
 
 **Safe & Reliable**
-- Runs in its own process—Explorer crashes won't affect it, and it won't crash Explorer
+
+- Runs in its own process - Explorer crashes won't affect it, and it won't crash Explorer
 - No external dependencies except Explorer itself
 - No services, no elevated privileges required
-- Works entirely through standard COM automation
+- Works entirely through standard Windows automation
 
 **Zero-Friction Deployment**
-- Just an executable and yamldotnet.dll
+
+- Just an executable and `YamlDotNet.dll`
 - Run it once, configure once, forget it
 - WinGet and Chocolatey packages coming soon
 
@@ -69,16 +75,23 @@ Configuration file: `%LocalAppData%\Explobar\toolbar-items.yaml`
 
 ### Minimal Example
 
-Settings: ButtonSize: 24 ShortcutKey: 'Shift+Escape'
+```yaml
+Settings: 
+  ButtonSize: 24 
+  ShortcutKey: Shift+Escape
 Items:
-•	Path: '{new-file}'           # Built-in: create text file
-•	Path: '{new-folder}'         # Built-in: create folder
-•	Path: '{separator}'          # Visual separator
-•	Path: 'notepad.exe'          # Custom: launch notepad Arguments: '%f%'             # Pass selected file Tooltip: 'Edit in Notepad'
+ - Path: '{new-file}'           # Built-in: create text file
+ - Path: '{new-folder}'         # Built-in: create folder
+ - Path: '{separator}'          # Visual separator
+ - Path: 'notepad.exe'          # Custom: launch notepad 
+   Arguments: '%f%'             # Pass selected file 
+   Tooltip: 'Edit in Notepad'
+```
 
 ### Configuration Elements
 
 **Settings:**
+
 - `ButtonSize` - Icon size in pixels
 - `ShortcutKey` - Keyboard shortcut to show toolbar
 - `HistorySize` - Number of recent folders to remember
@@ -119,7 +132,8 @@ Items:
   Tooltip: 'Windows Terminal' 
   Shortcut: 'Ctrl+Alt+T'
 ```
-### Example: Hidden Shortcut-Only Command
+
+### Example: Hidden, Shortcut-Only Command
 
 ```yaml
 Items:
@@ -129,7 +143,7 @@ Items:
   Hidden: true          # No toolbar button, keyboard-only
 ```
 
-For complete configuration reference, see [CUSTOMIZATION.md](CUSTOMIZATION.md).
+For complete configuration reference, see [customization.md](customization.md).
 
 ## Plugin Development
 
@@ -168,32 +182,35 @@ public class FolderLister : CustomButton
 
 ```yaml
 Items:
--	Path: '{C:\Plugins\MyPlugin.dll,FolderLister}' 
-    Tooltip: 'List folder contents' # if you want to override
+ - Path: '{C:\Plugins\MyPlugin.dll,FolderLister}' 
+   Tooltip: 'List folder contents' # if you want to override
 ```
 
-For complete plugin development guide, see [CUSTOMIZATION.md](CUSTOMIZATION.md).
+For complete plugin development guide, see [customization.md](customization.md).
 
 ## Troubleshooting
 
 **Toolbar doesn't appear**
+
 - Ensure Explorer window has focus
 - Check shortcut key isn't conflicting with other applications
 - Verify mouse cursor is over Explorer window
 
 **Configuration changes not applying**
+
 - Check YAML syntax (use online validator)
 - Review console for errors: Set `ShowConsoleAtStartup: true`
 - Restart Explobar if necessary
 
 **Plugin not loading**
+
 - Verify path uses curly brackets: `{path\to\plugin.dll}`
 - Check plugin targets .NET Framework 4.7.2
 - Enable console to see detailed error messages
 
 ## Architecture Highlights
 
-- **Separate Process:** Explobar runs independently—no risk to Explorer stability
+- **Separate Process:** Explobar runs independently - no risk to Explorer stability
 - **COM Automation:** Safe, documented API for Explorer interaction
 - **Low-Level Keyboard Hook:** System-wide shortcut monitoring
 - **Dynamic Plugin Loading:** Reflection-based assembly loading at runtime
@@ -202,6 +219,7 @@ For complete plugin development guide, see [CUSTOMIZATION.md](CUSTOMIZATION.md).
 ## System Tray
 
 Right-click tray icon for quick access:
+
 - Icon Browser
 - Edit Configuration
 - Toggle Console
@@ -212,13 +230,13 @@ Right-click tray icon for quick access:
 
 - **GitHub:** https://github.com/oleg-shilo/explobar
 - **Issues:** https://github.com/oleg-shilo/explobar/issues
-- **Documentation:** [CUSTOMIZATION.md](CUSTOMIZATION.md)
+- **Documentation:** [customization.md](customization.md)
 
 ## Credits
 
 - **Author:** Oleg Shilo
 - **YAML Parser:** [YamlDotNet](https://github.com/aaubry/YamlDotNet)
-- **Icon Extraction:** [IconLib](https://www.codeproject.com/Articles/16178/IconLib-Icons-Unfolded-MultiIcon-and-Windows-Vista)
+- **Icon Extraction:** [IconExtractor](https://github.com/TsudaKageyu/IconExtractor)
 
 ---
 
