@@ -12,7 +12,8 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 
 // TODO
-//     Allow scripted buttons
+//    Allow scripted buttons
+//    Allow auto-startup with Windows
 // settings:
 // ✅ configure shortcut
 // ✅ support shortcuts
