@@ -160,12 +160,17 @@ namespace Explobar
                 addMenuItem("Show/Hide Console", "Toggle visibility of the application console.",
                             ConsoleManager.Toggle);
 
-                addMenuItem("Restart Explorer", "Restart Window Expolorer",
+                addMenuItem("Restart Explorer", "Restart Windows Explorer",
                             () =>
                             {
                                 var processes = Process.GetProcessesByName("explorer");
                                 foreach (var process in processes)
-                                    try { process.Kill(); } catch { }
+                                    try
+                                    {
+                                        process.Kill();
+                                        process.WaitForExit(200);
+                                    }
+                                    catch { /* ignored, we did what we could */ }
                                 Process.Start("explorer.exe", $"{args.Context.RootPath}");
                             });
 
