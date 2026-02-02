@@ -216,8 +216,9 @@ namespace Explobar
         }
     }
 
-    static class Runtime
+    public static class Runtime
     {
+        public static Action<string> ShowInfo = (message) => showMessage(message, MessageBoxIcon.Information);
         public static Action<string> ShowWarning = (message) => showMessage(message, MessageBoxIcon.Warning);
         public static Action<string> ShowError = (message) => showMessage(message, MessageBoxIcon.Error);
         public static Action<string> Log = log;
@@ -261,7 +262,7 @@ namespace Explobar
 
         static void log(string message)
         {
-            Console.WriteLine("[Explobar] " + message);
+            Console.WriteLine(message);
         }
     }
 
