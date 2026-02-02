@@ -223,7 +223,7 @@ Use the built-in Icon Browser to find icon indices:
 - Right-click tray icon → Icon Browser
 - Or: Toolbar → `{app-config}` → Preview icons
 
-![alt text](image.png)
+<img width="785" height="593" alt="image" src="https://github.com/user-attachments/assets/1b024caa-0a26-442d-9976-412c586060c6" />
 
 ### Path Resolution
 
