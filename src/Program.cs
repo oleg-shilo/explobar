@@ -53,10 +53,6 @@ namespace Explobar
         [STAThread]
         static void Main(string[] args)
         {
-            // ConsoleHelper.AttachConsole();
-
-            // Console.WriteLine("Hello from WinForms 👋");
-
             if (SingleInstanceApp.AnotherInstanceDetected())
             {
                 Runtime.ShowError("Explobar is already running.");
