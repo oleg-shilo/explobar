@@ -14,6 +14,8 @@ using System.Windows.Forms;
 // TODO
 //    Allow scripted buttons
 //    Allow auto-startup with Windows
+//    Allow specifying the default button under cursor on popup
+//    Allow keyboard navigation in the toolbar
 // settings:
 // ✅ configure shortcut
 // ✅ support shortcuts
