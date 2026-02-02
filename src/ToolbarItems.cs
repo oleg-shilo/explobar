@@ -124,7 +124,9 @@ namespace Explobar
                 Applications = new List<string>
                 {
                     "notepad.exe",
-                    "calc.exe"
+                    "calc.exe",
+                    "wt.exe|-d %c%",  // Terminal in current directory
+                    "powershell.exe|-NoExit|%c%"  // PowerShell with working dir set to current
                 },
                 Items = GetDefaultItems()
             };
@@ -169,9 +171,18 @@ namespace Explobar
                 comments.AppendLine("#");
                 comments.AppendLine("# Applications:");
                 comments.AppendLine("#   List of application paths that appear in the Applications menu");
+                comments.AppendLine("#   Format: 'path' or 'path|arguments' or 'path|arguments|workingdir'");
+                comments.AppendLine("#   Arguments support placeholders: %f% (selected file), %c% (current directory)");
+                comments.AppendLine("#   WorkingDir defaults to executable's directory if not specified");
+                comments.AppendLine("#   WorkingDir supports placeholder: %c% (current directory in Explorer)");
                 comments.AppendLine("#   Example:");
-                comments.AppendLine("#     - C:\\Program Files\\Notepad++\\notepad++.exe");
-                comments.AppendLine("#     - %ProgramFiles%\\Git\\git-bash.exe");
+                comments.AppendLine("#     - notepad.exe");
+                comments.AppendLine("#     - notepad.exe|%f%");
+                comments.AppendLine("#     - wt.exe|-d %c%");
+                comments.AppendLine("#     - powershell.exe|-NoExit||%c%");
+                comments.AppendLine("#     - C:\\Program Files\\Notepad++\\notepad++.exe|%f%");
+                comments.AppendLine("#     - python.exe|script.py|C:\\Scripts");
+                comments.AppendLine("#     - %ProgramFiles%\\Git\\git-bash.exe||%c%");
                 comments.AppendLine("#");
                 comments.AppendLine("# Stock Toolbar Buttons (built-in functionality):");
                 comments.AppendLine("#   {new-tab}         - Opens a new Explorer tab");

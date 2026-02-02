@@ -223,15 +223,17 @@ namespace Explobar
             {
                 var menu = new ContextMenuStrip();
 
-                foreach (string path in ToolbarItems.Applications)
+                foreach (string appDef in ToolbarItems.Applications)
                 {
+                    var (path, arguments, workingDir) = ParseApplicationDefinition(appDef);
+
                     var menuItem = new ToolStripMenuItem(Path.GetFileName(path));
-                    menuItem.ToolTipText = path;
+                    menuItem.ToolTipText = appDef;
                     menuItem.Click += (s, e) =>
                     {
                         try
                         {
-                            Process.Start(path);
+                            LaunchApplication(path, arguments, workingDir, args.Context);
                         }
                         catch (Exception ex)
                         {
@@ -244,6 +246,87 @@ namespace Explobar
                 }
                 return menu;
             });
+        }
+
+        (string path, string arguments, string workingDir) ParseApplicationDefinition(string appDef)
+        {
+            var parts = appDef.Split(new[] { '|' }, 3);
+
+            if (parts.Length == 3)
+                return (parts[0].Trim(), parts[1].Trim(), parts[2].Trim());
+
+            if (parts.Length == 2)
+                return (parts[0].Trim(), parts[1].Trim(), "");
+
+            return (appDef.Trim(), "", "");
+        }
+
+        void LaunchApplication(string path, string arguments, string workingDir, ExplorerContext context)
+        {
+            // Expand environment variables in path
+            path = Environment.ExpandEnvironmentVariables(path);
+
+            // Replace placeholders in arguments
+            if (!string.IsNullOrEmpty(arguments))
+            {
+                var firstItem = context.SelectedItems?.FirstOrDefault() ?? "";
+                var currDir = context.RootPath ?? Environment.CurrentDirectory;
+
+                arguments = arguments
+                    .Replace("%f%", $"\"{firstItem}\"")
+                    .Replace("%c%", $"\"{currDir}\"");
+
+                arguments = Environment.ExpandEnvironmentVariables(arguments);
+            }
+
+            // Determine working directory
+            string effectiveWorkingDir;
+            if (!string.IsNullOrWhiteSpace(workingDir))
+            {
+                // Use specified working directory with placeholder replacement
+                var currDir = context.RootPath ?? Environment.CurrentDirectory;
+                effectiveWorkingDir = workingDir
+                    .Replace("%c%", currDir);
+                effectiveWorkingDir = Environment.ExpandEnvironmentVariables(effectiveWorkingDir);
+            }
+            else
+            {
+                // Default to directory where executable is located
+                effectiveWorkingDir = Path.GetDirectoryName(path);
+            }
+
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = path,
+                Arguments = arguments,
+                UseShellExecute = true,
+                WorkingDirectory = effectiveWorkingDir
+            };
+
+            var process = Process.Start(startInfo);
+
+            // Set focus to the process window
+            if (process != null)
+            {
+                Task.Run(() =>
+                {
+                    try
+                    {
+                        if (process.WaitForInputIdle(2000))
+                        {
+                            Thread.Sleep(100);
+                            if (process.MainWindowHandle != IntPtr.Zero)
+                            {
+                                Desktop.SetForegroundWindow(process.MainWindowHandle);
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        // Ignore errors
+                    }
+                });
+            }
         }
     }
 
