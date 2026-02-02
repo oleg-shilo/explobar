@@ -43,6 +43,6 @@ public class FolderContentButton : CustomButton
 
         Clipboard.SetText(folderContent.ToString());
 
-        MessageBox.Show("Clipboard is updated with the names of the folder content.");
+        Runtime.ShowInfo("Clipboard is updated with the names of the folder content.");
     }
 }
