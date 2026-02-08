@@ -17,9 +17,6 @@ namespace Explobar
         [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
         static extern bool SHObjectProperties(IntPtr hwnd, uint shopObjectType, [MarshalAs(UnmanagedType.LPWStr)] string pszObjectName, [MarshalAs(UnmanagedType.LPWStr)] string pszPropertyPage);
 
-        [DllImport("user32.dll")]
-        static extern IntPtr GetForegroundWindow();
-
         const uint SHOP_FILEPATH = 0x2;
 
         public static void ShowFileProperties(string path)
@@ -117,7 +114,7 @@ namespace Explobar
                 IntPtr rootWindowUnderMouse = Desktop.GetAncestor(windowUnderMouse, Desktop.GA_ROOT);
 
                 // Get the foreground window (the one with focus)
-                IntPtr foregroundWindow = GetForegroundWindow();
+                IntPtr foregroundWindow = Desktop.GetForegroundWindow();
 
                 var explorersTabs = new List<dynamic>();        // all tabs of all explorers
                 foreach (dynamic window in shell.Windows())     // need to use foreach since LINQ does not work with dynamic
@@ -237,7 +234,27 @@ namespace Explobar
         {
             try
             {
-                explorerWindow.Navigate2(path);
+                // Explorer injects this preffix for long paths, but it does not work with Navigate2 method, so we need to remove it.
+                var navigatePath = path.Replace("\\\\?\\", "");
+
+                // explorerWindow.Navigate2 does not work with paths containing # character,
+                // it seems to be a bug in explorer. So we need use CLI interface instead.
+                if (path.Contains("#"))
+                {
+                    // IE: D:\dev\support\wixsharp_#1887\WixSharp Setup1\WixSharp Setup1
+                    Runtime.Log($"Path contains #, encoding as: {navigatePath}");
+                    try
+                    {
+                        System.Diagnostics.Process.Start("explorer.exe", $"\"{path}\"");
+                        return;
+                    }
+                    catch (Exception ex)
+                    {
+                        Runtime.Log($"Explorer.exe failed: {ex.Message}");
+                    }
+                }
+                else
+                    explorerWindow.Navigate2(navigatePath);
             }
             catch (Exception ex)
             {
