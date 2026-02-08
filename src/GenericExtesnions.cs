@@ -252,13 +252,28 @@ namespace Explobar
         }
 
         static void showMessage(string message, MessageBoxIcon icon = MessageBoxIcon.None)
-                        => MessageBox.Show(
-                                      new Form
-                                      {
-                                          TopMost = true,
-                                          StartPosition = FormStartPosition.CenterScreen
-                                      },
-                                      message, "Explobar", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        {
+            // Create a hidden topmost owner form
+            using (var topMostForm = new Form())
+            {
+                topMostForm.TopMost = true;
+                topMostForm.StartPosition = FormStartPosition.Manual;
+                topMostForm.Location = new Point(-32000, -32000); // Far off-screen
+                topMostForm.Size = new Size(1, 1);
+                topMostForm.ShowInTaskbar = false;
+                topMostForm.FormBorderStyle = FormBorderStyle.None;
+                topMostForm.Opacity = 0; // Make it invisible
+                topMostForm.Show();
+
+                MessageBox.Show(
+                    topMostForm,
+                    message,
+                    "Explobar",
+                    MessageBoxButtons.OK,
+                    icon
+                               );
+            }
+        }
 
         static void log(string message)
         {

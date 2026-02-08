@@ -92,10 +92,10 @@ Items:
 
 **Settings:**
 
-- `ButtonSize` - Icon size in pixels
-- `ShortcutKey` - Keyboard shortcut to show toolbar
-- `HistorySize` - Number of recent folders to remember
-- `ShowConsoleAtStartup` - Show debug console (for troubleshooting)
+- `ButtonSize` - Icon size in pixels (default: 24)
+- `ShortcutKey` - Keyboard shortcut to show toolbar (default: Shift+Escape)
+- `HistorySize` - Number of recent folders to remember (default: 10)
+- `ShowConsoleAtStartup` - Show debug console on startup (default: false)
 
 **Items:** Toolbar buttons (stock or custom)
 
@@ -182,9 +182,12 @@ public class FolderLister : CustomButton
 
 ```yaml
 Items:
- - Path: '{C:\Plugins\MyPlugin.dll,FolderLister}' 
-   Tooltip: 'List folder contents' # if you want to override
+  # Plugin paths MUST be enclosed in curly brackets
+  - Path: '{C:\Plugins\MyPlugin.dll,FolderLister}'
+    Tooltip: 'List folder contents'
 ```
+
+**Important:** Plugin paths must be enclosed in curly brackets `{}` to distinguish them from regular executables.
 
 For complete plugin development guide, see [customization.md](customization.md).
 
@@ -193,7 +196,7 @@ For complete plugin development guide, see [customization.md](customization.md).
 **Toolbar doesn't appear**
 
 - Ensure Explorer window has focus
-- Check shortcut key isn't conflicting with other applications
+- Check shortcut key isn't conflicting with other applications. Use PowerToys to resolve any shortkey conflicts. 
 - Verify mouse cursor is over Explorer window
 
 **Configuration changes not applying**
@@ -226,6 +229,61 @@ Right-click tray icon for quick access:
 - About
 - Exit
 
+## Limitations and Constraints
+
+### Platform Requirements
+
+Will arguebly work with all Windows but some features (e.g. NewTab) are specifically targeting Windows 10/11 only.
+
+### Windows 11 Multi-Tab Detection
+
+When an Explorer window contains multiple tabs open to folders with same names, it's impossible to reliably detect which tab is active due to Windows Explorer API limitations.
+
+*Impact:* Will show a message box asking to close the duplicated tabs.
+
+*Workaround:* Enable "Display the full path in the title bar" in Folder Options to improve tab detection reliability, or close duplicate/similarly-named tabs
+
+### Path Navigation Constraints
+
+**Hash (#) Character:**
+
+- Explorer's COM API (`Navigate2`) fails with paths containing `#`
+- Explobar automatically falls back to `explorer.exe`, which opens the path in a new window instead of navigating the current tab.
+
+### Activation Requirements
+
+- Explorer window must have mouse cursor over it to activate toolbar
+- Explorer window must have focus for context detection
+- Toolbar appears at cursor position, so cursor must be within Explorer bounds
+
+### Single Instance
+
+- Only one instance of Explobar can run at a time
+- Attempting to launch a second instance shows a warning message
+- Allows configuration to be managed in one place but prevents multi-profile setups
+
+### Keyboard Shortcuts
+
+- Uses low-level keyboard hook for global shortcut monitoring
+- Potential conflicts with other applications using the same shortcuts
+- System-wide shortcuts (`SystemWide: true`) always active, even when Explorer doesn't have focus
+- No support for shortcut combinations with more than one modifier + key (e.g., `Ctrl+Shift+Alt+Key` not supported)
+
+### Configuration
+
+- YAML syntax errors prevent configuration from loading (falls back to default config)
+- Configuration changes apply when toolbar is next shown (not instantly for currently visible toolbar)
+- No built-in YAML validation - must use external tools to validate syntax
+- Duplicate shortcuts silently ignored (first one wins, others logged to console)
+
+### Plugin System
+
+- Plugin paths **must** be enclosed in curly brackets: `{path\to\plugin.dll}`
+- Plugins must inherit from `CustomButton` and implement `ICustomButton`
+- Plugin assemblies are loaded via reflection and cannot be unloaded without restarting Explobar
+- COM object separation errors possible when plugins interact with stale Explorer window references
+- No hot-reload support - configuration changes require showing toolbar again
+
 ## Links
 
 - **GitHub:** https://github.com/oleg-shilo/explobar
@@ -241,3 +299,5 @@ Right-click tray icon for quick access:
 ---
 
 **Explobar** - Friction-free productivity for Windows Explorer
+
+**Note:** The application is configured as a Windows Application. Console window is hidden by default but can be toggled via system tray menu or `ShowConsoleAtStartup` setting for debugging.

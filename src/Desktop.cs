@@ -145,6 +145,9 @@ namespace Explobar
             SendKeys.Flush();
         }
 
+        [DllImport("user32.dll")]
+        public static extern IntPtr GetForegroundWindow();
+
         [StructLayout(LayoutKind.Sequential)]
         struct INPUT
         {

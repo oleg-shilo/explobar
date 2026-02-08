@@ -45,7 +45,8 @@ using System.Windows.Forms;
 // ✅  app icon
 // ✅  taskbar icon for Icon Browser
 // ✅  recent for Icon Browser
-
+// make navigation warning more user friendly (e.g. "The folder you are trying to navigate to does not exist. Do you want to remove it from the history?")
+// and chaed; do not show the warning if it is still being doisplayed
 namespace Explobar
 {
     internal class Program

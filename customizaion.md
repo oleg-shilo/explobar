@@ -101,14 +101,17 @@ Settings: ShowConsoleAtStartup: false   # Default: false
 ```
 
 Set to `true` for troubleshooting. Console shows:
-
 - Configuration loading messages
 - Button click events
 - Plugin loading status
+- Path navigation attempts and fallbacks
 - Error details
 
-Console can also be toggled via system tray menu or `{app-config}` button.
+Console can also be toggled at runtime via:
+- System tray menu → "Show/Hide Console"
+- Toolbar → `{app-config}` → "Show/Hide Console"
 
+**Note:** When running as Windows Application, console output is only visible when the console window is shown.
 ---
 
 ## Stock Toolbar Buttons
@@ -271,20 +274,57 @@ Favorites:
 
 Applications that appear in the `{application}` dropdown menu.
 
+**Format:** `path` or `path|arguments` or `path|arguments|workingdir`
+
 ```yaml
 Applications:
 - notepad.exe
-- calc.exe
-- C:\Program Files\Notepad++\notepad++.exe
-- %ProgramFiles%\Git\git-bash.exe
+- notepad.exe|%f%
+- wt.exe|-d %c%
+- powershell.exe|-NoExit||%c%
+- python.exe|script.py|C:\Scripts
+- %ProgramFiles%\Git\git-bash.exe||%c%
 ```
 
 **Features:**
 
 - Click to launch
-- Tooltip shows full path
+- Tooltip shows full definition
 - Same path resolution as custom commands
+- Arguments support same placeholders as toolbar items (`%f%`, `%c%`, environment variables)
+- Working directory can be set to current Explorer folder using `%c%`
 - Non-existent files are skipped
+
+**Examples:**
+
+#### Applications:
+
+Simple launch
+- notepad.exe
+
+Open selected file
+- notepad.exe|%f%
+
+Terminal in current directory
+- wt.exe|-d %c%
+ 
+PowerShell with working directory set to current folder (empty arguments)
+- powershell.exe|-NoExit||%c%
+ 
+Python script with specific working directory
+- python.exe|script.py|C:\Scripts
+
+VS Code: open current folder
+- code.exe|.|%c%
+
+Command prompt in current folder
+- cmd.exe|/K||%c%
+
+
+**Special Cases:**
+- `app||workdir` - Empty arguments but custom working directory
+- `app|args|` - Custom arguments but default working directory (executable's folder)
+
 
 ---
 
@@ -400,6 +440,19 @@ History file: `%LocalAppData%\Explobar\explorer-history.txt`
 
 Access via `{recent}` button.
 
+### Path Navigation Limitations
+
+**Hash (#) Character:**
+Explorer's COM API (`Navigate2`) has issues with paths containing the `#` character. Explobar detects this automatically and uses `explorer.exe` as a fallback, which may open the path in a new window instead of navigating the current tab.
+
+**Workaround:**
+- Avoid `#` in folder names when possible
+- Path navigation will still work but may not preserve current tab and will open in another Explorer window.
+- Short path (8.3 format) is attempted first if available
+
+**Other special characters:**
+Most other characters work fine with `Navigate2`. If you encounter issues with other characters (`?`, `&`), they will be handled similarly.
+
 ---
 
 ## Plugin Development
@@ -450,6 +503,8 @@ public class HelloButton : CustomButton
 
 ### Configuration
 
+**Important:** Plugin paths MUST be enclosed in curly brackets `{}`.
+
 Load first `ICustomButton` found in DLL
 
 ```yaml
@@ -462,6 +517,16 @@ Load specific class
 - Path: '{C:\Plugins\MyPlugin.dll,HelloButton}' 
   Tooltip: 'Say hello'
 ```
+
+**Format:** `{path\to\assembly.dll}` or `{path\to\assembly.dll,ClassName}`
+
+- Without class name: Loads first `ICustomButton` implementation found
+- With class name: Loads specified class (case-insensitive match on Name or FullName)
+- Curly brackets are required to distinguish plugins from regular executables
+- Supports relative paths: `{..\CustomPlugins\bin\Debug\CustomPlugins.dll,MyButton}`
+- Environment variables supported: `{%LocalAppData%\Explobar\Plugins\tools.dll,Tool1}`
+
+If plugin fails to load, a "misconfigured button" placeholder appears with error details.
 
 **Note:** Plugin paths must be enclosed in curly brackets `{}`.
 
@@ -763,8 +828,8 @@ Items:
 **Load specific class:**
 
 ```yaml
-- Path: '{C:\Plugins\MyTools.dll,FolderLister}' 
-  Tooltip: 'List folder contents'
+- Path: '{C:\Plugins\MyTools.dll,HelloButton}' 
+  Tooltip: 'Say hello'
 ```
 
 **Multiple classes from same DLL:**
