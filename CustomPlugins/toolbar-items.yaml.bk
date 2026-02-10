@@ -1,0 +1,195 @@
+# Explobar Toolbar Configuration
+# This file defines the toolbar settings and items displayed when pressing the configured shortcut in Windows Explorer
+#
+# Settings:
+#   ButtonSize: Size of toolbar button icons in pixels (default: 24)
+#   HistorySize: Maximum number of recently visited locations to remember (default: 10)
+#   ShortcutKey: Keyboard key combination to trigger the toolbar (default: Shift+Escape)
+#                Valid values: Escape, F1-F12, OemTilde, Shift+Escape, Ctrl+F1, Alt+F2, etc.
+#                Supported modifiers: Shift, Ctrl, Alt (can be combined with +)
+#                Examples: 'F1', 'Shift+F1', 'Ctrl+Alt+F12', 'OemTilde' (~)
+#   ShowConsoleAtStartup: Show debug console window on application startup (default: false)");
+#                         Console can be toggled later via tray icon or toolbar menu
+#
+# Favorites:
+#   List of favorite folder paths that appear in the Favorites menu
+#   You can add any valid folder path (supports environment variables like %UserProfile%)
+#   Example:
+#     - C:\Projects
+#     - %UserProfile%\Downloads
+#
+# Applications:
+#   List of application paths that appear in the Applications menu
+#   Format: 'path' or 'path|arguments' or 'path|arguments|workingdir'
+#   Arguments support placeholders: %f% (selected file), %c% (current directory)
+#   WorkingDir defaults to executable's directory if not specified
+#   WorkingDir supports placeholder: %c% (current directory in Explorer)
+#   Example:
+#     - C:\Program Files\Notepad++\notepad++.exe
+#     - %ProgramFiles%\Git\git-bash.exe
+#
+# Stock Toolbar Buttons (built-in functionality):
+#   {new-tab}         - Opens a new Explorer tab
+#   {new-file}        - Creates a new text file in the current directory
+#   {new-folder}      - Creates a new folder in the current directory
+#   {from-clipboard}  - Navigates to path from clipboard (Ctrl+click opens in new tab)
+#   {recent}          - Shows dropdown menu of recently visited folders
+#   {favorites}       - Shows dropdown menu of favorite folders (defined above)
+#   {application}     - Shows dropdown menu of applications (defined above)
+#   {props}           - Opens properties dialog for selected file/folder
+#   {separator}       - Adds a visual separator between toolbar items
+#   {app-config}      - Shows configuration menu (Edit Config, Icon Explorer, About)
+#
+# Custom Toolbar Items:
+#   Each custom toolbar item has the following properties:
+#   Icon: Path to icon file with optional index (e.g., 'shell32.dll,314' or 'notepad.exe')
+#   Path: Executable or application to launch
+#   Arguments: Command line arguments (supports placeholders)
+#   WorkingDir: Working directory for the application
+#   Tooltip: Tooltip text shown on hover
+#   Shortcut: Keyboard shortcut to trigger this item (e.g., 'Ctrl+N', 'Shift+F1')");
+#             Uses same format as ShortcutKey setting");
+#   Hidden: Set to true to hide button from toolbar (useful for shortcut-only items)");
+#           Default: false 
+#   SystemWide: Set to true to make shortcut work system-wide (doesn't require Explorer focus)
+#               When true, %c% and %f% placeholders will be empty
+#               Useful for launching applications from anywhere
+#               Default: false
+#
+# Available placeholders:
+#   %f% - First selected file (quoted)
+#   %c% - Current directory (quoted)
+#   %<environment-variable>% - Any environment variable (e.g., %UserProfile%, %SystemRoot%)
+#
+# Example custom toolbar item:
+#   - Icon: '%SystemRoot%\System32\shell32.dll,314'
+#     Path: 'notepad.exe'
+#     Arguments: '%f%'
+#     Tooltip: 'Open in Notepad'
+# 
+# Example shortcut-only item (no toolbar button):");
+#   - Path: 'calc.exe'
+#     Shortcut: 'Ctrl+Alt+C'
+#     Hidden: true
+# 
+# Plugin Buttons (custom .NET assemblies):");
+#   Path must be enclosed in curly brackets and point to a .dll file containing a class that:
+#   - Implements ICustomButton interface
+#   - Inherits from System.Windows.Forms.Button
+#   
+#   Format: '{path\\to\\assembly.dll}' or '{path\\to\\assembly.dll,ClassName}'
+#   
+#   If class name is not specified, the first matching type is loaded
+#   If class name is specified, that specific class is loaded
+#   
+#   Examples:
+#     - Path: '{C:\\Plugins\\MyCustomButtons.dll}'
+#     
+#     - Path: '{C:\\Plugins\\MyCustomButtons.dll,FolderContentButton}'
+#       Icon: 'shell32.dll,43'
+#       Tooltip: 'Specific button from assembly'
+#     
+#================================
+
+Settings:
+  ButtonSize: 32
+  HistorySize: 10
+  # ShortcutKey: Shift+Escape # Shift+OemTilde  
+  ShortcutKey: Shift+Escape # I used PowerToys to remap Windows Ctrl+Escape to Shift+Escape
+  ShowConsoleAtStartup: false
+
+Favorites:
+ - '%UserProfile%\AppData\Local\Explobar'
+ - '%UserProfile%\Downloads'
+ - D:\Galos\MyToDo
+ - C:\Users\Oleg.Shilo\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup
+
+Applications:
+- D:\tools\Porable Settings\Utils\IconExplorer.exe
+- D:\tools\IuSpy.exe
+- D:\tools\Porable Settings\Utils\IcoFX.exe
+- C:\Users\Oleg.Shilo\AppData\Local\PowerToys\WinUI3Apps\PowerToys.Settings.exe
+- D:\Galos\MyToDo\publish\MyToDo.exe|-start-ui
+- C:\CUBE_Dev\dev\architecture-reports\urgent_issues\run.cmd
+
+Items:
+- Path: '{new-tab}'
+- Path: '{from-clipboard}'
+- Path: '{separator}'
+- Path: '{new-file}'
+- Path: '{new-folder}'
+- Path: '{separator}'
+- Path: '{recent}'
+- Path: '{props}'
+- Path: '{favorites}'
+- Path: '{application}'
+- Path: '{separator}'
+
+- Path: 'C:\Program Files\Mythicsoft\Agent Ransack\AgentRansack.exe'
+  Arguments: '-d %c%'
+
+- Path: 'C:\Users\Oleg.Shilo\AppData\Local\Microsoft\WindowsApps\wt.exe'
+  Icon: 'C:\Users\Oleg.Shilo\.dotnet\tools\css.exe,0'
+  Arguments: '-d %c% css -wait %f%'
+
+- Icon: '%SystemRoot%\System32\cmd.exe'
+  Path: wt.exe
+  Arguments: -d %c% -p "Command Prompt"; -d %c% -p "Windows PowerShell"
+  Tooltip: Open Windows Terminal
+
+- Path: 'C:\Program Files\Notepad++\notepad++.exe'
+  Arguments: '%f%'
+  Tooltip: Open in Notepad++
+
+- Path: notepad.exe
+  Arguments: '%f%'
+  Tooltip: Open in notepad
+
+- Path: 'D:\tools\SublimeText\sublime_text.exe'
+  Arguments: '%f%'
+  Tooltip: Open in Sublime Text
+  Shortcut: 'Ctrl+Alt+N'
+
+- Path: 'C:\Users\Oleg.Shilo\AppData\Local\Programs\Microsoft VS Code\Code.exe'
+  Arguments: '--wait -r %f%'
+  WorkingDir: '%c%'
+  Tooltip: Open file in VSCode
+
+- Path: 'C:\Program Files\7-Zip\7zFM.exe'
+  Arguments: '%f%'
+  WorkingDir: '%c%'
+  Tooltip: Open in 7Zip
+
+- Path: 'C:\ProgramData\chocolatey\lib\ilspy\tools\ILSpy.exe'
+  Arguments: '%f%'
+  Tooltip: Open in ILSpy
+
+- Path: '{separator}'
+
+- Path: 'C:\Users\Oleg.Shilo\AppData\Local\Programs\Microsoft VS Code\Code.exe'
+  Arguments: '--wait -r %c%'
+  WorkingDir: '%c%'
+  Tooltip: Open folder in VSCode
+
+- Path: 'C:\Users\Oleg.Shilo\.dotnet\tools\css.exe'
+  Icon: 'C:\Program Files\Microsoft Visual Studio\2022\Professional\Common7\IDE\devenv.exe,0'
+  Arguments: '-vs %f%'
+  WorkingDir: '%c%'
+  Tooltip: Open *.cs in Visual Studio
+
+- Path: 'C:\Program Files\TortoiseGit\bin\TortoiseGitProc.exe'
+  Arguments: '/command:commit /path:%c% /closeonend:0'
+  WorkingDir: '%c%'
+
+- Path: '{separator}'
+
+- Icon: ''
+  Path: '{app-config}'
+  Arguments: ''
+  WorkingDir: ''
+  Tooltip: ''
+
+# Hidden shortcut-only command
+- Path: 'calc.exe'
+  Shortcut: 'Ctrl+Alt+C'
+  Hidden: true

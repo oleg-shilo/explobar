@@ -93,6 +93,13 @@ namespace Explobar
 
         static void OnShortcutPressed(Keys key)
         {
+            // Ignore keystrokes while config is loading or error dialog is shown
+            if (ToolbarItems.IsConfigLoadingInProgress)
+            {
+                Runtime.Log("Keystroke ignored - config loading in progress");
+                return;
+            }
+
             if (_isProcessing)
                 return;
 
