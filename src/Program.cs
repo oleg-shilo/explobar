@@ -54,6 +54,17 @@ namespace Explobar
         [STAThread]
         static void Main(string[] args)
         {
+            var otherInstanceToWaitFor = args.FirstOrDefault(x => x.StartsWith("-wait:"))?.Substring(6);
+            if (otherInstanceToWaitFor != null)
+            {
+                var pid = int.Parse(otherInstanceToWaitFor);
+                var otherProcess = Process.GetProcessById(pid);
+                if (otherProcess != null)
+                {
+                    otherProcess.WaitForExit();
+                }
+            }
+
             if (SingleInstanceApp.AnotherInstanceDetected())
             {
                 Runtime.ShowError("Explobar is already running.");
