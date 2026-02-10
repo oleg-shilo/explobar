@@ -346,50 +346,63 @@ namespace Explobar
                 };
             }
 
-            // Build tooltip text with shortcut if available
-            string tooltipText = info.Tooltip.IfEmpty(customButton?.Tooltip ?? info.Path.GetFileName());
-            if (info.Shortcut.HasText())
-                tooltipText += Environment.NewLine + "Shortcut: " + info.Shortcut;
-            toolTip.SetToolTip(button, tooltipText);
-
-            customButton?.OnInit(info, this.ExplorerContext);
-
-            button.Click += (x, y) =>
+            toolTip.SetToolTip(button, $"Button: \"{info.Path}\"");
+            try
             {
-                try
+                // Build tooltip text with shortcut if available
+                string tooltipText = info.Tooltip.IfEmpty(customButton?.Tooltip ?? info.Path.GetFileName());
+                if (info.Shortcut.HasText())
+                    tooltipText += Environment.NewLine + "Shortcut: " + info.Shortcut;
+                toolTip.SetToolTip(button, tooltipText);
+
+                customButton?.OnInit(info, this.ExplorerContext);
+
+                button.Click += (x, y) =>
                 {
-                    var clickArgs = new ClickArgs { Context = this.ExplorerContext, Toolbar = this };
-
-                    if (customButton != null)
-                        customButton.OnClick(clickArgs);
-                    else
-                        info.Execute(this.ExplorerContext);
-
-                    if (!clickArgs.DoNotHideToolbar)
+                    try
                     {
-                        HideToolbar();
-                        SetForegroundWindow((IntPtr)ExplorerContext.HWND);
-                    }
-                }
-                catch (Exception e)
-                {
-                    Runtime.ShowError(e.Message);
-                }
-            };
+                        var clickArgs = new ClickArgs { Context = this.ExplorerContext, Toolbar = this };
 
+                        if (customButton != null)
+                            customButton.OnClick(clickArgs);
+                        else
+                            info.Execute(this.ExplorerContext);
+
+                        if (!clickArgs.DoNotHideToolbar)
+                        {
+                            HideToolbar();
+                            SetForegroundWindow((IntPtr)ExplorerContext.HWND);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Runtime.ShowError(e.Message);
+                    }
+                };
+            }
+            catch
+            {
+                // Ignore errors in tooltip or click handler setup
+            }
             toolbarPanel.Controls.Add(button);
         }
 
         Bitmap CreateButtonImage(string iconPath, int iconIndex)
         {
             Image originalIcon = null;
+            try
+            {
+                var ext = Path.GetExtension(iconPath).ToLowerInvariant();
 
-            var ext = Path.GetExtension(iconPath).ToLowerInvariant();
-
-            if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".bmp" || ext == ".ico" || ext == ".gif")
-                originalIcon = Image.FromFile(iconPath);
-            else
-                originalIcon = iconPath.ExtractIcon(iconIndex);
+                if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".bmp" || ext == ".ico" || ext == ".gif")
+                    originalIcon = Image.FromFile(iconPath);
+                else
+                    originalIcon = iconPath.ExtractIcon(iconIndex);
+            }
+            catch
+            {
+                // Ignore errors and use default icon
+            }
 
             if (originalIcon == null)
                 originalIcon = DefaultIcon;

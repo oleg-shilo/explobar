@@ -218,13 +218,16 @@ namespace Explobar
 
     public static class Runtime
     {
-        public static Action<string> ShowInfo = (message) => showMessage(message, MessageBoxIcon.Information);
-        public static Action<string> ShowWarning = (message) => showMessage(message, MessageBoxIcon.Warning);
-        public static Action<string> ShowError = (message) => showMessage(message, MessageBoxIcon.Error);
+        public static Action<string> ShowInfo = (message) => ShowMessageBox(message, MessageBoxIcon.Information);
+        public static Action<string> ShowWarning = (message) => ShowMessageBox(message, MessageBoxIcon.Warning);
+        public static Func<string, bool> UserDecision = (message) => ShowMessageBox(message, MessageBoxIcon.Warning, MessageBoxButtons.OKCancel) == DialogResult.OK;
+        public static Action<string> ShowError = (message) => ShowMessageBox(message, MessageBoxIcon.Error);
         public static Action<string> Log = log;
 
         static Icon _icon;
         static Bitmap _logo;
+        static readonly object messageBoxLock = new object();
+        static bool isMessageBoxShowing = false;
 
         public static Icon AppIcon
         {
@@ -251,27 +254,49 @@ namespace Explobar
             }
         }
 
-        static void showMessage(string message, MessageBoxIcon icon = MessageBoxIcon.None)
+        static DialogResult ShowMessageBox(string message, MessageBoxIcon icon = MessageBoxIcon.None, MessageBoxButtons buttons = MessageBoxButtons.OK)
         {
-            // Create a hidden topmost owner form
-            using (var topMostForm = new Form())
+            // Prevent multiple message boxes from showing simultaneously
+            lock (messageBoxLock)
             {
-                topMostForm.TopMost = true;
-                topMostForm.StartPosition = FormStartPosition.Manual;
-                topMostForm.Location = new Point(-32000, -32000); // Far off-screen
-                topMostForm.Size = new Size(1, 1);
-                topMostForm.ShowInTaskbar = false;
-                topMostForm.FormBorderStyle = FormBorderStyle.None;
-                topMostForm.Opacity = 0; // Make it invisible
-                topMostForm.Show();
+                if (isMessageBoxShowing)
+                {
+                    // A message box is already showing - log and return default result
+                    Log($"[MessageBox blocked] Another message box is already showing. Message: {message}");
 
-                MessageBox.Show(
-                    topMostForm,
-                    message,
-                    "Explobar",
-                    MessageBoxButtons.OK,
-                    icon
-                               );
+                    // Return safe default based on button type
+                    return buttons == MessageBoxButtons.OKCancel ? DialogResult.Cancel : DialogResult.OK;
+                }
+
+                try
+                {
+                    isMessageBoxShowing = true;
+
+                    // Create a hidden topmost owner form
+                    using (var topMostForm = new Form())
+                    {
+                        topMostForm.TopMost = true;
+                        topMostForm.StartPosition = FormStartPosition.Manual;
+                        topMostForm.Location = new Point(-32000, -32000); // Far off-screen
+                        topMostForm.Size = new Size(1, 1);
+                        topMostForm.ShowInTaskbar = false;
+                        topMostForm.FormBorderStyle = FormBorderStyle.None;
+                        topMostForm.Opacity = 0; // Make it invisible
+                        topMostForm.Show();
+
+                        return MessageBox.Show(
+                            topMostForm,
+                            message,
+                            "Explobar",
+                            buttons,
+                            icon
+                                              );
+                    }
+                }
+                finally
+                {
+                    isMessageBoxShowing = false;
+                }
             }
         }
 

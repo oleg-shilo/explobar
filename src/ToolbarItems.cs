@@ -45,6 +45,9 @@ namespace Explobar
         public static DateTime configFileTimestamp = DateTime.MinValue;
         static ToolbarConfig currentConfig = null;
 
+        // Flag to indicate config loading is in progress (user is viewing error dialog)
+        public static bool IsConfigLoadingInProgress { get; private set; } = false;
+
         public static bool IsConfigUpToDate
         {
             get
@@ -64,45 +67,130 @@ namespace Explobar
             if (IsConfigUpToDate)
                 return currentConfig;
 
+            IsConfigLoadingInProgress = true; // Block keyboard input
             try
             {
-                if (File.Exists(ConfigPath))
+                try
                 {
-                    var yaml = File.ReadAllText(ConfigPath);
-                    var deserializer = new DeserializerBuilder()
-                        .WithNamingConvention(PascalCaseNamingConvention.Instance)
-                        .Build();
+                    if (File.Exists(ConfigPath))
+                    {
+                        var yaml = File.ReadAllText(ConfigPath);
+                        var deserializer = new DeserializerBuilder()
+                            .WithNamingConvention(PascalCaseNamingConvention.Instance)
+                            .Build();
 
-                    currentConfig = deserializer.Deserialize<ToolbarConfig>(yaml);
-                    if (currentConfig == null || currentConfig.Items == null || !currentConfig.Items.Any())
+                        currentConfig = deserializer.Deserialize<ToolbarConfig>(yaml);
+                        if (currentConfig == null || currentConfig.Items == null || !currentConfig.Items.Any())
+                            currentConfig = SaveDefaultConfig();
+                    }
+                    else
+                    {
                         currentConfig = SaveDefaultConfig();
+                    }
                 }
-                else
+                catch (YamlDotNet.Core.SyntaxErrorException ex)
                 {
-                    currentConfig = SaveDefaultConfig();
+                    if (!HandleConfigLoadError(ex, isYamlError: true))
+                    {
+                        // User chose to cancel - exit application
+                        Application.Exit();
+                        return null;
+                    }
                 }
+                catch (Exception ex)
+                {
+                    if (!HandleConfigLoadError(ex, isYamlError: false))
+                    {
+                        // User chose to cancel - exit application
+                        Application.Exit();
+                        return null;
+                    }
+                }
+
+                if (currentConfig == null)
+                    currentConfig = SaveDefaultConfig();
+
+                if (File.Exists(ConfigPath))
+                    configFileTimestamp = File.GetLastWriteTime(ConfigPath);
+                else
+                    configFileTimestamp = DateTime.MinValue;
+
+                currentConfig.Items.Resolve();
+                return currentConfig;
             }
-            catch (YamlDotNet.Core.SyntaxErrorException ex)
+            finally
             {
-                var message = $"Error loading toolbar items: {ex.Message}; start: {ex.Start}, end: {ex.End}";
-                Runtime.ShowWarning(message);
-                Runtime.Log(message);
+                IsConfigLoadingInProgress = false; // Unblock keyboard input
+            }
+        }
+
+        static bool HandleConfigLoadError(Exception ex, bool isYamlError)
+        {
+            var errorDetails = isYamlError && ex is YamlDotNet.Core.SyntaxErrorException yamlEx
+                ? $"{ex.Message}\nStart: {yamlEx.Start}, End: {yamlEx.End}"
+                : ex.Message;
+
+            var message = $"Error loading configuration file:\n\n" +
+                         $"{errorDetails}\n\n" +
+                         $"Location: {ConfigPath}\n\n" +
+                         $"Click OK to:\n" +
+                         $"  • Backup your current config (with timestamp)\n" +
+                         $"  • Create a default configuration\n" +
+                         $"  • Continue running Explobar\n\n" +
+                         $"Click Cancel to:\n" +
+                         $"  • Exit Explobar\n" +
+                         $"  • Fix the configuration manually\n" +
+                         $"  • Restart when ready";
+
+            // Note: IsConfigLoadingInProgress is true while this dialog is showing
+            bool userChoseOK = Runtime.UserDecision(message);
+
+            if (userChoseOK)
+            {
+                // User chose to backup and create defaults
+                var backupPath = BackupConfigFile();
+
+                var successMessage = backupPath != null
+                    ? $"Your configuration has been backed up to:\n{backupPath}\n\nA default configuration has been created."
+                    : "A default configuration has been created.";
+
+                Runtime.ShowInfo(successMessage);
+                Runtime.Log($"Config error handled: backup created, defaults loaded. Error was: {ex.Message}");
+
+                return true; // Continue with defaults
+            }
+            else
+            {
+                // User chose to cancel and fix manually
+                Runtime.Log($"Config load cancelled by user. Error was: {ex.Message}");
+                return false; // Exit application
+            }
+        }
+
+        static string BackupConfigFile()
+        {
+            if (!File.Exists(ConfigPath))
+                return null;
+
+            try
+            {
+                var timestamp = DateTime.Now.ToString("yyyy-MM-dd_HHmmss");
+                var directory = Path.GetDirectoryName(ConfigPath);
+                var fileName = Path.GetFileNameWithoutExtension(ConfigPath);
+                var extension = Path.GetExtension(ConfigPath);
+
+                var backupPath = Path.Combine(directory, $"{fileName}.backup_{timestamp}{extension}");
+
+                File.Copy(ConfigPath, backupPath, overwrite: false);
+
+                Runtime.Log($"Config file backed up to: {backupPath}");
+                return backupPath;
             }
             catch (Exception ex)
             {
-                Runtime.Log($"Error loading toolbar items: {ex.Message}");
+                Runtime.Log($"Failed to backup config file: {ex.Message}");
+                return null;
             }
-
-            if (currentConfig == null)
-                currentConfig = SaveDefaultConfig();
-
-            if (File.Exists(ConfigPath))
-                configFileTimestamp = File.GetLastWriteTime(ConfigPath);
-            else
-                configFileTimestamp = DateTime.MinValue;
-
-            currentConfig.Items.Resolve();
-            return currentConfig;
         }
 
         static ToolbarConfig SaveDefaultConfig()
