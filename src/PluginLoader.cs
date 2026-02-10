@@ -31,7 +31,13 @@ namespace Explobar
                     (className != null ? $", class: {className}" : ""));
 
                 // Load the assembly
-                var assembly = Assembly.LoadFrom(assemblyPath);
+
+                Assembly assembly;
+
+                if (assemblyPath.EndsWithEither(".cs.dll"))
+                    assembly = Assembly.Load(File.ReadAllBytes(assemblyPath));
+                else
+                    assembly = Assembly.LoadFrom(assemblyPath);
 
                 // Find all types implementing ICustomButton
                 var buttonTypes = assembly.GetTypes()
@@ -127,13 +133,25 @@ namespace Explobar
                 return false;
 
             var expanded = assemblyPath.ExpandEnvars().ResolvePath();
-            return expanded.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)
+            return expanded.EndsWithEither(".dll", ".exe", ".cs")
                 && File.Exists(expanded);
         }
 
         public static Button LoadCustomButtonFromAssembly(string path)
         {
             var (assemblyPath, className) = ParsePluginPath(path);
+
+            if (assemblyPath.EndsWithEither(".cs"))
+            {
+                var expectedAssembly = assemblyPath + ".dll";
+                if (!File.Exists(expectedAssembly))
+                {
+                    Runtime.Log($"Plugin source file not found: {expectedAssembly}");
+                }
+
+                assemblyPath = expectedAssembly;
+            }
+
             var customButton = LoadCustomButton(assemblyPath, className);
             return customButton as Button;
         }

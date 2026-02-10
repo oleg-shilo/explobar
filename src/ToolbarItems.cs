@@ -122,6 +122,8 @@ namespace Explobar
             }
         }
 
+        static Dictionary<string, DateTime> failedCompilations = new Dictionary<string, DateTime>();
+
         static List<string> GetPluginPaths(List<ToolbarItem> items)
         {
             var paths = new List<string>();
@@ -160,10 +162,134 @@ namespace Explobar
                     {
                         paths.Add(dllPath);
                     }
+
+                    if (dllPath.EndsWithEither(".cs") && !paths.Contains(dllPath))
+                    {
+                        var assemblyPath = dllPath + ".dll";
+
+                        if (File.Exists(dllPath))
+                        {
+                            if (!File.Exists(assemblyPath) || File.GetLastWriteTime(assemblyPath) != File.GetLastWriteTime(dllPath))
+                            {
+                                if (failedCompilations.ContainsKey(dllPath) && failedCompilations[dllPath] >= File.GetLastWriteTimeUtc(dllPath))
+                                {
+                                    // Skip recompilation if the source file hasn't changed since the last failed attempt
+                                    Runtime.Log($"Skipping compilation for {dllPath} since it has not changed since the last failed attempt.");
+                                    continue;
+                                }
+
+                                try
+                                {
+                                    CompileScriptedPlugin(dllPath, assemblyPath);
+
+                                    // all good but we need to reload so the change takes effect immediately
+                                    ToolbarForm.HideOnClosing = false;
+                                    Process.Start(Application.ExecutablePath, $"-wait:{Process.GetCurrentProcess().Id}");
+                                    Application.Exit();
+                                }
+                                catch (Exception e)
+                                {
+                                    failedCompilations[dllPath] = File.GetLastWriteTimeUtc(dllPath);
+
+                                    Runtime.Log($"Failed to compile scripted plugin: {dllPath}");
+                                    Task.Run(() =>
+                                    {
+                                        Thread.Sleep(100); // Give the main window a moment to initialize
+                                        Runtime.ShowInfo($"Scripted plugin has failed to load: {dllPath}.\n+{e.Message}");
+                                    });
+                                }
+                            }
+                            else
+                            {
+                                // Compiled assembly is up to date
+                                paths.Add(assemblyPath);
+                            }
+                        }
+                        else
+                        {
+                            Runtime.Log($"Scripted plugin source file not found: {dllPath}");
+                        }
+                    }
                 }
             }
 
             return paths;
+        }
+
+        static void CompileScriptedPlugin(string csFile, string outPath)
+        {
+            Runtime.Log($"Compiling scripted plugin: {csFile}");
+
+            var source = File.ReadAllText(csFile);
+
+            using (var codeProvider = new Microsoft.CSharp.CSharpCodeProvider())
+            {
+                var parameters = new System.CodeDom.Compiler.CompilerParameters
+                {
+                    GenerateExecutable = false,
+                    GenerateInMemory = false, // Output to file
+                    OutputAssembly = outPath,
+                    IncludeDebugInformation = false,
+                    TreatWarningsAsErrors = false
+                };
+
+                // Add references to required assemblies
+                parameters.ReferencedAssemblies.Add("System.dll");
+                parameters.ReferencedAssemblies.Add("System.Core.dll");
+                parameters.ReferencedAssemblies.Add("System.Windows.Forms.dll");
+                parameters.ReferencedAssemblies.Add("System.Drawing.dll");
+
+                // Add reference to the current assembly (Explobar.exe) to access ICustomButton, etc.
+                parameters.ReferencedAssemblies.Add(System.Reflection.Assembly.GetExecutingAssembly().Location);
+
+                // Add any other referenced assemblies that might be needed
+                foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+                {
+                    try
+                    {
+                        if (!assembly.IsDynamic && !string.IsNullOrEmpty(assembly.Location))
+                        {
+                            var name = assembly.GetName().Name;
+                            if (name == "Shell32" || name == "YamlDotNet" || name == "TsudaKageyu")
+                            {
+                                parameters.ReferencedAssemblies.Add(assembly.Location);
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        // Ignore assemblies we can't reference
+                    }
+                }
+
+                // Compile the code
+                var results = codeProvider.CompileAssemblyFromSource(parameters, source);
+
+                // Check for compilation errors
+                if (results.Errors.HasErrors)
+                {
+                    var errors = new StringBuilder();
+                    errors.AppendLine($"Compilation failed for {Path.GetFileName(csFile)}:");
+
+                    foreach (System.CodeDom.Compiler.CompilerError error in results.Errors)
+                    {
+                        errors.AppendLine($"  Line {error.Line}: {error.ErrorText}");
+                    }
+
+                    Runtime.Log(errors.ToString());
+                    throw new Exception(errors.ToString());
+                }
+
+                // Set the output DLL timestamp to match the source file
+
+                // This helps with change detection
+                if (File.Exists(outPath))
+                {
+                    File.SetLastWriteTime(outPath, File.GetLastWriteTime(csFile));
+                }
+
+                Runtime.Log($"Successfully compiled: {Path.GetFileName(csFile)} -> {Path.GetFileName(outPath)}");
+            }
         }
 
         static void UpdatePluginTimestamps()

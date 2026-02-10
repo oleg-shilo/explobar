@@ -229,6 +229,28 @@ namespace Explobar
         static readonly object messageBoxLock = new object();
         static bool isMessageBoxShowing = false;
 
+        const string MESSAGE_BOX_MARKER = "Explobar_MessageBox_Marker_7F8E9A2B";
+
+        [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
+        static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
+
+        public static bool AnyOtherExplobarMessageBoxShowing()
+        {
+            try
+            {
+                // Search for a window with our distinctive title
+                IntPtr hWnd = FindWindow(null, MESSAGE_BOX_MARKER);
+
+                // If found and it's not zero, another Explobar instance has a message box showing
+                return hWnd != IntPtr.Zero;
+            }
+            catch (Exception ex)
+            {
+                Log($"Error checking for message box window: {ex.Message}");
+                return false; // Assume not showing on error
+            }
+        }
+
         public static Icon AppIcon
         {
             get
@@ -261,10 +283,17 @@ namespace Explobar
             {
                 if (isMessageBoxShowing)
                 {
-                    // A message box is already showing - log and return default result
-                    Log($"[MessageBox blocked] Another message box is already showing. Message: {message}");
+                    // A message box is already showing in this process - log and return default result
+                    Log($"[MessageBox blocked - same process] Another message box is already showing. Message: {message}");
 
                     // Return safe default based on button type
+                    return buttons == MessageBoxButtons.OKCancel ? DialogResult.Cancel : DialogResult.OK;
+                }
+
+                // Check if another Explobar instance is showing a message box
+                if (AnyOtherExplobarMessageBoxShowing())
+                {
+                    Log($"[MessageBox blocked - other process] Another Explobar instance is showing a message box. Message: {message}");
                     return buttons == MessageBoxButtons.OKCancel ? DialogResult.Cancel : DialogResult.OK;
                 }
 
@@ -272,9 +301,10 @@ namespace Explobar
                 {
                     isMessageBoxShowing = true;
 
-                    // Create a hidden topmost owner form
+                    // Create a hidden topmost owner form with distinctive title
                     using (var topMostForm = new Form())
                     {
+                        topMostForm.Text = MESSAGE_BOX_MARKER; // Distinctive title for detection
                         topMostForm.TopMost = true;
                         topMostForm.StartPosition = FormStartPosition.Manual;
                         topMostForm.Location = new Point(-32000, -32000); // Far off-screen
@@ -284,13 +314,15 @@ namespace Explobar
                         topMostForm.Opacity = 0; // Make it invisible
                         topMostForm.Show();
 
+                        // Small delay to ensure window is registered with the system
+                        Application.DoEvents();
+
                         return MessageBox.Show(
                             topMostForm,
                             message,
                             "Explobar",
                             buttons,
-                            icon
-                                              );
+                            icon);
                     }
                 }
                 finally
