@@ -44,6 +44,7 @@ namespace Explobar
 
         public static DateTime configFileTimestamp = DateTime.MinValue;
         static ToolbarConfig currentConfig = null;
+        static Dictionary<string, DateTime> pluginTimestamps = new Dictionary<string, DateTime>();
 
         // Flag to indicate config loading is in progress (user is viewing error dialog)
         public static bool IsConfigLoadingInProgress { get; private set; } = false;
@@ -57,8 +58,137 @@ namespace Explobar
                 if (currentConfig == null)
                     return false;
 
+                // Check YAML config file timestamp
                 var lastWriteTime = File.GetLastWriteTime(ConfigPath);
-                return lastWriteTime == configFileTimestamp;
+                if (lastWriteTime != configFileTimestamp)
+                    return false;
+
+                // Check if any plugin DLL files have changed
+                if (!ArePluginsUpToDate())
+                    return false;
+
+                return true;
+            }
+        }
+
+        static bool ArePluginsUpToDate()
+        {
+            if (currentConfig?.Items == null)
+                return true;
+
+            try
+            {
+                // Get all plugin DLL paths from config
+                var pluginPaths = GetPluginPaths(currentConfig.Items);
+
+                foreach (var pluginPath in pluginPaths)
+                {
+                    if (!File.Exists(pluginPath))
+                    {
+                        // Plugin file was deleted - need to reload
+                        Runtime.Log($"Plugin file no longer exists: {pluginPath}");
+                        return false;
+                    }
+
+                    var lastWriteTime = File.GetLastWriteTime(pluginPath);
+
+                    // Check if this is a new plugin or if it was modified
+                    if (!pluginTimestamps.ContainsKey(pluginPath))
+                    {
+                        // New plugin detected
+                        return false;
+                    }
+
+                    if (pluginTimestamps[pluginPath] < lastWriteTime)
+                    {
+                        // Plugin was modified
+                        Runtime.Log($"Plugin file changed: {pluginPath}");
+                        return false;
+                    }
+                }
+
+                // Check if any plugins were removed from config
+                if (pluginTimestamps.Count > pluginPaths.Count)
+                {
+                    return false;
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Runtime.Log($"Error checking plugin timestamps: {ex.Message}");
+                return false; // Assume outdated on error
+            }
+        }
+
+        static List<string> GetPluginPaths(List<ToolbarItem> items)
+        {
+            var paths = new List<string>();
+
+            foreach (var item in items)
+            {
+                if (item.Path.IsEmpty())
+                    continue;
+
+                // Check if path is a plugin reference (enclosed in curly brackets)
+                if (item.Path.StartsWith("{") && item.Path.EndsWith("}"))
+                {
+                    var pathContent = item.Path.Trim('{', '}');
+
+                    // Skip built-in stock controls
+                    if (pathContent.StartsWith("new-") ||
+                        pathContent.StartsWith("from-") ||
+                        pathContent == "recent" ||
+                        pathContent == "favorites" ||
+                        pathContent == "application" ||
+                        pathContent == "props" ||
+                        pathContent == "separator" ||
+                        pathContent == "app-config")
+                    {
+                        continue;
+                    }
+
+                    // Extract DLL path (format: path or path,ClassName)
+                    var dllPath = pathContent.Split(',')[0].Trim();
+
+                    // Resolve path (expand environment variables)
+                    dllPath = dllPath.ExpandEnvars();
+
+                    // Check if it's a valid DLL file
+                    if (dllPath.EndsWithEither(".dll", ".exe") && !paths.Contains(dllPath))
+                    {
+                        paths.Add(dllPath);
+                    }
+                }
+            }
+
+            return paths;
+        }
+
+        static void UpdatePluginTimestamps()
+        {
+            pluginTimestamps.Clear();
+
+            if (currentConfig?.Items == null)
+                return;
+
+            var pluginPaths = GetPluginPaths(currentConfig.Items);
+
+            foreach (var pluginPath in pluginPaths)
+            {
+                try
+                {
+                    if (File.Exists(pluginPath))
+                    {
+                        pluginTimestamps[pluginPath] = File.GetLastWriteTime(pluginPath);
+                        Runtime.Log($"Tracked plugin: {pluginPath}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Runtime.Log($"Failed to track plugin {pluginPath}: {ex.Message}");
+                }
             }
         }
 
@@ -114,6 +244,9 @@ namespace Explobar
                     configFileTimestamp = File.GetLastWriteTime(ConfigPath);
                 else
                     configFileTimestamp = DateTime.MinValue;
+
+                // Update plugin timestamps after successful load
+                UpdatePluginTimestamps();
 
                 currentConfig.Items.Resolve();
                 return currentConfig;
