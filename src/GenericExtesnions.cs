@@ -34,6 +34,8 @@ namespace Explobar
 
         public static string GetFileName(this string path) => Path.GetFileName(path);
 
+        public static string GetDirName(this string path) => Path.GetDirectoryName(path);
+
         public static string GetPath(this SpecialFolder folder) => Environment.GetFolderPath(folder);
 
         public static string Combine(this string folder, string path, params string[] paths)
@@ -208,6 +210,30 @@ namespace Explobar
                     return clsid;
             }
             return folderName;
+        }
+
+        public static FileSystemWatcher WatchForChanges(this string path, FileSystemEventHandler onChange)
+        {
+            try
+            {
+                var watcher = new FileSystemWatcher
+                {
+                    Path = path.GetDirName(),
+                    Filter = path.GetFileName(),
+                    NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.CreationTime,
+                    EnableRaisingEvents = true
+                };
+                watcher.Changed += onChange;
+                watcher.Created += onChange;
+                watcher.Deleted += onChange;
+                Runtime.Output($"File watcher initialized for: {path}");
+                return watcher;
+            }
+            catch (Exception ex)
+            {
+                Runtime.Output($"Failed to initialize watcher for plugin {path}: {ex.Message}");
+            }
+            return null;
         }
     }
 

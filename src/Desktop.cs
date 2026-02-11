@@ -33,8 +33,7 @@ namespace Explobar
 
         public static void ShowToolbarForm(string root, List<string> items, dynamic window, bool createNew)
         {
-            if (!ConfigManager.IsConfigUpToDate || !ConfigManager.ArePluginsUpToDate())
-                // if (!ToolbarItems.IsConfigUpToDate)
+            if (!ConfigManager.IsConfigUpToDate || !ConfigManager.ArePluginsUpToDate)
                 ToolbarForm.ResetInstance();
 
             var form = createNew ?

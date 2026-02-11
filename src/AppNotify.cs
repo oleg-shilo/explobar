@@ -98,7 +98,7 @@ namespace Explobar
             _trayIcon.DoubleClick += (s, e) => Process.Start("notepad.exe", ConfigManager.ConfigPath);
         }
 
-        private static void CreatePluginTemplate()
+        static void CreatePluginTemplate()
         {
             try
             {
@@ -192,7 +192,7 @@ namespace MyPlugins
         }
 
         // Example: Menu builder method (C# 7.3 local function would work inside OnClick too)
-        private ContextMenuStrip BuildMenu()
+        ContextMenuStrip BuildMenu()
         {
             var menu = new ContextMenuStrip();
 
@@ -223,7 +223,7 @@ namespace MyPlugins
             }
         }
 
-        private static void RestartExplorer()
+        static void RestartExplorer()
         {
             try
             {
@@ -254,7 +254,7 @@ namespace MyPlugins
             }
         }
 
-        private static void RestartApp()
+        static void RestartApp()
         {
             try
             {
@@ -272,7 +272,7 @@ namespace MyPlugins
             }
         }
 
-        private static void ToggleStartup(object sender, EventArgs e)
+        static void ToggleStartup(object sender, EventArgs e)
         {
             try
             {
@@ -298,7 +298,7 @@ namespace MyPlugins
             }
         }
 
-        private static bool IsInStartup()
+        static bool IsInStartup()
         {
             var startupPath = Environment.SpecialFolder.Startup.Combine("Explobar.lnk");
             return File.Exists(startupPath);

@@ -42,7 +42,7 @@ namespace Explobar
 
         // Flag to indicate config loading is in progress (user is viewing error dialog)
 
-        private static ToolbarConfig _defaultConfig;
+        static ToolbarConfig _defaultConfig;
 
         public static ToolbarConfig DefaultConfig => _defaultConfig ?? (_defaultConfig =
             new ToolbarConfig
@@ -166,7 +166,7 @@ namespace Explobar
             }
         }
 
-        private static void TrySetProcessFocus(Process process)
+        static void TrySetProcessFocus(Process process)
         {
             Task.Run(() =>
             {
