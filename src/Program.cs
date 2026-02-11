@@ -19,10 +19,10 @@ using System.Windows.Forms;
 //    Allow auto-startup with Windows
 //    Allow specifying the default button under cursor on popup
 //    Allow keyboard navigation in the toolbar
-//    for plugin buttons as context menu
-//    - Open Location
-//    - Edit script
-//    Development options in the tray icon menu
+// ✅   for plugin buttons as context menu
+// ✅   - Open Location
+// ✅   - Edit script
+// ✅ Development options in the tray icon menu
 // ✅    - open logs
 // ✅    - mark in logs
 // ✅    - create plugin

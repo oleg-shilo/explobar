@@ -307,6 +307,7 @@ namespace Explobar
 
             bool isStockButton = info.Path.StartsWith("{") && info.Path.EndsWith("}") && StockToolbarControls.Items.ContainsKey(info.Path);
             bool isPluginButton = !isStockButton && PluginLoader.IsPluginAssembly(info.Path);
+            bool isScriptedButton = isPluginButton && info.Path.EndsWith(".cs}");
 
             if (isStockButton || isPluginButton) // both implement ICustomButton
             {
@@ -315,6 +316,20 @@ namespace Explobar
                     PluginLoader.LoadCustomButtonFromAssembly(info.Path) ?? new MisconfiguredButton(info.Path);
 
                 customButton = (button as ICustomButton);
+
+                // add context menu to this plugin button
+                if (isScriptedButton)
+                {
+                    var script = info.Path.Trim('{', '}');
+                    var menu = new ContextMenuStrip();
+                    menu.Items.Add("Edit Source", null, (s, ev) => Process.Start("notepad.exe", $"\"{script}\""));
+                    menu.Items.Add("Open Location", null, (s, ev) => Process.Start("explorer.exe", $"\"{Path.GetDirectoryName(script)}\""));
+                    button.MouseUp += (s, ev) =>
+                    {
+                        if (ev.Button == MouseButtons.Right)
+                            menu.Show(button, ev.Location);
+                    };
+                }
 
                 iconPath = info.IconPath.IfEmpty(customButton.IconPath.ExpandEnvars());
                 iconIndex = info.IconPath.IsEmpty() ? customButton.IconIndex : info.IconIndex;
