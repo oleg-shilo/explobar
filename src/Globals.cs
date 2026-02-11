@@ -18,10 +18,18 @@ namespace Explobar
         public const string app_config = "{app-config}";
         public const string CurrDir = "%c%";
         public const string SelectedFile = "%f%";
+
+        public static string[] StockButtons = new[]
+        {
+            new_tab, from_clip, separator, new_file, new_folder, recent, props, favs, apps, app_config
+        };
     }
 
     static class Globals
     {
+        public const int WindowStabilizationDelay = 2000;
+        public const int ProcessWindowInitTimeout = 100;
+
         public static string ConfigFileHeader
         {
             get

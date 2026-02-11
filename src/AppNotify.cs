@@ -31,7 +31,7 @@ namespace Explobar
             var contextMenu = new ContextMenuStrip();
 
             contextMenu.Items.Add(new ToolStripMenuItem("Configuration", null,
-                (s, e) => Process.Start("notepad.exe", ToolbarItems.ConfigPath)));
+                (s, e) => Process.Start("notepad.exe", ConfigManager.ConfigPath)));
 
             contextMenu.Items.Add(new ToolStripMenuItem("Icon Browser", null,
                 (s, e) => IconBrowser.Show()));
@@ -58,7 +58,7 @@ namespace Explobar
 
             _trayIcon.ContextMenuStrip = contextMenu;
 
-            _trayIcon.DoubleClick += (s, e) => Process.Start("notepad.exe", ToolbarItems.ConfigPath);
+            _trayIcon.DoubleClick += (s, e) => Process.Start("notepad.exe", ConfigManager.ConfigPath);
         }
     }
 }

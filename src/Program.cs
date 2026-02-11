@@ -27,6 +27,7 @@ using System.Windows.Forms;
 //    - create plugin
 //    - show / hide console
 //    - Open App Folder
+//    - Open Startup Folder
 //    - restart explorer
 //    - restart app
 // settings:
@@ -118,7 +119,7 @@ namespace Explobar
         static void OnShortcutPressed(Keys key)
         {
             // Ignore keystrokes while config is loading or error dialog is shown
-            if (ToolbarItems.IsConfigLoadingInProgress)
+            if (ConfigManager.IsConfigLoadingInProgress)
             {
                 Runtime.Output("Keystroke ignored - config loading in progress");
                 return;

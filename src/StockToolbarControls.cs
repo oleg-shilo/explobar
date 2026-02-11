@@ -165,7 +165,7 @@ namespace Explobar
                 }
 
                 addMenuItem("Toolbar Items Configuration", "Configure toolbar buttons appearance and actions.",
-                            () => Process.Start("notepad.exe", ToolbarItems.ConfigPath));
+                            () => Process.Start("notepad.exe", ConfigManager.ConfigPath));
 
                 addMenuItem("Preview icons", "Browse all icons from a given file.",
                             IconBrowser.Show);
@@ -339,7 +339,7 @@ namespace Explobar
                 {
                     try
                     {
-                        if (process.WaitForInputIdle(2000))
+                        if (process.WaitForInputIdle(Globals.WindowStabilizationDelay))
                         {
                             Thread.Sleep(100);
                             if (process.MainWindowHandle != IntPtr.Zero)
