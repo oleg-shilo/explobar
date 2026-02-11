@@ -157,10 +157,35 @@ namespace Explobar
             return path;
         }
 
+        public static void DeleteIfExists(this string path)
+        {
+            if (File.Exists(path))
+                File.Delete(path);
+            if (Directory.Exists(path))
+                Directory.Delete(path);
+        }
+
         public static string EnsureFileDir(this string path)
         {
             Directory.CreateDirectory(Path.GetDirectoryName(path));
             return path;
+        }
+
+        public static void CreateShortcut(this string targetPath, string shortcutPath)
+        {
+            // Using IWshRuntimeLibrary (add reference to COM: Windows Script Host Object Model)
+            // Or use simpler approach with shell32:
+
+            Type shellType = Type.GetTypeFromProgID("WScript.Shell");
+            dynamic shell = Activator.CreateInstance(shellType);
+            var shortcut = shell.CreateShortcut(shortcutPath);
+            shortcut.TargetPath = targetPath;
+            shortcut.WorkingDirectory = Path.GetDirectoryName(targetPath);
+            shortcut.Description = "Explobar - Windows Explorer Toolbar";
+            shortcut.Save();
+
+            System.Runtime.InteropServices.Marshal.ReleaseComObject(shortcut);
+            System.Runtime.InteropServices.Marshal.ReleaseComObject(shell);
         }
 
         public static bool DirExists(this string path)
@@ -234,6 +259,7 @@ namespace Explobar
         public static Action<string> ShowInfo = (message) => ShowMessageBox(message, MessageBoxIcon.Information);
         public static Action<string> ShowWarning = (message) => ShowMessageBox(message, MessageBoxIcon.Warning);
         public static Func<string, bool> UserDecision = (message) => ShowMessageBox(message, MessageBoxIcon.Warning, MessageBoxButtons.OKCancel) == DialogResult.OK;
+        public static Func<string, bool> UserDecisionYesNo = (message) => ShowMessageBox(message, MessageBoxIcon.Question, MessageBoxButtons.YesNo) == DialogResult.Yes;
         public static Action<string> ShowError = (message) => ShowMessageBox(message, MessageBoxIcon.Error);
         public static Action<string> Output = output;
         public static Action<string> Log = log;
