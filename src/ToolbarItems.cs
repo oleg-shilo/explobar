@@ -68,61 +68,56 @@ namespace Explobar
             }
         }
 
-        public static bool ArePluginsUpToDate
+        public static bool ArePluginsUpToDate()
         {
-            get
+            if (currentConfig?.Items == null)
+                return true;
+
+            try
             {
-                if (currentConfig?.Items == null)
-                    return true;
+                // Get all plugin DLL paths from config
+                var pluginPaths = GetPluginPaths(currentConfig.Items);
 
-                try
+                foreach (var pluginPath in pluginPaths)
                 {
-                    // Get all plugin DLL paths from config
-                    var pluginPaths = GetPluginPaths(currentConfig.Items);
-
-                    foreach (var pluginPath in pluginPaths)
+                    if (!File.Exists(pluginPath))
                     {
-                        if (!File.Exists(pluginPath))
-                        {
-                            // Plugin file was deleted - need to reload
-                            Runtime.Output($"Plugin file no longer exists: {pluginPath}");
-                            return false;
-                        }
-
-                        var lastWriteTime = File.GetLastWriteTime(pluginPath);
-
-                        // Check if this is a new plugin or if it was modified
-                        if (!pluginTimestamps.ContainsKey(pluginPath))
-                        {
-                            // New plugin detected
-                            return false;
-                        }
-
-                        if (pluginTimestamps[pluginPath] < lastWriteTime)
-                        {
-                            // Plugin was modified
-                            Runtime.Output($"Plugin file changed: {pluginPath}");
-                            return false;
-                        }
-                    }
-
-                    // Check if any plugins were removed from config
-                    if (pluginTimestamps.Count > pluginPaths.Count)
-                    {
+                        // Plugin file was deleted - need to reload
+                        Runtime.Output($"Plugin file no longer exists: {pluginPath}");
                         return false;
                     }
 
-                    return true;
+                    var lastWriteTime = File.GetLastWriteTime(pluginPath);
+
+                    // Check if this is a new plugin or if it was modified
+                    if (!pluginTimestamps.ContainsKey(pluginPath))
+                    {
+                        // New plugin detected
+                        return false;
+                    }
+
+                    if (pluginTimestamps[pluginPath] < lastWriteTime)
+                    {
+                        // Plugin was modified
+                        Runtime.Output($"Plugin file changed: {pluginPath}");
+                        return false;
+                    }
                 }
-                catch (Exception ex)
+
+                // Check if any plugins were removed from config
+                if (pluginTimestamps.Count > pluginPaths.Count)
                 {
-                    Runtime.Output($"Error checking plugin timestamps: {ex.Message}");
-                    return false; // Assume outdated on error
+                    return false;
                 }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Runtime.Output($"Error checking plugin timestamps: {ex.Message}");
+                return false; // Assume outdated on error
             }
         }
-
-        static Dictionary<string, DateTime> failedCompilations = new Dictionary<string, DateTime>();
 
         static List<string> GetPluginPaths(List<ToolbarItem> items)
         {
@@ -162,54 +157,6 @@ namespace Explobar
                     {
                         paths.Add(dllPath);
                     }
-
-                    // if (dllPath.EndsWithEither(".cs") && !paths.Contains(dllPath))
-                    // {
-                    //     var assemblyPath = dllPath + ".dll";
-
-                    //     if (File.Exists(dllPath))
-                    //     {
-                    //         if (!File.Exists(assemblyPath) || File.GetLastWriteTime(assemblyPath) != File.GetLastWriteTime(dllPath))
-                    //         {
-                    //             if (failedCompilations.ContainsKey(dllPath) && failedCompilations[dllPath] >= File.GetLastWriteTimeUtc(dllPath))
-                    //             {
-                    //                 // Skip recompilation if the source file hasn't changed since the last failed attempt
-                    //                 Runtime.Output($"Skipping compilation for {dllPath} since it has not changed since the last failed attempt.");
-
-                    //                 paths.Add(assemblyPath);
-                    //                 continue;
-                    //             }
-
-                    //             if (File.Exists(assemblyPath))
-                    //                 File.Delete(assemblyPath);
-
-                    //             try
-                    //             {
-                    //                 CompileScriptedPlugin(dllPath, assemblyPath);
-
-                    //                 // all good but we need to reload so the change takes effect immediately
-                    //                 ToolbarForm.HideOnClosing = false;
-                    //                 Process.Start(Application.ExecutablePath, $"-wait:{Process.GetCurrentProcess().Id}");
-                    //                 Application.Exit();
-                    //             }
-                    //             catch (Exception e)
-                    //             {
-                    //                 failedCompilations[dllPath] = File.GetLastWriteTimeUtc(dllPath);
-
-                    //                 Runtime.Log($"Failed to compile scripted plugin: {dllPath}\n{e.Message}");
-                    //             }
-                    //         }
-                    //         else
-                    //         {
-                    //             // Compiled assembly is up to date
-                    //             paths.Add(assemblyPath);
-                    //         }
-                    //     }
-                    //     else
-                    //     {
-                    //         Runtime.Output($"Scripted plugin source file not found: {dllPath}");
-                    //     }
-                    // }
                 }
             }
 
@@ -244,66 +191,70 @@ namespace Explobar
 
         internal static ToolbarConfig LoadConfig()
         {
-            if (IsConfigUpToDate)
-                return currentConfig;
-
-            IsConfigLoadingInProgress = true; // Block keyboard input
-            try
+            lock (typeof(ToolbarItems))
             {
+                if (IsConfigUpToDate)
+                    return currentConfig;
+
+                IsConfigLoadingInProgress = true; // Block keyboard input
                 try
                 {
-                    if (File.Exists(ConfigPath))
+                    try
                     {
-                        var yaml = File.ReadAllText(ConfigPath);
-                        var deserializer = new DeserializerBuilder()
-                            .WithNamingConvention(PascalCaseNamingConvention.Instance)
-                            .Build();
+                        if (File.Exists(ConfigPath))
+                        {
+                            var yaml = File.ReadAllText(ConfigPath);
+                            var deserializer = new DeserializerBuilder()
+                                .WithNamingConvention(PascalCaseNamingConvention.Instance)
+                                .Build();
 
-                        currentConfig = deserializer.Deserialize<ToolbarConfig>(yaml);
-                        if (currentConfig == null || currentConfig.Items == null || !currentConfig.Items.Any())
+                            currentConfig = deserializer.Deserialize<ToolbarConfig>(yaml);
+
+                            if (currentConfig?.Items == null || !currentConfig.Items.Any())
+                                currentConfig = SaveDefaultConfig();
+                        }
+                        else
+                        {
                             currentConfig = SaveDefaultConfig();
+                        }
                     }
-                    else
+                    catch (YamlDotNet.Core.SyntaxErrorException ex)
                     {
+                        if (!HandleConfigLoadError(ex, isYamlError: true))
+                        {
+                            // User chose to cancel - exit application
+                            Application.Exit();
+                            return null;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        if (!HandleConfigLoadError(ex, isYamlError: false))
+                        {
+                            // User chose to cancel - exit application
+                            Application.Exit();
+                            return null;
+                        }
+                    }
+
+                    if (currentConfig == null)
                         currentConfig = SaveDefaultConfig();
-                    }
+
+                    if (File.Exists(ConfigPath))
+                        configFileTimestamp = File.GetLastWriteTime(ConfigPath);
+                    else
+                        configFileTimestamp = DateTime.MinValue;
+
+                    // Update plugin timestamps after successful load
+                    UpdatePluginTimestamps();
+
+                    currentConfig.Items.Resolve();
+                    return currentConfig;
                 }
-                catch (YamlDotNet.Core.SyntaxErrorException ex)
+                finally
                 {
-                    if (!HandleConfigLoadError(ex, isYamlError: true))
-                    {
-                        // User chose to cancel - exit application
-                        Application.Exit();
-                        return null;
-                    }
+                    IsConfigLoadingInProgress = false; // Unblock keyboard input
                 }
-                catch (Exception ex)
-                {
-                    if (!HandleConfigLoadError(ex, isYamlError: false))
-                    {
-                        // User chose to cancel - exit application
-                        Application.Exit();
-                        return null;
-                    }
-                }
-
-                if (currentConfig == null)
-                    currentConfig = SaveDefaultConfig();
-
-                if (File.Exists(ConfigPath))
-                    configFileTimestamp = File.GetLastWriteTime(ConfigPath);
-                else
-                    configFileTimestamp = DateTime.MinValue;
-
-                // Update plugin timestamps after successful load
-                UpdatePluginTimestamps();
-
-                currentConfig.Items.Resolve();
-                return currentConfig;
-            }
-            finally
-            {
-                IsConfigLoadingInProgress = false; // Unblock keyboard input
             }
         }
 
@@ -419,111 +370,10 @@ namespace Explobar
                     .Replace($"  Tooltip: ''{NewLine}", "");
 
                 // Add comments at the start of the file
-                var comments = new StringBuilder();
-                comments.AppendLine("# Explobar Toolbar Configuration");
-                comments.AppendLine("# This file defines the toolbar settings and items displayed when pressing the configured shortcut in Windows Explorer");
-                comments.AppendLine("#");
-                comments.AppendLine("# Settings:");
-                comments.AppendLine("#   ButtonSize: Size of toolbar button icons in pixels (default: 24)");
-                comments.AppendLine("#   HistorySize: Maximum number of recently visited locations to remember (default: 10)");
-                comments.AppendLine("#   ShortcutKey: Keyboard key combination to trigger the toolbar (default: Shift+Escape)");
-                comments.AppendLine("#                Valid values: Escape, F1-F12, OemTilde, Shift+Escape, Ctrl+F1, Alt+F2, etc.");
-                comments.AppendLine("#                Supported modifiers: Shift, Ctrl, Alt (can be combined with +)");
-                comments.AppendLine("#                Examples: 'F1', 'Shift+F1', 'Ctrl+Alt+F12', 'OemTilde' (~)");
-                comments.AppendLine("#   ShowConsoleAtStartup: Show debug console window on application startup (default: false)");
-                comments.AppendLine("#                         Console can be toggled later via tray icon or toolbar menu");
-                comments.AppendLine("#");
-                comments.AppendLine("# Favorites:");
-                comments.AppendLine("#   List of favorite folder paths that appear in the Favorites menu");
-                comments.AppendLine("#   You can add any valid folder path (supports environment variables like %UserProfile%)");
-                comments.AppendLine("#   Example:");
-                comments.AppendLine("#     - C:\\Projects");
-                comments.AppendLine("#     - %UserProfile%\\Downloads");
-                comments.AppendLine("#");
-                comments.AppendLine("# Applications:");
-                comments.AppendLine("#   List of application paths that appear in the Applications menu");
-                comments.AppendLine("#   Format: 'path' or 'path|arguments' or 'path|arguments|workingdir'");
-                comments.AppendLine("#   Arguments support placeholders: %f% (selected file), %c% (current directory)");
-                comments.AppendLine("#   WorkingDir defaults to executable's directory if not specified");
-                comments.AppendLine("#   WorkingDir supports placeholder: %c% (current directory in Explorer)");
-                comments.AppendLine("#   Example:");
-                comments.AppendLine("#     - notepad.exe");
-                comments.AppendLine("#     - notepad.exe|%f%");
-                comments.AppendLine("#     - wt.exe|-d %c%");
-                comments.AppendLine("#     - powershell.exe|-NoExit||%c%");
-                comments.AppendLine("#     - C:\\Program Files\\Notepad++\\notepad++.exe|%f%");
-                comments.AppendLine("#     - python.exe|script.py|C:\\Scripts");
-                comments.AppendLine("#     - %ProgramFiles%\\Git\\git-bash.exe||%c%");
-                comments.AppendLine("#");
-                comments.AppendLine("# Stock Toolbar Buttons (built-in functionality):");
-                comments.AppendLine("#   {new-tab}         - Opens a new Explorer tab");
-                comments.AppendLine("#   {new-file}        - Creates a new text file in the current directory");
-                comments.AppendLine("#   {new-folder}      - Creates a new folder in the current directory");
-                comments.AppendLine("#   {from-clipboard}  - Navigates to path from clipboard (Ctrl+click opens in new tab)");
-                comments.AppendLine("#   {recent}          - Shows dropdown menu of recently visited folders");
-                comments.AppendLine("#   {favorites}       - Shows dropdown menu of favorite folders (defined above)");
-                comments.AppendLine("#   {application}     - Shows dropdown menu of applications (defined above)");
-                comments.AppendLine("#   {props}           - Opens properties dialog for selected file/folder");
-                comments.AppendLine("#   {separator}       - Adds a visual separator between toolbar items");
-                comments.AppendLine("#   {app-config}      - Shows configuration menu (Edit Config, Icon Explorer, About)");
-                comments.AppendLine("#");
-                comments.AppendLine("# Custom Toolbar Items:");
-                comments.AppendLine("#   Each custom toolbar item has the following properties:");
-                comments.AppendLine("#   Icon: Path to icon file with optional index (e.g., 'shell32.dll,314' or 'notepad.exe')");
-                comments.AppendLine("#   Path: Executable or application to launch");
-                comments.AppendLine("#   Arguments: Command line arguments (supports placeholders)");
-                comments.AppendLine("#   WorkingDir: Working directory for the application");
-                comments.AppendLine("#   Tooltip: Tooltip text shown on hover");
-                comments.AppendLine("#   Shortcut: Keyboard shortcut to trigger this item (e.g., 'Ctrl+N', 'Shift+F1')");
-                comments.AppendLine("#             Uses same format as ShortcutKey setting");
-                comments.AppendLine("#             Uses PowerToys if you need to solve conflicts with the Windows system shortcuts");
-                comments.AppendLine("#   Hidden: Set to true to hide button from toolbar (useful for shortcut-only items)");
-                comments.AppendLine("#           Default: false");
-                comments.AppendLine("#   SystemWide: Set to true to make shortcut work system-wide (doesn't require Explorer focus)");
-                comments.AppendLine("#               When true, %c% and %f% placeholders will be empty");
-                comments.AppendLine("#               Useful for launching applications from anywhere");
-                comments.AppendLine("#               Default: false");
-                comments.AppendLine("#");
-                comments.AppendLine("# Available placeholders:");
-                comments.AppendLine("#   %f% - First selected file (quoted)");
-                comments.AppendLine("#   %c% - Current directory (quoted)");
-                comments.AppendLine("#   %<environment-variable>% - Any environment variable (e.g., %UserProfile%, %SystemRoot%)");
-                comments.AppendLine("#");
-                comments.AppendLine("# Example custom toolbar item:");
-                comments.AppendLine("#   - Icon: '%SystemRoot%\\System32\\shell32.dll,314'");
-                comments.AppendLine("#     Path: 'notepad.exe'");
-                comments.AppendLine("#     Arguments: '%f%'");
-                comments.AppendLine("#     Tooltip: 'Open in Notepad'");
-                comments.AppendLine("#     Shortcut: 'Ctrl+N'");
-                comments.AppendLine("#");
-                comments.AppendLine("# Example shortcut-only item (no toolbar button):");
-                comments.AppendLine("#   - Path: 'calc.exe'");
-                comments.AppendLine("#     Shortcut: 'Ctrl+Alt+C'");
-                comments.AppendLine("#     Hidden: true");
-                comments.AppendLine("#");
-                comments.AppendLine("# Plugin Buttons (custom .NET assemblies):");
-                comments.AppendLine("#   Path must be enclosed in curly brackets and point to a .dll file containing a class that:");
-                comments.AppendLine("#   - Implements ICustomButton interface");
-                comments.AppendLine("#   - Inherits from System.Windows.Forms.Button");
-                comments.AppendLine("#   ");
-                comments.AppendLine("#   Format: '{path\\to\\assembly.dll}' or '{path\\to\\assembly.dll,ClassName}'");
-                comments.AppendLine("#   ");
-                comments.AppendLine("#   If class name is not specified, the first matching type is loaded");
-                comments.AppendLine("#   If class name is specified, that specific class is loaded");
-                comments.AppendLine("#   ");
-                comments.AppendLine("#   Examples:");
-                comments.AppendLine("#     - Path: '{C:\\Plugins\\MyCustomButtons.dll}'");
-                comments.AppendLine("#     ");
-                comments.AppendLine("#     - Path: '{C:\\Plugins\\MyCustomButtons.dll,FolderContentButton}'");
-                comments.AppendLine("#       Icon: 'shell32.dll,43'");
-                comments.AppendLine("#       Tooltip: 'Specific button from assembly'");
-                comments.AppendLine("#     ");
-                comments.AppendLine("#");
-                comments.AppendLine("#================================");
-                comments.AppendLine();
+                var comments = Globals.ConfigFileHeader;
 
                 ConfigPath.EnsureFileDir();
-                var yamlWithComments = comments.ToString() + yaml;
+                var yamlWithComments = comments + yaml;
                 File.WriteAllText(ConfigPath, yamlWithComments);
 
                 Runtime.Output($"Default config created at: {ConfigPath}");
@@ -539,34 +389,34 @@ namespace Explobar
         {
             var items = new List<ToolbarItem>
             {
-                new ToolbarItem() { Path = "{new-tab}" },
-                new ToolbarItem() { Path = "{from-clipboard}" },
-                new ToolbarItem() { Path = "{separator}" },
-                new ToolbarItem() { Path = "{new-file}" },
-                new ToolbarItem() { Path = "{new-folder}" },
-                new ToolbarItem() { Path = "{separator}" },
-                new ToolbarItem() { Path = "{recent}" },
-                new ToolbarItem() { Path = "{props}" },
-                new ToolbarItem() { Path = "{favorites}" },
-                new ToolbarItem() { Path = "{application}" },
-                new ToolbarItem() { Path = "{separator}" },
+                new ToolbarItem() { Path = ConfigConstants.new_tab },
+                new ToolbarItem() { Path = ConfigConstants.from_clip },
+                new ToolbarItem() { Path = ConfigConstants.separator },
+                new ToolbarItem() { Path = ConfigConstants.new_file },
+                new ToolbarItem() { Path = ConfigConstants.new_folder },
+                new ToolbarItem() { Path = ConfigConstants.separator },
+                new ToolbarItem() { Path = ConfigConstants.recent },
+                new ToolbarItem() { Path = ConfigConstants.props },
+                new ToolbarItem() { Path = ConfigConstants.favs },
+                new ToolbarItem() { Path = ConfigConstants.apps },
+                new ToolbarItem() { Path = ConfigConstants.separator },
                 new ToolbarItem()
                 {
                     Icon = @"%SystemRoot%\System32\cmd.exe",
                     Path = "wt.exe",
-                    Arguments = @"-d %c% -p ""Command Prompt""; -d %c% -p ""Windows PowerShell""",
+                    Arguments = $@"-d {ConfigConstants.CurrDir} -p ""Command Prompt""; -d {ConfigConstants.CurrDir} -p ""Windows PowerShell""",
                     Tooltip = "Open Windows Terminal"
                 },
                 new ToolbarItem()
                 {
                     Icon = @"%SystemRoot%\System32\shell32.dll,314",
                     Path = "notepad.exe",
-                    Arguments = "%f%",
+                    Arguments = ConfigConstants.SelectedFile,
                     Tooltip = "Open in notepad",
                     Shortcut = "Ctrl+Alt+N"
                 },
-                new ToolbarItem() { Path = "{separator}" },
-                new ToolbarItem() { Path = "{app-config}" },
+                new ToolbarItem() { Path = ConfigConstants.separator },
+                new ToolbarItem() { Path = ConfigConstants.app_config },
             };
             return items;
         }
@@ -587,7 +437,7 @@ namespace Explobar
         internal int IconIndex => Icon.ParseIconPath().index;
     }
 
-    static class ToolbarExtesnions
+    static class ToolbarExtensions
     {
         public static void Execute(this ToolbarItem info, ExplorerContext context)
         {
@@ -600,18 +450,19 @@ namespace Explobar
 
                 var firstItem = selectedItems?.FirstOrDefault() ?? "";
 
-                if (info.Arguments.Contains("%f%") && firstItem.IsEmpty())
+                if (info.Arguments.Contains(ConfigConstants.SelectedFile) && firstItem.IsEmpty())
                 {
                     Runtime.ShowWarning("Please select the item in the explorer view to be passed to the command.");
                     return;
                 }
 
                 var args = info.Arguments?
-                    .Replace("%f%", $"\"{firstItem}\"")
-                    .Replace("%c%", $"\"{currDir}\"")
+                    .Replace(ConfigConstants.SelectedFile, $"\"{firstItem}\"")
+                    .Replace(ConfigConstants.CurrDir, $"\"{currDir}\"")
                     ?? "";
+
                 var workDir = info.WorkingDir?
-                    .Replace("%c%", currDir)
+                    .Replace(ConfigConstants.CurrDir, currDir)
                     ?? "";
 
                 var startInfo = new ProcessStartInfo
@@ -651,7 +502,8 @@ namespace Explobar
             }
             catch
             {
-                // Ignore errors
+                // Ignore errors - user will see no execution anyway and follow it in logs.
+                // Avoid interfering with the UX via message boxes or other popups.
             }
         }
 

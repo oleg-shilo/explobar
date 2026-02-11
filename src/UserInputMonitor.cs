@@ -207,17 +207,12 @@ namespace Explobar
                         var button = factory();
                         if (button is ICustomButton customButton)
                         {
-                            // Desktop.SetForegroundWindow(context.HWND);
-                            // Thread.Sleep(100);
                             customButton.OnClick(new ClickArgs { Context = context });
                         }
                     }
                 }
                 else
                 {
-                    // Desktop.SetForegroundWindow(context.HWND);
-                    // Thread.Sleep(100);
-                    // Handle custom executables
                     item.Execute(context);
                 }
             }

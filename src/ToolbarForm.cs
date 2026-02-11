@@ -271,12 +271,11 @@ namespace Explobar
                         {
                             enableMouseCheck = true;
                             checkMouseTimer?.Start();
-                            // Runtime.Output("Started mouse check timer");
                         }));
                     }
                     catch
                     {
-                        // Ignore errors
+                        // Ignore errors - we may fail if the for is disposed by other means
                     }
                 });
 
@@ -486,7 +485,7 @@ namespace Explobar
                 }
                 catch
                 {
-                    // Ignore errors
+                    // Ignore errors - we may fail if the for is disposed by other means
                 }
             }
         }

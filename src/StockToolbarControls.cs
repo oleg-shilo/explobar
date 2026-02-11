@@ -33,16 +33,16 @@ namespace Explobar
     {
         public static Dictionary<string, Func<Button>> Items = new Dictionary<string, Func<Button>>
         {
-            { "{from-clipboard}", () => new NavigateFromClipboard() },
-            { "{new-file}", () => new NewFile() },
-            { "{new-folder}", () => new NewFolder() },
-            { "{new-tab}", () => new NewTab() },
-            { "{props}", () => new FileProperties() },
-            { "{icons}", () => new BrowseIcons() },
-            { "{recent}", () => new RecentLocations() },
-            { "{app-config}", () => new AppConfig() },
-            { "{favorites}", () => new FavoriteLocations() },
-            { "{application}", () => new FavoriteApplications() },
+            { ConfigConstants.from_clip, () => new NavigateFromClipboard() },
+            { ConfigConstants.new_file, () => new NewFile() },
+            { ConfigConstants.new_folder, () => new NewFolder() },
+            { ConfigConstants.new_tab, () => new NewTab() },
+            { ConfigConstants.props, () => new FileProperties() },
+            { ConfigConstants.icons, () => new BrowseIcons() },
+            { ConfigConstants.recent, () => new RecentLocations() },
+            { ConfigConstants.app_config, () => new AppConfig() },
+            { ConfigConstants.favs, () => new FavoriteLocations() },
+            { ConfigConstants.apps, () => new FavoriteApplications() },
         };
     }
 
@@ -300,8 +300,8 @@ namespace Explobar
                 var currDir = context.RootPath ?? Environment.CurrentDirectory;
 
                 arguments = arguments
-                    .Replace("%f%", $"\"{firstItem}\"")
-                    .Replace("%c%", $"\"{currDir}\"");
+                    .Replace(ConfigConstants.SelectedFile, $"\"{firstItem}\"")
+                    .Replace(ConfigConstants.CurrDir, $"\"{currDir}\"");
 
                 arguments = Environment.ExpandEnvironmentVariables(arguments);
             }
@@ -350,7 +350,7 @@ namespace Explobar
                     }
                     catch
                     {
-                        // Ignore errors
+                        // Ignore errors - it's a background thread. nothing meaningful we can do, and the operation is not critical anyway
                     }
                 });
             }
