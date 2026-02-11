@@ -59,3 +59,4 @@ nunit-*.xml
 /src/MigrationBackup/59c5cec2/explobar
 .veracode
 /src/logo
+/CustomPlugins/MyScriptedButton.cs.dll

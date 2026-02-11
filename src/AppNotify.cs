@@ -30,29 +30,31 @@ namespace Explobar
             // Create context menu
             var contextMenu = new ContextMenuStrip();
 
-            var configItem = new ToolStripMenuItem("Configuration");
-            configItem.Click += (s, e) => Process.Start("notepad.exe", ToolbarItems.ConfigPath);
-            contextMenu.Items.Add(configItem);
+            contextMenu.Items.Add(new ToolStripMenuItem("Configuration", null,
+                (s, e) => Process.Start("notepad.exe", ToolbarItems.ConfigPath)));
 
-            var iconBrowserItem = new ToolStripMenuItem("Icon Browser");
-            iconBrowserItem.Click += (s, e) => IconBrowser.Show();
-            contextMenu.Items.Add(iconBrowserItem);
+            contextMenu.Items.Add(new ToolStripMenuItem("Icon Browser", null,
+                (s, e) => IconBrowser.Show()));
 
-            contextMenu.Items.Add(new ToolStripSeparator());
+            contextMenu.Items.Add(new ToolStripMenuItem("Show Logs", null,
+                (s, e) => Process.Start("notepad.exe", Runtime.LogFilePath)));
 
-            var aboutItem = new ToolStripMenuItem("About");
-            aboutItem.Click += (s, e) => AboutBox.Show();
-            contextMenu.Items.Add(aboutItem);
+            contextMenu.Items.Add(new ToolStripMenuItem("Mark in Logs", null,
+                (s, e) => Runtime.Log("================")));
 
             contextMenu.Items.Add(new ToolStripSeparator());
 
-            var exitItem = new ToolStripMenuItem("Exit");
-            exitItem.Click += (s, e) =>
-            {
-                ToolbarForm.HideOnClosing = false;
-                Application.Exit();
-            };
-            contextMenu.Items.Add(exitItem);
+            contextMenu.Items.Add(new ToolStripMenuItem("About", null,
+                (s, e) => AboutBox.Show()));
+
+            contextMenu.Items.Add(new ToolStripSeparator());
+
+            contextMenu.Items.Add(new ToolStripMenuItem("Exit", null,
+                (s, e) =>
+                {
+                    ToolbarForm.HideOnClosing = false;
+                    Application.Exit();
+                }));
 
             _trayIcon.ContextMenuStrip = contextMenu;
 

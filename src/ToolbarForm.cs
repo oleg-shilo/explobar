@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using static System.Collections.Specialized.BitVector32;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -145,6 +146,8 @@ namespace Explobar
 
         public ToolbarForm Init()
         {
+            var items = ToolbarItems.LoadConfig().Items;
+
             this.Text = "Selected Items";
             this.TopMost = true;
             this.FormBorderStyle = FormBorderStyle.None;
@@ -184,7 +187,7 @@ namespace Explobar
 
             this.Controls.Add(toolbarPanel);
 
-            foreach (var item in ToolbarItems.Items)
+            foreach (var item in items)
             {
                 if (item.Hidden)
                     continue; // Skip hidden items - they're only accessible via shortcuts
@@ -201,6 +204,12 @@ namespace Explobar
                 checkMouseTimer.Tick += CheckMouseTimer_Tick;
             }
 
+            this.Load += (s, e) =>
+            {
+                enableMouseCheck = true;
+                checkMouseTimer?.Start();
+            };
+
             this.VisibleChanged += (s, e) =>
             {
                 if (this.Visible)
@@ -209,27 +218,33 @@ namespace Explobar
 
             this.FormClosing += (s, e) =>
             {
-                this.InUIThread(() =>
+                Profiler.Log($"Form is closing: {this.Handle}");
+                // Debug.Assert(false);
+                // this.InUIThread(() =>
+                this.Invoke((Action)(() =>
                 {
                     if (HideOnClosing)
                     {
-                        Runtime.Log("Hiding toolbar instead of closing");
+                        Runtime.Output("Hiding toolbar instead of closing");
                         e.Cancel = true;
                         this.Hide();
                     }
                     else
                     {
-                        Runtime.Log("Disposing toolbar");
+                        Runtime.Output("Disposing toolbar");
                         checkMouseTimer?.Stop();
                         checkMouseTimer?.Dispose();
                         toolTip?.Dispose();
                         Instance = null;
                     }
-                });
+                }));
             };
 
             this.lastLoadedConfiguration = ToolbarItems.configFileTimestamp;
-            Profiler.Log();
+
+            Profiler.Log($"Form is initiated: {this.Handle}");
+            ToolbarItems.UpdatePluginTimestamps();
+            Instance = this;
             return this;
         }
 
@@ -244,23 +259,26 @@ namespace Explobar
             SetWindowPos(this.Handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
             SetForegroundWindow(this.Handle);
 
-            Task.Run(() =>
-            {
-                Thread.Sleep(700);
-                try
+            if (this.IsHandleCreated)
+                Task.Run(() =>
                 {
-                    this.BeginInvoke((Action)(() =>
+                    for (int i = 0; i < 10 && !this.IsHandleCreated; i++)
+                        Thread.Sleep(700);
+
+                    try
                     {
-                        enableMouseCheck = true;
-                        checkMouseTimer?.Start();
-                        // Runtime.Log("Started mouse check timer");
-                    }));
-                }
-                catch
-                {
-                    // Ignore errors
-                }
-            });
+                        this.BeginInvoke((Action)(() =>
+                        {
+                            enableMouseCheck = true;
+                            checkMouseTimer?.Start();
+                            // Runtime.Output("Started mouse check timer");
+                        }));
+                    }
+                    catch
+                    {
+                        // Ignore errors
+                    }
+                });
 
             Profiler.Log();
             return this;
@@ -436,16 +454,16 @@ namespace Explobar
 
         public void HideToolbar()
         {
-            // Runtime.Log("Stopping mouse timer");
+            // Runtime.Output("Stopping mouse timer");
             checkMouseTimer?.Stop();
             if (HideOnClosing)
             {
-                // Runtime.Log("Hiding toolbar");
+                // Runtime.Output("Hiding toolbar");
                 this.Hide();
             }
             else
             {
-                // Runtime.Log("Closing toolbar");
+                // Runtime.Output("Closing toolbar");
                 this.Close();
             }
             SetForegroundWindow((IntPtr)ExplorerContext.HWND);

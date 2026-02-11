@@ -54,14 +54,14 @@ namespace Explobar
             });
             _monitorThread.SetApartmentState(ApartmentState.STA);
             _monitorThread.Start();
-            Runtime.Log("Explorer history monitoring started");
+            Runtime.Output("Explorer history monitoring started");
         }
 
         public static void StopMonitor()
         {
             _monitorThread.Abort();
             _monitorThread = null;
-            Runtime.Log("Explorer history monitoring stopped");
+            Runtime.Output("Explorer history monitoring stopped");
         }
 
         static void ScanExplorerWindows()
@@ -80,16 +80,16 @@ namespace Explobar
                 _lastKnownPaths = currentPaths;
 
                 if (newPaths.Any())
-                    Runtime.Log($"Found {newPaths.Count} new Explorer location(s)");
+                    Runtime.Output($"Found {newPaths.Count} new Explorer location(s)");
             }
             catch (Exception ex)
             {
-                Runtime.Log($"Error scanning explorer windows: {ex.Message}");
+                Runtime.Output($"Error scanning explorer windows: {ex.Message}");
             }
             finally
             {
                 sw.Stop();
-                Runtime.Log($"Explorer scan completed in {sw.ElapsedMilliseconds} ms");
+                Runtime.Output($"Explorer scan completed in {sw.ElapsedMilliseconds} ms");
             }
         }
 
@@ -123,7 +123,7 @@ namespace Explobar
             }
             catch (Exception ex)
             {
-                Runtime.Log($"Error enumerating explorer windows: {ex.Message}");
+                Runtime.Output($"Error enumerating explorer windows: {ex.Message}");
             }
             finally
             {
@@ -155,7 +155,7 @@ namespace Explobar
                 SaveHistory();
 
                 if (!silent)
-                    Runtime.Log($"Added to history: {path}");
+                    Runtime.Output($"Added to history: {path}");
             }
         }
 
@@ -196,7 +196,7 @@ namespace Explobar
             }
             catch (Exception ex)
             {
-                Runtime.Log($"Error loading history: {ex.Message}");
+                Runtime.Output($"Error loading history: {ex.Message}");
             }
         }
 
@@ -210,7 +210,7 @@ namespace Explobar
             }
             catch (Exception ex)
             {
-                Runtime.Log($"Error saving history: {ex.Message}");
+                Runtime.Output($"Error saving history: {ex.Message}");
             }
         }
     }
