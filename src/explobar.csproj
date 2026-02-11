@@ -57,6 +57,7 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="AppNotify.cs" />
+    <Compile Include="ConfigManager.cs" />
     <Compile Include="Desktop.cs" />
     <Compile Include="Explorer.cs" />
     <Compile Include="ExplorerHistory.cs" />

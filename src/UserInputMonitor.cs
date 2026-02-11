@@ -123,7 +123,7 @@ namespace Explobar
         void KeyboardHook_OnKeyPressed(Keys key)
         {
             // Reload configured key if config changed
-            if (!ToolbarItems.IsConfigUpToDate)
+            if (!ConfigManager.IsConfigUpToDate)
             {
                 ParseShortcutKey(ToolbarItems.Settings.ShortcutKey);
                 LoadToolbarShortcuts();

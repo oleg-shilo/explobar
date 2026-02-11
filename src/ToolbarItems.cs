@@ -35,301 +35,17 @@ namespace Explobar
 
     static class ToolbarItems
     {
-        public static string ConfigPath = SpecialFolder.LocalApplicationData.Combine("Explobar", "toolbar-items.yaml");
-
-        public static List<ToolbarItem> Items => LoadConfig().Items;
-        public static ToolbarSettings Settings => LoadConfig().Settings;
-        public static List<string> Favorites => LoadConfig().Favorites;
-        public static List<string> Applications => LoadConfig().Applications;
-
-        public static DateTime configFileTimestamp = DateTime.MinValue;
-        static ToolbarConfig currentConfig = null;
-        static Dictionary<string, DateTime> pluginTimestamps = new Dictionary<string, DateTime>();
+        public static List<ToolbarItem> Items => ConfigManager.LoadConfig().Items;
+        public static ToolbarSettings Settings => ConfigManager.LoadConfig().Settings;
+        public static List<string> Favorites => ConfigManager.LoadConfig().Favorites;
+        public static List<string> Applications => ConfigManager.LoadConfig().Applications;
 
         // Flag to indicate config loading is in progress (user is viewing error dialog)
-        public static bool IsConfigLoadingInProgress { get; private set; } = false;
 
-        public static bool IsConfigUpToDate
-        {
-            get
-            {
-                Runtime.Output("Checking if config is up to date...");
-                if (!File.Exists(ConfigPath))
-                    return false;
-                if (currentConfig == null)
-                    return false;
+        private static ToolbarConfig _defaultConfig;
 
-                // Check YAML config file timestamp
-                var lastWriteTime = File.GetLastWriteTime(ConfigPath);
-                if (lastWriteTime != configFileTimestamp)
-                    return false;
-
-                return true;
-            }
-        }
-
-        public static bool ArePluginsUpToDate()
-        {
-            if (currentConfig?.Items == null)
-                return true;
-
-            try
-            {
-                // Get all plugin DLL paths from config
-                var pluginPaths = GetPluginPaths(currentConfig.Items);
-
-                foreach (var pluginPath in pluginPaths)
-                {
-                    if (!File.Exists(pluginPath))
-                    {
-                        // Plugin file was deleted - need to reload
-                        Runtime.Output($"Plugin file no longer exists: {pluginPath}");
-                        return false;
-                    }
-
-                    var lastWriteTime = File.GetLastWriteTime(pluginPath);
-
-                    // Check if this is a new plugin or if it was modified
-                    if (!pluginTimestamps.ContainsKey(pluginPath))
-                    {
-                        // New plugin detected
-                        return false;
-                    }
-
-                    if (pluginTimestamps[pluginPath] < lastWriteTime)
-                    {
-                        // Plugin was modified
-                        Runtime.Output($"Plugin file changed: {pluginPath}");
-                        return false;
-                    }
-                }
-
-                // Check if any plugins were removed from config
-                if (pluginTimestamps.Count > pluginPaths.Count)
-                {
-                    return false;
-                }
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Runtime.Output($"Error checking plugin timestamps: {ex.Message}");
-                return false; // Assume outdated on error
-            }
-        }
-
-        static List<string> GetPluginPaths(List<ToolbarItem> items)
-        {
-            var paths = new List<string>();
-
-            foreach (var item in items)
-            {
-                if (item.Path.IsEmpty())
-                    continue;
-
-                // Check if path is a plugin reference (enclosed in curly brackets)
-                if (item.Path.StartsWith("{") && item.Path.EndsWith("}"))
-                {
-                    var pathContent = item.Path.Trim('{', '}');
-
-                    // Skip built-in stock controls
-                    if (pathContent.StartsWith("new-") ||
-                        pathContent.StartsWith("from-") ||
-                        pathContent == "recent" ||
-                        pathContent == "favorites" ||
-                        pathContent == "application" ||
-                        pathContent == "props" ||
-                        pathContent == "separator" ||
-                        pathContent == "app-config")
-                    {
-                        continue;
-                    }
-
-                    // Extract DLL path (format: path or path,ClassName)
-                    var dllPath = pathContent.Split(',')[0].Trim();
-
-                    // Resolve path (expand environment variables)
-                    dllPath = dllPath.ExpandEnvars();
-
-                    // Check if it's a valid DLL file
-                    if (dllPath.EndsWithEither(".dll", ".exe", ".cs") && !paths.Contains(dllPath))
-                    {
-                        paths.Add(dllPath);
-                    }
-                }
-            }
-
-            return paths;
-        }
-
-        public static void UpdatePluginTimestamps()
-        {
-            pluginTimestamps.Clear();
-
-            if (currentConfig?.Items == null)
-                return;
-
-            var pluginPaths = GetPluginPaths(currentConfig.Items);
-
-            foreach (var pluginPath in pluginPaths)
-            {
-                try
-                {
-                    if (File.Exists(pluginPath))
-                    {
-                        pluginTimestamps[pluginPath] = File.GetLastWriteTime(pluginPath);
-                        Runtime.Output($"Tracked plugin: {pluginPath}");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Runtime.Output($"Failed to track plugin {pluginPath}: {ex.Message}");
-                }
-            }
-        }
-
-        internal static ToolbarConfig LoadConfig()
-        {
-            lock (typeof(ToolbarItems))
-            {
-                if (IsConfigUpToDate)
-                    return currentConfig;
-
-                IsConfigLoadingInProgress = true; // Block keyboard input
-                try
-                {
-                    try
-                    {
-                        if (File.Exists(ConfigPath))
-                        {
-                            var yaml = File.ReadAllText(ConfigPath);
-                            var deserializer = new DeserializerBuilder()
-                                .WithNamingConvention(PascalCaseNamingConvention.Instance)
-                                .Build();
-
-                            currentConfig = deserializer.Deserialize<ToolbarConfig>(yaml);
-
-                            if (currentConfig?.Items == null || !currentConfig.Items.Any())
-                                currentConfig = SaveDefaultConfig();
-                        }
-                        else
-                        {
-                            currentConfig = SaveDefaultConfig();
-                        }
-                    }
-                    catch (YamlDotNet.Core.SyntaxErrorException ex)
-                    {
-                        if (!HandleConfigLoadError(ex, isYamlError: true))
-                        {
-                            // User chose to cancel - exit application
-                            Application.Exit();
-                            return null;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        if (!HandleConfigLoadError(ex, isYamlError: false))
-                        {
-                            // User chose to cancel - exit application
-                            Application.Exit();
-                            return null;
-                        }
-                    }
-
-                    if (currentConfig == null)
-                        currentConfig = SaveDefaultConfig();
-
-                    if (File.Exists(ConfigPath))
-                        configFileTimestamp = File.GetLastWriteTime(ConfigPath);
-                    else
-                        configFileTimestamp = DateTime.MinValue;
-
-                    // Update plugin timestamps after successful load
-                    UpdatePluginTimestamps();
-
-                    currentConfig.Items.Resolve();
-                    return currentConfig;
-                }
-                finally
-                {
-                    IsConfigLoadingInProgress = false; // Unblock keyboard input
-                }
-            }
-        }
-
-        static bool HandleConfigLoadError(Exception ex, bool isYamlError)
-        {
-            var errorDetails = isYamlError && ex is YamlDotNet.Core.SyntaxErrorException yamlEx
-                ? $"{ex.Message}\nStart: {yamlEx.Start}, End: {yamlEx.End}"
-                : ex.Message;
-
-            var message = $"Error loading configuration file:\n\n" +
-                         $"{errorDetails}\n\n" +
-                         $"Location: {ConfigPath}\n\n" +
-                         $"Click OK to:\n" +
-                         $"  • Backup your current config (with timestamp)\n" +
-                         $"  • Create a default configuration\n" +
-                         $"  • Continue running Explobar\n\n" +
-                         $"Click Cancel to:\n" +
-                         $"  • Exit Explobar\n" +
-                         $"  • Fix the configuration manually\n" +
-                         $"  • Restart when ready";
-
-            // Note: IsConfigLoadingInProgress is true while this dialog is showing
-            bool userChoseOK = Runtime.UserDecision(message);
-
-            if (userChoseOK)
-            {
-                // User chose to backup and create defaults
-                var backupPath = BackupConfigFile();
-
-                var successMessage = backupPath != null
-                    ? $"Your configuration has been backed up to:\n{backupPath}\n\nA default configuration has been created."
-                    : "A default configuration has been created.";
-
-                Runtime.ShowInfo(successMessage);
-                Runtime.Output($"Config error handled: backup created, defaults loaded. Error was: {ex.Message}");
-
-                return true; // Continue with defaults
-            }
-            else
-            {
-                // User chose to cancel and fix manually
-                Runtime.Output($"Config load cancelled by user. Error was: {ex.Message}");
-                return false; // Exit application
-            }
-        }
-
-        static string BackupConfigFile()
-        {
-            if (!File.Exists(ConfigPath))
-                return null;
-
-            try
-            {
-                var timestamp = DateTime.Now.ToString("yyyy-MM-dd_HHmmss");
-                var directory = Path.GetDirectoryName(ConfigPath);
-                var fileName = Path.GetFileNameWithoutExtension(ConfigPath);
-                var extension = Path.GetExtension(ConfigPath);
-
-                var backupPath = Path.Combine(directory, $"{fileName}.backup_{timestamp}{extension}");
-
-                File.Copy(ConfigPath, backupPath, overwrite: false);
-
-                Runtime.Output($"Config file backed up to: {backupPath}");
-                return backupPath;
-            }
-            catch (Exception ex)
-            {
-                Runtime.Output($"Failed to backup config file: {ex.Message}");
-                return null;
-            }
-        }
-
-        static ToolbarConfig SaveDefaultConfig()
-        {
-            var result = new ToolbarConfig
+        public static ToolbarConfig DefaultConfig => _defaultConfig ?? (_defaultConfig =
+            new ToolbarConfig
             {
                 Settings = new ToolbarSettings
                 {
@@ -338,88 +54,51 @@ namespace Explobar
                     ShortcutKey = "Shift+Escape"
                 },
                 Favorites = new List<string>
-                {
-                    SpecialFolder.Desktop.GetPath(),
-                    SpecialFolder.MyDocuments.GetPath(),
-                    SpecialFolder.UserProfile.GetPath()
-                },
+                            {
+                                SpecialFolder.Desktop.GetPath(),
+                                SpecialFolder.MyDocuments.GetPath(),
+                                SpecialFolder.UserProfile.GetPath()
+                            },
                 Applications = new List<string>
-                {
-                    "notepad.exe",
-                    "calc.exe",
-                    "wt.exe|-d %c%",  // Terminal in current directory
-                    "powershell.exe|-NoExit|%c%"  // PowerShell with working dir set to current
-                },
-                Items = GetDefaultItems()
-            };
-
-            try
-            {
-                var serializer = new SerializerBuilder()
-                    .WithNamingConvention(PascalCaseNamingConvention.Instance)
-                    .Build();
-
-                var yaml = serializer.Serialize(result);
-                yaml = yaml
-                    .Replace($"  Arguments: ''{NewLine}", "")
-                    .Replace($"  WorkingDir: ''{NewLine}", "")
-                    .Replace($"  Icon: ''{NewLine}", "")
-                    .Replace($"  Shortcut: ''{NewLine}", "")
-                    .Replace($"  Hidden: false{NewLine}", "")
-                    .Replace($"  SystemWide: false{NewLine}", "")
-                    .Replace($"  Tooltip: ''{NewLine}", "");
-
-                // Add comments at the start of the file
-                var comments = Globals.ConfigFileHeader;
-
-                ConfigPath.EnsureFileDir();
-                var yamlWithComments = comments + yaml;
-                File.WriteAllText(ConfigPath, yamlWithComments);
-
-                Runtime.Output($"Default config created at: {ConfigPath}");
+                    {
+                        "notepad.exe",
+                        "calc.exe",
+                        "wt.exe|-d %c%",  // Terminal in current directory
+                        "powershell.exe|-NoExit|%c%"  // PowerShell with working dir set to current
+                    },
+                Items = new List<ToolbarItem>
+                    {
+                        new ToolbarItem() { Path = ConfigConstants.new_tab },
+                        new ToolbarItem() { Path = ConfigConstants.from_clip },
+                        new ToolbarItem() { Path = ConfigConstants.separator },
+                        new ToolbarItem() { Path = ConfigConstants.new_file },
+                        new ToolbarItem() { Path = ConfigConstants.new_folder },
+                        new ToolbarItem() { Path = ConfigConstants.separator },
+                        new ToolbarItem() { Path = ConfigConstants.recent },
+                        new ToolbarItem() { Path = ConfigConstants.props },
+                        new ToolbarItem() { Path = ConfigConstants.favs },
+                        new ToolbarItem() { Path = ConfigConstants.apps },
+                        new ToolbarItem() { Path = ConfigConstants.separator },
+                        new ToolbarItem()
+                        {
+                            Icon = @"%SystemRoot%\System32\cmd.exe",
+                            Path = "wt.exe",
+                            Arguments = $@"-d {ConfigConstants.CurrDir} -p ""Command Prompt""; -d {ConfigConstants.CurrDir} -p ""Windows PowerShell""",
+                            Tooltip = "Open Windows Terminal"
+                        },
+                        new ToolbarItem()
+                        {
+                            Icon = @"%SystemRoot%\System32\shell32.dll,314",
+                            Path = "notepad.exe",
+                            Arguments = ConfigConstants.SelectedFile,
+                            Tooltip = "Open in notepad",
+                            Shortcut = "Ctrl+Alt+N"
+                        },
+                        new ToolbarItem() { Path = ConfigConstants.separator },
+                        new ToolbarItem() { Path = ConfigConstants.app_config },
+                    }
             }
-            catch (Exception ex)
-            {
-                Runtime.Output($"Error saving default config: {ex.Message}");
-            }
-            return result;
-        }
-
-        static List<ToolbarItem> GetDefaultItems()
-        {
-            var items = new List<ToolbarItem>
-            {
-                new ToolbarItem() { Path = ConfigConstants.new_tab },
-                new ToolbarItem() { Path = ConfigConstants.from_clip },
-                new ToolbarItem() { Path = ConfigConstants.separator },
-                new ToolbarItem() { Path = ConfigConstants.new_file },
-                new ToolbarItem() { Path = ConfigConstants.new_folder },
-                new ToolbarItem() { Path = ConfigConstants.separator },
-                new ToolbarItem() { Path = ConfigConstants.recent },
-                new ToolbarItem() { Path = ConfigConstants.props },
-                new ToolbarItem() { Path = ConfigConstants.favs },
-                new ToolbarItem() { Path = ConfigConstants.apps },
-                new ToolbarItem() { Path = ConfigConstants.separator },
-                new ToolbarItem()
-                {
-                    Icon = @"%SystemRoot%\System32\cmd.exe",
-                    Path = "wt.exe",
-                    Arguments = $@"-d {ConfigConstants.CurrDir} -p ""Command Prompt""; -d {ConfigConstants.CurrDir} -p ""Windows PowerShell""",
-                    Tooltip = "Open Windows Terminal"
-                },
-                new ToolbarItem()
-                {
-                    Icon = @"%SystemRoot%\System32\shell32.dll,314",
-                    Path = "notepad.exe",
-                    Arguments = ConfigConstants.SelectedFile,
-                    Tooltip = "Open in notepad",
-                    Shortcut = "Ctrl+Alt+N"
-                },
-                new ToolbarItem() { Path = ConfigConstants.separator },
-                new ToolbarItem() { Path = ConfigConstants.app_config },
-            };
-            return items;
-        }
+                                                                       );
     }
 
     public class ToolbarItem
@@ -477,34 +156,31 @@ namespace Explobar
                 // Set focus to the process window
                 if (process != null)
                 {
-                    Task.Run(() =>
-                    {
-                        try
-                        {
-                            // Wait for the process to create its main window (up to 2 seconds)
-                            if (process.WaitForInputIdle(2000))
-                            {
-                                // Give the window a moment to fully initialize
-                                Thread.Sleep(100);
-
-                                if (process.MainWindowHandle != IntPtr.Zero)
-                                {
-                                    Desktop.SetForegroundWindow(process.MainWindowHandle);
-                                }
-                            }
-                        }
-                        catch
-                        {
-                            // Ignore errors - some processes don't have a UI or can't be accessed
-                        }
-                    });
+                    TrySetProcessFocus(process);
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // Ignore errors - user will see no execution anyway and follow it in logs.
                 // Avoid interfering with the UX via message boxes or other popups.
+                Runtime.Output($"Failed to execute toolbar item '{info.Path}': {ex.Message}");
             }
+        }
+
+        private static void TrySetProcessFocus(Process process)
+        {
+            Task.Run(() =>
+            {
+                try
+                {
+                    if (process.WaitForInputIdle(Globals.WindowStabilizationDelay))
+                    {
+                        Thread.Sleep(100);
+                        if (process.MainWindowHandle != IntPtr.Zero)
+                            Desktop.SetForegroundWindow(process.MainWindowHandle);
+                    }
+                }
+                catch { /* Non-critical background operation */ }
+            });
         }
 
         public static Image ExtractIcon(this string iconPath, int iconIndex, int iconSize = 0)
@@ -550,6 +226,41 @@ namespace Explobar
             {
                 return null;
             }
+        }
+
+        public static List<string> GetPluginPaths(this List<ToolbarItem> items)
+        {
+            var paths = new List<string>();
+
+            foreach (var item in items)
+            {
+                if (item.Path.IsEmpty())
+                    continue;
+
+                // Check if path is a plugin reference (enclosed in curly brackets)
+                if (item.Path.StartsWith("{") && item.Path.EndsWith("}"))
+                {
+                    // Skip built-in stock controls
+                    if (ConfigConstants.StockButtons.Contains(item.Path))
+                        continue;
+
+                    var pathContent = item.Path.Trim('{', '}');
+
+                    // Extract DLL path (format: path or path,ClassName)
+                    var dllPath = pathContent.Split(',')[0].Trim();
+
+                    // Resolve path (expand environment variables)
+                    dllPath = dllPath.ExpandEnvars();
+
+                    // Check if it's a valid DLL file
+                    if (dllPath.EndsWithEither(".dll", ".exe", ".cs") && !paths.Contains(dllPath))
+                    {
+                        paths.Add(dllPath);
+                    }
+                }
+            }
+
+            return paths;
         }
 
         public static List<ToolbarItem> Resolve(this List<ToolbarItem> items)

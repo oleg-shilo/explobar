@@ -79,7 +79,7 @@ namespace Explobar
 
         public static ToolbarForm GetInstance()
         {
-            if (Instance != null && Instance.lastLoadedConfiguration == ToolbarItems.configFileTimestamp)
+            if (Instance != null && Instance.lastLoadedConfiguration == ConfigManager.configFileTimestamp)
                 return Instance;
             else
                 return null;
@@ -96,7 +96,7 @@ namespace Explobar
         {
             // To avoid flickering, we create the next instance in advance and reuse it
             Profiler.Log();
-            if (Instance == null || Instance.lastLoadedConfiguration != ToolbarItems.configFileTimestamp)
+            if (Instance == null || Instance.lastLoadedConfiguration != ConfigManager.configFileTimestamp)
                 Instance = new ToolbarForm().Init();
             return Instance;
         }
@@ -146,7 +146,7 @@ namespace Explobar
 
         public ToolbarForm Init()
         {
-            var items = ToolbarItems.LoadConfig().Items;
+            var items = ConfigManager.LoadConfig().Items;
 
             this.Text = "Selected Items";
             this.TopMost = true;
@@ -179,7 +179,6 @@ namespace Explobar
             toolbarPanel = new FlowLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                // BackColor = Color.AliceBlue,
                 BackColor = Color.WhiteSmoke,
                 AutoSize = true,
                 AutoSizeMode = AutoSizeMode.GrowAndShrink
@@ -219,8 +218,6 @@ namespace Explobar
             this.FormClosing += (s, e) =>
             {
                 Profiler.Log($"Form is closing: {this.Handle}");
-                // Debug.Assert(false);
-                // this.InUIThread(() =>
                 this.Invoke((Action)(() =>
                 {
                     if (HideOnClosing)
@@ -240,10 +237,10 @@ namespace Explobar
                 }));
             };
 
-            this.lastLoadedConfiguration = ToolbarItems.configFileTimestamp;
+            this.lastLoadedConfiguration = ConfigManager.configFileTimestamp;
 
             Profiler.Log($"Form is initiated: {this.Handle}");
-            ToolbarItems.UpdatePluginTimestamps();
+            ConfigManager.UpdatePluginTimestamps();
             Instance = this;
             return this;
         }
