@@ -11,11 +11,54 @@ namespace Explobar
 {
     static class ConfigManager
     {
+        private static FileSystemWatcher configWatcher;
+        private static bool isConfigUpToDate = false;
+        private static bool suppressWatcherEvents = false;
+
+        public static bool IsConfigUpToDate => isConfigUpToDate;
+
+        public static void Initialize()
+        {
+            // Ensure config directory exists
+            var configDir = Path.GetDirectoryName(ConfigPath);
+            if (!Directory.Exists(configDir))
+                Directory.CreateDirectory(configDir);
+
+            // Set up file watcher for config file
+            configWatcher = new FileSystemWatcher
+            {
+                Path = configDir,
+                Filter = Path.GetFileName(ConfigPath),
+                NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.CreationTime,
+                EnableRaisingEvents = true
+            };
+
+            configWatcher.Changed += OnConfigFileChanged;
+            configWatcher.Created += OnConfigFileChanged;
+            configWatcher.Deleted += OnConfigFileChanged;
+            configWatcher.Renamed += OnConfigFileChanged;
+
+            Runtime.Output($"Config file watcher initialized for: {ConfigPath}");
+        }
+
+        private static void OnConfigFileChanged(object sender, FileSystemEventArgs e)
+        {
+            // Ignore events triggered by our own save operations
+            if (suppressWatcherEvents)
+            {
+                Runtime.Output($"Config file change ignored (internal save): {e.ChangeType}");
+                return;
+            }
+
+            Runtime.Output($"Config file change detected: {e.ChangeType}");
+            isConfigUpToDate = false;
+        }
+
         public static ToolbarConfig LoadConfig()
         {
-            lock (typeof(ToolbarItems))
+            lock (typeof(ConfigManager))
             {
-                if (IsConfigUpToDate)
+                if (IsConfigUpToDate && currentConfig != null)
                     return currentConfig;
 
                 IsConfigLoadingInProgress = true; // Block keyboard input
@@ -71,31 +114,18 @@ namespace Explobar
                     UpdatePluginTimestamps();
 
                     currentConfig.Items.Resolve();
+
+                    // Mark config as up to date after successful load
+                    isConfigUpToDate = true;
+
                     return currentConfig;
                 }
                 finally
                 {
+                    if (configWatcher == null)
+                        Initialize(); // Ensure watcher is initialized after first load
                     IsConfigLoadingInProgress = false; // Unblock keyboard input
                 }
-            }
-        }
-
-        public static bool IsConfigUpToDate
-        {
-            get
-            {
-                Runtime.Output("Checking if config is up to date...");
-                if (!File.Exists(ConfigPath))
-                    return false;
-                if (currentConfig == null)
-                    return false;
-
-                // Check YAML config file timestamp
-                var lastWriteTime = File.GetLastWriteTime(ConfigPath);
-                if (lastWriteTime != configFileTimestamp)
-                    return false;
-
-                return true;
             }
         }
 
@@ -157,20 +187,30 @@ namespace Explobar
 
             try
             {
-                var timestamp = DateTime.Now.ToString("yyyy-MM-dd_HHmmss");
-                var directory = Path.GetDirectoryName(ConfigPath);
-                var fileName = Path.GetFileNameWithoutExtension(ConfigPath);
-                var extension = Path.GetExtension(ConfigPath);
+                // Suppress watcher events during backup
+                suppressWatcherEvents = true;
+                try
+                {
+                    var timestamp = DateTime.Now.ToString("yyyy-MM-dd_HHmmss");
+                    var directory = Path.GetDirectoryName(ConfigPath);
+                    var fileName = Path.GetFileNameWithoutExtension(ConfigPath);
+                    var extension = Path.GetExtension(ConfigPath);
 
-                var backupPath = Path.Combine(directory, $"{fileName}.backup_{timestamp}{extension}");
+                    var backupPath = Path.Combine(directory, $"{fileName}.backup_{timestamp}{extension}");
 
-                File.Copy(ConfigPath, backupPath, overwrite: false);
+                    File.Copy(ConfigPath, backupPath, overwrite: false);
 
-                Runtime.Output($"Config file backed up to: {backupPath}");
-                return backupPath;
+                    Runtime.Output($"Config file backed up to: {backupPath}");
+                    return backupPath;
+                }
+                finally
+                {
+                    suppressWatcherEvents = false;
+                }
             }
             catch (Exception ex)
             {
+                suppressWatcherEvents = false;
                 Runtime.Output($"Failed to backup config file: {ex.Message}");
                 return null;
             }
@@ -251,31 +291,41 @@ namespace Explobar
 
             try
             {
-                var serializer = new SerializerBuilder()
-                    .WithNamingConvention(PascalCaseNamingConvention.Instance)
-                    .Build();
+                // Suppress watcher events during our own save
+                suppressWatcherEvents = true;
+                try
+                {
+                    var serializer = new SerializerBuilder()
+                        .WithNamingConvention(PascalCaseNamingConvention.Instance)
+                        .Build();
 
-                var yaml = serializer.Serialize(result);
-                yaml = yaml
-                    .Replace($"  Arguments: ''{NewLine}", "")
-                    .Replace($"  WorkingDir: ''{NewLine}", "")
-                    .Replace($"  Icon: ''{NewLine}", "")
-                    .Replace($"  Shortcut: ''{NewLine}", "")
-                    .Replace($"  Hidden: false{NewLine}", "")
-                    .Replace($"  SystemWide: false{NewLine}", "")
-                    .Replace($"  Tooltip: ''{NewLine}", "");
+                    var yaml = serializer.Serialize(result);
+                    yaml = yaml
+                        .Replace($"  Arguments: ''{NewLine}", "")
+                        .Replace($"  WorkingDir: ''{NewLine}", "")
+                        .Replace($"  Icon: ''{NewLine}", "")
+                        .Replace($"  Shortcut: ''{NewLine}", "")
+                        .Replace($"  Hidden: false{NewLine}", "")
+                        .Replace($"  SystemWide: false{NewLine}", "")
+                        .Replace($"  Tooltip: ''{NewLine}", "");
 
-                // Add comments at the start of the file
-                var comments = Globals.ConfigFileHeader;
+                    // Add comments at the start of the file
+                    var comments = Globals.ConfigFileHeader;
 
-                ConfigPath.EnsureFileDir();
-                var yamlWithComments = comments + yaml;
-                File.WriteAllText(ConfigPath, yamlWithComments);
+                    ConfigPath.EnsureFileDir();
+                    var yamlWithComments = comments + yaml;
+                    File.WriteAllText(ConfigPath, yamlWithComments);
 
-                Runtime.Output($"Default config created at: {ConfigPath}");
+                    Runtime.Output($"Default config created at: {ConfigPath}");
+                }
+                finally
+                {
+                    suppressWatcherEvents = false;
+                }
             }
             catch (Exception ex)
             {
+                suppressWatcherEvents = false;
                 Runtime.Output($"Error saving default config: {ex.Message}");
             }
             return result;
