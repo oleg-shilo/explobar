@@ -12,6 +12,7 @@ namespace Explobar
     static class ConfigManager
     {
         private static FileSystemWatcher configWatcher;
+        private static List<FileSystemWatcher> pluginWatchers = new List<FileSystemWatcher>();
         private static bool isConfigUpToDate = false;
         private static bool suppressWatcherEvents = false;
 
@@ -39,19 +40,93 @@ namespace Explobar
             configWatcher.Renamed += OnConfigFileChanged;
 
             Runtime.Output($"Config file watcher initialized for: {ConfigPath}");
+
+            InitPluginWatchers();
         }
 
         private static void OnConfigFileChanged(object sender, FileSystemEventArgs e)
         {
             // Ignore events triggered by our own save operations
             if (suppressWatcherEvents)
-            {
-                Runtime.Output($"Config file change ignored (internal save): {e.ChangeType}");
                 return;
+
+            ReportNewFileChange("Config file", e.FullPath, e.ChangeType);
+
+            isConfigUpToDate = false;
+        }
+
+        private static void OnPluginFileChanged(object sender, FileSystemEventArgs e)
+        {
+            // Ignore events triggered by our own save operations
+            if (suppressWatcherEvents)
+                return;
+
+            ReportNewFileChange("Plugin file", e.FullPath, e.ChangeType);
+
+            arePluginsUpToDate = false;
+        }
+
+        static (string path, int timestamp) lastPluginChangeReport = (null, 0);
+
+        static void ReportNewFileChange(string context, string path, WatcherChangeTypes changeType)
+        {
+            // To avoid spamming logs with multiple events for the same change, only report if it's a different file or if
+            // more than 1 second has passed since the last report
+            if (lastPluginChangeReport.path != path || (Environment.TickCount - lastPluginChangeReport.timestamp) > 1000)
+            {
+                Runtime.Output($"{context ?? "File"} change detected: {path} ({changeType})");
+                lastPluginChangeReport = (path, Environment.TickCount);
+            }
+        }
+
+        static bool arePluginsUpToDate;
+
+        static void InitPluginWatchers()
+        {
+            // Dispose existing watchers
+            foreach (var watcher in pluginWatchers)
+            {
+                watcher.Dispose();
             }
 
-            Runtime.Output($"Config file change detected: {e.ChangeType}");
-            isConfigUpToDate = false;
+            pluginWatchers.Clear();
+
+            if (currentConfig?.Items == null)
+                return;
+
+            var pluginPaths = currentConfig.Items.GetPluginPaths();
+            foreach (var pluginPath in pluginPaths)
+            {
+                try
+                {
+                    var directory = Path.GetDirectoryName(pluginPath);
+                    var fileName = Path.GetFileName(pluginPath);
+                    var watcher = new FileSystemWatcher
+                    {
+                        Path = directory,
+                        Filter = fileName,
+                        NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.CreationTime,
+                        EnableRaisingEvents = true
+                    };
+                    watcher.Changed += OnPluginFileChanged;
+                    watcher.Created += OnPluginFileChanged;
+                    watcher.Deleted += OnPluginFileChanged;
+                    watcher.Renamed += OnPluginFileChanged;
+                    pluginWatchers.Add(watcher);
+                    Runtime.Output($"Plugin file watcher initialized for: {pluginPath}");
+                }
+                catch (Exception ex)
+                {
+                    Runtime.Output($"Failed to initialize watcher for plugin {pluginPath}: {ex.Message}");
+                }
+            }
+        }
+
+        public static bool ArePluginsUpToDate()
+        {
+            if (currentConfig?.Items == null)
+                return true;
+            return arePluginsUpToDate;
         }
 
         public static ToolbarConfig LoadConfig()
@@ -110,8 +185,8 @@ namespace Explobar
                     else
                         configFileTimestamp = DateTime.MinValue;
 
-                    // Update plugin timestamps after successful load
-                    UpdatePluginTimestamps();
+                    // Update plugin dirty after successful load
+                    ResetPluginDirtyFlag();
 
                     currentConfig.Items.Resolve();
 
@@ -126,57 +201,6 @@ namespace Explobar
                         Initialize(); // Ensure watcher is initialized after first load
                     IsConfigLoadingInProgress = false; // Unblock keyboard input
                 }
-            }
-        }
-
-        public static bool ArePluginsUpToDate()
-        {
-            if (currentConfig?.Items == null)
-                return true;
-
-            try
-            {
-                // Get all plugin DLL paths from config
-                var pluginPaths = currentConfig.Items.GetPluginPaths();
-
-                foreach (var pluginPath in pluginPaths)
-                {
-                    if (!File.Exists(pluginPath))
-                    {
-                        // Plugin file was deleted - need to reload
-                        Runtime.Output($"Plugin file no longer exists: {pluginPath}");
-                        return false;
-                    }
-
-                    var lastWriteTime = File.GetLastWriteTime(pluginPath);
-
-                    // Check if this is a new plugin or if it was modified
-                    if (!pluginTimestamps.ContainsKey(pluginPath))
-                    {
-                        // New plugin detected
-                        return false;
-                    }
-
-                    if (pluginTimestamps[pluginPath] < lastWriteTime)
-                    {
-                        // Plugin was modified
-                        Runtime.Output($"Plugin file changed: {pluginPath}");
-                        return false;
-                    }
-                }
-
-                // Check if any plugins were removed from config
-                if (pluginTimestamps.Count > pluginPaths.Count)
-                {
-                    return false;
-                }
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Runtime.Output($"Error checking plugin timestamps: {ex.Message}");
-                return false; // Assume outdated on error
             }
         }
 
@@ -216,30 +240,9 @@ namespace Explobar
             }
         }
 
-        public static void UpdatePluginTimestamps()
+        public static void ResetPluginDirtyFlag()
         {
-            pluginTimestamps.Clear();
-
-            if (currentConfig?.Items == null)
-                return;
-
-            var pluginPaths = currentConfig.Items.GetPluginPaths();
-
-            foreach (var pluginPath in pluginPaths)
-            {
-                try
-                {
-                    if (File.Exists(pluginPath))
-                    {
-                        pluginTimestamps[pluginPath] = File.GetLastWriteTime(pluginPath);
-                        Runtime.Output($"Tracked plugin: {pluginPath}");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Runtime.Output($"Failed to track plugin {pluginPath}: {ex.Message}");
-                }
-            }
+            arePluginsUpToDate = true;
         }
 
         static bool HandleConfigLoadError(Exception ex, bool isYamlError)

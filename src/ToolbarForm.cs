@@ -240,7 +240,7 @@ namespace Explobar
             this.lastLoadedConfiguration = ConfigManager.configFileTimestamp;
 
             Profiler.Log($"Form is initiated: {this.Handle}");
-            ConfigManager.UpdatePluginTimestamps();
+            ConfigManager.ResetPluginDirtyFlag();
             Instance = this;
             return this;
         }
@@ -294,7 +294,8 @@ namespace Explobar
             toolbarPanel.Controls.Add(separator);
         }
 
-        public static Bitmap DefaultIcon => (Bitmap)@"%SystemRoot%\System32\imageres.dll".ExpandEnvars().ExtractIcon(231);
+        private static Bitmap _defaultIcon;
+        public static Bitmap DefaultIcon => _defaultIcon ?? (_defaultIcon = (Bitmap)@"%SystemRoot%\System32\imageres.dll".ExpandEnvars().ExtractIcon(231));
 
         void AddToolbarButton(ToolbarItem info)
         {
@@ -416,41 +417,56 @@ namespace Explobar
             toolbarPanel.Controls.Add(button);
         }
 
+        // Cache for loaded images to avoid reloading and resizing the same icons multiple times
+        // Cache is not cleared in the current implementation - it can grow indefinitely if
+        // there are many different icons, but in typical usage it should be limited and it
+        // significantly improves performance when the same icons are used multiple times (e.g. for stock buttons)
+        // or when the toolbar is shown multiple times with the same configuration.
+        static Dictionary<string, Image> imageCache = new Dictionary<string, Image>();
+
         Bitmap CreateButtonImage(string iconPath, int iconIndex)
         {
-            Image originalIcon = null;
-            try
-            {
-                var ext = Path.GetExtension(iconPath).ToLowerInvariant();
+            var imageId = $"{iconPath}|{iconIndex}";
 
-                if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".bmp" || ext == ".ico" || ext == ".gif")
-                    originalIcon = Image.FromFile(iconPath);
-                else
-                    originalIcon = iconPath.ExtractIcon(iconIndex);
-            }
-            catch
+            Image originalIcon = null;
+            if (imageCache.ContainsKey(imageId))
             {
-                // Ignore errors and use default icon
+                originalIcon = imageCache[imageId];
+            }
+            else
+            {
+                try
+                {
+                    var ext = Path.GetExtension(iconPath).ToLowerInvariant();
+
+                    if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".bmp" || ext == ".ico" || ext == ".gif")
+                        originalIcon = Image.FromFile(iconPath);
+                    else
+                        originalIcon = iconPath.ExtractIcon(iconIndex);
+                }
+                catch
+                {
+                    // Ignore errors and use default icon
+                }
             }
 
             if (originalIcon == null)
                 originalIcon = DefaultIcon;
+            else
+                imageCache[imageId] = originalIcon;
 
-            using (originalIcon)
-            {
-                int imageSize = buttonSize - imagePadding - imagePadding;
+            int imageSize = buttonSize - imagePadding - imagePadding;
 
-                // Resize icon to exactly imageSize x imageSize
-                var resizedIcon = new Bitmap(imageSize, imageSize);
+            // Resize icon to exactly imageSize x imageSize
+            var resizedIcon = new Bitmap(imageSize, imageSize);
 
-                if (originalIcon != null)
-                    using (var graphics = Graphics.FromImage(resizedIcon))
-                    {
-                        graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
-                        graphics.DrawImage(originalIcon, 0, 0, imageSize, imageSize);
-                    }
-                return resizedIcon;
-            }
+            if (originalIcon != null)
+                using (var graphics = Graphics.FromImage(resizedIcon))
+                {
+                    graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                    graphics.DrawImage(originalIcon, 0, 0, imageSize, imageSize);
+                }
+            return resizedIcon;
         }
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
