@@ -134,8 +134,8 @@ namespace Explobar
                 return false;
 
             var expanded = assemblyPath.ExpandEnvars().ResolvePath();
-            return expanded.EndsWithEither(".dll", ".exe", ".cs")
-                && File.Exists(expanded);
+            return expanded.EndsWithEither(".dll", ".exe", ".cs");
+            // && File.Exists(expanded);
         }
 
         public static Button LoadCustomButtonFromAssembly(string path)
@@ -175,77 +175,82 @@ namespace Explobar
         {
             Runtime.Output($"Compiling scripted plugin: {csFile}");
 
-            var source = File.ReadAllText(csFile);
-
-            using (var codeProvider = new Microsoft.CSharp.CSharpCodeProvider())
+            try
             {
-                var parameters = new System.CodeDom.Compiler.CompilerParameters
+                var source = File.ReadAllText(csFile);
+
+                using (var codeProvider = new Microsoft.CSharp.CSharpCodeProvider())
                 {
-                    GenerateExecutable = false,
-                    GenerateInMemory = false, // Output to file
-                    OutputAssembly = outPath,
-                    IncludeDebugInformation = false,
-                    TreatWarningsAsErrors = false
-                };
-
-                // Add references to required assemblies
-                parameters.ReferencedAssemblies.Add("System.dll");
-                parameters.ReferencedAssemblies.Add("System.Core.dll");
-                parameters.ReferencedAssemblies.Add("System.Windows.Forms.dll");
-                parameters.ReferencedAssemblies.Add("System.Drawing.dll");
-
-                // Add reference to the current assembly (Explobar.exe) to access ICustomButton, etc.
-                parameters.ReferencedAssemblies.Add(System.Reflection.Assembly.GetExecutingAssembly().Location);
-
-                // Add any other referenced assemblies that might be needed
-                foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
-                {
-                    try
+                    var parameters = new System.CodeDom.Compiler.CompilerParameters
                     {
-                        if (!assembly.IsDynamic && !string.IsNullOrEmpty(assembly.Location))
+                        GenerateExecutable = false,
+                        GenerateInMemory = false, // Output to file
+                        OutputAssembly = outPath,
+                        IncludeDebugInformation = false,
+                        TreatWarningsAsErrors = false
+                    };
+
+                    // Add references to required assemblies
+                    parameters.ReferencedAssemblies.Add("System.dll");
+                    parameters.ReferencedAssemblies.Add("System.Core.dll");
+                    parameters.ReferencedAssemblies.Add("System.Windows.Forms.dll");
+                    parameters.ReferencedAssemblies.Add("System.Drawing.dll");
+
+                    // Add reference to the current assembly (Explobar.exe) to access ICustomButton, etc.
+                    parameters.ReferencedAssemblies.Add(System.Reflection.Assembly.GetExecutingAssembly().Location);
+
+                    // Add any other referenced assemblies that might be needed
+                    foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+                    {
+                        try
                         {
-                            var name = assembly.GetName().Name;
-                            if (name == "Shell32" || name == "YamlDotNet" || name == "TsudaKageyu")
+                            if (!assembly.IsDynamic && !string.IsNullOrEmpty(assembly.Location))
                             {
-                                parameters.ReferencedAssemblies.Add(assembly.Location);
+                                var name = assembly.GetName().Name;
+                                if (name == "Shell32" || name == "YamlDotNet" || name == "TsudaKageyu")
+                                {
+                                    parameters.ReferencedAssemblies.Add(assembly.Location);
+                                }
                             }
                         }
+                        catch
+                        {
+                            // Ignore assemblies we can't reference
+                        }
                     }
-                    catch
+
+                    // Compile the code
+                    var results = codeProvider.CompileAssemblyFromSource(parameters, source);
+
+                    // Check for compilation errors
+                    if (results.Errors.HasErrors)
                     {
-                        // Ignore assemblies we can't reference
+                        var errors = new StringBuilder();
+                        errors.AppendLine($"Compilation failed for {Path.GetFileName(csFile)}:");
+
+                        foreach (System.CodeDom.Compiler.CompilerError error in results.Errors)
+                        {
+                            errors.AppendLine($"  Line {error.Line}: {error.ErrorText}");
+                        }
+
+                        throw new Exception(errors.ToString());
                     }
-                }
 
-                // Compile the code
-                var results = codeProvider.CompileAssemblyFromSource(parameters, source);
+                    // Set the output DLL timestamp to match the source file
 
-                // Check for compilation errors
-                if (results.Errors.HasErrors)
-                {
-                    var errors = new StringBuilder();
-                    errors.AppendLine($"Compilation failed for {Path.GetFileName(csFile)}:");
-
-                    foreach (System.CodeDom.Compiler.CompilerError error in results.Errors)
+                    // This helps with change detection
+                    if (File.Exists(outPath))
                     {
-                        errors.AppendLine($"  Line {error.Line}: {error.ErrorText}");
+                        File.SetLastWriteTime(outPath, File.GetLastWriteTime(csFile));
                     }
 
-                    // Runtime.Log(errors.ToString());
-                    return (false, errors.ToString());
-                    // throw new Exception(errors.ToString());
+                    Runtime.Output($"Successfully compiled: {Path.GetFileName(csFile)} -> {Path.GetFileName(outPath)}");
+                    return (true, null);
                 }
-
-                // Set the output DLL timestamp to match the source file
-
-                // This helps with change detection
-                if (File.Exists(outPath))
-                {
-                    File.SetLastWriteTime(outPath, File.GetLastWriteTime(csFile));
-                }
-
-                Runtime.Output($"Successfully compiled: {Path.GetFileName(csFile)} -> {Path.GetFileName(outPath)}");
-                return (true, null);
+            }
+            catch (Exception e)
+            {
+                return (false, e.Message);
             }
         }
     }
