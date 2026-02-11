@@ -18,6 +18,7 @@ public class MyButton : CustomButton
 
     public override void OnClick(ClickArgs args)
     {
-        MessageBox.Show("Scripted Plugin executed!!!");
+        // hjkghjkh
+        MessageBox.Show("Scripted Plugin executed$$$$");
     }
 }

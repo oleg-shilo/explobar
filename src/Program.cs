@@ -6,16 +6,26 @@ using System.Runtime.CompilerServices;
 
 // using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
 // TODO
-//    Allow scripted buttons
+// ✅ Allow scripted buttons
+//    IsConfigUpToDate should not be called on every keystroke but only when the config file changes (e.g. using FileSystemWatcher)
 //    Allow auto-startup with Windows
 //    Allow specifying the default button under cursor on popup
 //    Allow keyboard navigation in the toolbar
+//    Development options in the tray icon menu
+//    - open logs
+//    - mark in logs
+//    - create plugin
+//    - show / hide console
+//    - Open App Folder
+//    - restart explorer
+//    - restart app
 // settings:
 // ✅ configure shortcut
 // ✅ support shortcuts
@@ -54,50 +64,50 @@ namespace Explobar
         [STAThread]
         static void Main(string[] args)
         {
-            var otherInstanceToWaitFor = args.FirstOrDefault(x => x.StartsWith("-wait:"))?.Substring(6);
-            if (otherInstanceToWaitFor != null)
+            try
             {
-                var pid = int.Parse(otherInstanceToWaitFor);
-                var otherProcess = Process.GetProcessById(pid);
-                if (otherProcess != null)
+                var otherInstanceToWaitFor = args.FirstOrDefault(x => x.StartsWith("-wait:"))?.Substring(6);
+
+                otherInstanceToWaitFor?.GetProcess()?.WaitForExit();
+
+                if (SingleInstanceApp.AnotherInstanceDetected())
                 {
-                    otherProcess.WaitForExit();
+                    Runtime.ShowError("Explobar is already running.");
+                    return;
                 }
-            }
 
-            if (SingleInstanceApp.AnotherInstanceDetected())
-            {
-                Runtime.ShowError("Explobar is already running.");
-                return;
-            }
+                Application.EnableVisualStyles();
+                Application.SetCompatibleTextRenderingDefault(false);
 
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
+                ConsoleManager.AllocateHidden();
 
-            ConsoleManager.AllocateHidden();
+                if (ToolbarItems.Settings.ShowConsoleAtStartup)
+                    ConsoleManager.Show();
 
-            if (ToolbarItems.Settings.ShowConsoleAtStartup)
-                ConsoleManager.Show();
+                UserInputMonitor.StartMonitor(OnShortcutPressed);
+                ExplorerHistory.StartMonitor();
+                AppNotify.Setup();
 
-            UserInputMonitor.StartMonitor(OnShortcutPressed);
-            ExplorerHistory.StartMonitor();
-            AppNotify.Setup();
+                Application.ApplicationExit += (s, e) =>
+                {
+                    ExplorerHistory.StopMonitor();
+                    UserInputMonitor.StopMonitor();
+                    AppNotify.Dispose();
+                    ConsoleManager.Hide();
+                    SingleInstanceApp.Clear();
+                };
 
-            Application.ApplicationExit += (s, e) =>
-            {
-                ExplorerHistory.StopMonitor();
-                UserInputMonitor.StopMonitor();
-                AppNotify.Dispose();
-                ConsoleManager.Hide();
+                ToolbarForm.Preheat();
+                Profiler.Reset();
+
+                Application.Run();
+
                 SingleInstanceApp.Clear();
-            };
-
-            ToolbarForm.Preheat();
-            Profiler.Reset();
-
-            Application.Run();
-
-            SingleInstanceApp.Clear();
+            }
+            catch (Exception ex)
+            {
+                Runtime.Log("An unexpected error occurred: " + ex.Message);
+            }
         }
 
         static bool _isProcessing = false;
@@ -107,7 +117,7 @@ namespace Explobar
             // Ignore keystrokes while config is loading or error dialog is shown
             if (ToolbarItems.IsConfigLoadingInProgress)
             {
-                Runtime.Log("Keystroke ignored - config loading in progress");
+                Runtime.Output("Keystroke ignored - config loading in progress");
                 return;
             }
 

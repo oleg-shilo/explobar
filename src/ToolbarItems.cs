@@ -53,6 +53,7 @@ namespace Explobar
         {
             get
             {
+                Runtime.Output("Checking if config is up to date...");
                 if (!File.Exists(ConfigPath))
                     return false;
                 if (currentConfig == null)
@@ -63,62 +64,61 @@ namespace Explobar
                 if (lastWriteTime != configFileTimestamp)
                     return false;
 
-                // Check if any plugin DLL files have changed
-                if (!ArePluginsUpToDate())
-                    return false;
-
                 return true;
             }
         }
 
-        static bool ArePluginsUpToDate()
+        public static bool ArePluginsUpToDate
         {
-            if (currentConfig?.Items == null)
-                return true;
-
-            try
+            get
             {
-                // Get all plugin DLL paths from config
-                var pluginPaths = GetPluginPaths(currentConfig.Items);
+                if (currentConfig?.Items == null)
+                    return true;
 
-                foreach (var pluginPath in pluginPaths)
+                try
                 {
-                    if (!File.Exists(pluginPath))
+                    // Get all plugin DLL paths from config
+                    var pluginPaths = GetPluginPaths(currentConfig.Items);
+
+                    foreach (var pluginPath in pluginPaths)
                     {
-                        // Plugin file was deleted - need to reload
-                        Runtime.Log($"Plugin file no longer exists: {pluginPath}");
+                        if (!File.Exists(pluginPath))
+                        {
+                            // Plugin file was deleted - need to reload
+                            Runtime.Output($"Plugin file no longer exists: {pluginPath}");
+                            return false;
+                        }
+
+                        var lastWriteTime = File.GetLastWriteTime(pluginPath);
+
+                        // Check if this is a new plugin or if it was modified
+                        if (!pluginTimestamps.ContainsKey(pluginPath))
+                        {
+                            // New plugin detected
+                            return false;
+                        }
+
+                        if (pluginTimestamps[pluginPath] < lastWriteTime)
+                        {
+                            // Plugin was modified
+                            Runtime.Output($"Plugin file changed: {pluginPath}");
+                            return false;
+                        }
+                    }
+
+                    // Check if any plugins were removed from config
+                    if (pluginTimestamps.Count > pluginPaths.Count)
+                    {
                         return false;
                     }
 
-                    var lastWriteTime = File.GetLastWriteTime(pluginPath);
-
-                    // Check if this is a new plugin or if it was modified
-                    if (!pluginTimestamps.ContainsKey(pluginPath))
-                    {
-                        // New plugin detected
-                        return false;
-                    }
-
-                    if (pluginTimestamps[pluginPath] < lastWriteTime)
-                    {
-                        // Plugin was modified
-                        Runtime.Log($"Plugin file changed: {pluginPath}");
-                        return false;
-                    }
+                    return true;
                 }
-
-                // Check if any plugins were removed from config
-                if (pluginTimestamps.Count > pluginPaths.Count)
+                catch (Exception ex)
                 {
-                    return false;
+                    Runtime.Output($"Error checking plugin timestamps: {ex.Message}");
+                    return false; // Assume outdated on error
                 }
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Runtime.Log($"Error checking plugin timestamps: {ex.Message}");
-                return false; // Assume outdated on error
             }
         }
 
@@ -158,141 +158,65 @@ namespace Explobar
                     dllPath = dllPath.ExpandEnvars();
 
                     // Check if it's a valid DLL file
-                    if (dllPath.EndsWithEither(".dll", ".exe") && !paths.Contains(dllPath))
+                    if (dllPath.EndsWithEither(".dll", ".exe", ".cs") && !paths.Contains(dllPath))
                     {
                         paths.Add(dllPath);
                     }
 
-                    if (dllPath.EndsWithEither(".cs") && !paths.Contains(dllPath))
-                    {
-                        var assemblyPath = dllPath + ".dll";
+                    // if (dllPath.EndsWithEither(".cs") && !paths.Contains(dllPath))
+                    // {
+                    //     var assemblyPath = dllPath + ".dll";
 
-                        if (File.Exists(dllPath))
-                        {
-                            if (!File.Exists(assemblyPath) || File.GetLastWriteTime(assemblyPath) != File.GetLastWriteTime(dllPath))
-                            {
-                                if (failedCompilations.ContainsKey(dllPath) && failedCompilations[dllPath] >= File.GetLastWriteTimeUtc(dllPath))
-                                {
-                                    // Skip recompilation if the source file hasn't changed since the last failed attempt
-                                    Runtime.Log($"Skipping compilation for {dllPath} since it has not changed since the last failed attempt.");
-                                    continue;
-                                }
+                    //     if (File.Exists(dllPath))
+                    //     {
+                    //         if (!File.Exists(assemblyPath) || File.GetLastWriteTime(assemblyPath) != File.GetLastWriteTime(dllPath))
+                    //         {
+                    //             if (failedCompilations.ContainsKey(dllPath) && failedCompilations[dllPath] >= File.GetLastWriteTimeUtc(dllPath))
+                    //             {
+                    //                 // Skip recompilation if the source file hasn't changed since the last failed attempt
+                    //                 Runtime.Output($"Skipping compilation for {dllPath} since it has not changed since the last failed attempt.");
 
-                                try
-                                {
-                                    CompileScriptedPlugin(dllPath, assemblyPath);
+                    //                 paths.Add(assemblyPath);
+                    //                 continue;
+                    //             }
 
-                                    // all good but we need to reload so the change takes effect immediately
-                                    ToolbarForm.HideOnClosing = false;
-                                    Process.Start(Application.ExecutablePath, $"-wait:{Process.GetCurrentProcess().Id}");
-                                    Application.Exit();
-                                }
-                                catch (Exception e)
-                                {
-                                    failedCompilations[dllPath] = File.GetLastWriteTimeUtc(dllPath);
+                    //             if (File.Exists(assemblyPath))
+                    //                 File.Delete(assemblyPath);
 
-                                    Runtime.Log($"Failed to compile scripted plugin: {dllPath}");
-                                    Task.Run(() =>
-                                    {
-                                        Thread.Sleep(100); // Give the main window a moment to initialize
-                                        Runtime.ShowInfo($"Scripted plugin has failed to load: {dllPath}.\n+{e.Message}");
-                                    });
-                                }
-                            }
-                            else
-                            {
-                                // Compiled assembly is up to date
-                                paths.Add(assemblyPath);
-                            }
-                        }
-                        else
-                        {
-                            Runtime.Log($"Scripted plugin source file not found: {dllPath}");
-                        }
-                    }
+                    //             try
+                    //             {
+                    //                 CompileScriptedPlugin(dllPath, assemblyPath);
+
+                    //                 // all good but we need to reload so the change takes effect immediately
+                    //                 ToolbarForm.HideOnClosing = false;
+                    //                 Process.Start(Application.ExecutablePath, $"-wait:{Process.GetCurrentProcess().Id}");
+                    //                 Application.Exit();
+                    //             }
+                    //             catch (Exception e)
+                    //             {
+                    //                 failedCompilations[dllPath] = File.GetLastWriteTimeUtc(dllPath);
+
+                    //                 Runtime.Log($"Failed to compile scripted plugin: {dllPath}\n{e.Message}");
+                    //             }
+                    //         }
+                    //         else
+                    //         {
+                    //             // Compiled assembly is up to date
+                    //             paths.Add(assemblyPath);
+                    //         }
+                    //     }
+                    //     else
+                    //     {
+                    //         Runtime.Output($"Scripted plugin source file not found: {dllPath}");
+                    //     }
+                    // }
                 }
             }
 
             return paths;
         }
 
-        static void CompileScriptedPlugin(string csFile, string outPath)
-        {
-            Runtime.Log($"Compiling scripted plugin: {csFile}");
-
-            var source = File.ReadAllText(csFile);
-
-            using (var codeProvider = new Microsoft.CSharp.CSharpCodeProvider())
-            {
-                var parameters = new System.CodeDom.Compiler.CompilerParameters
-                {
-                    GenerateExecutable = false,
-                    GenerateInMemory = false, // Output to file
-                    OutputAssembly = outPath,
-                    IncludeDebugInformation = false,
-                    TreatWarningsAsErrors = false
-                };
-
-                // Add references to required assemblies
-                parameters.ReferencedAssemblies.Add("System.dll");
-                parameters.ReferencedAssemblies.Add("System.Core.dll");
-                parameters.ReferencedAssemblies.Add("System.Windows.Forms.dll");
-                parameters.ReferencedAssemblies.Add("System.Drawing.dll");
-
-                // Add reference to the current assembly (Explobar.exe) to access ICustomButton, etc.
-                parameters.ReferencedAssemblies.Add(System.Reflection.Assembly.GetExecutingAssembly().Location);
-
-                // Add any other referenced assemblies that might be needed
-                foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
-                {
-                    try
-                    {
-                        if (!assembly.IsDynamic && !string.IsNullOrEmpty(assembly.Location))
-                        {
-                            var name = assembly.GetName().Name;
-                            if (name == "Shell32" || name == "YamlDotNet" || name == "TsudaKageyu")
-                            {
-                                parameters.ReferencedAssemblies.Add(assembly.Location);
-                            }
-                        }
-                    }
-                    catch
-                    {
-                        // Ignore assemblies we can't reference
-                    }
-                }
-
-                // Compile the code
-                var results = codeProvider.CompileAssemblyFromSource(parameters, source);
-
-                // Check for compilation errors
-                if (results.Errors.HasErrors)
-                {
-                    var errors = new StringBuilder();
-                    errors.AppendLine($"Compilation failed for {Path.GetFileName(csFile)}:");
-
-                    foreach (System.CodeDom.Compiler.CompilerError error in results.Errors)
-                    {
-                        errors.AppendLine($"  Line {error.Line}: {error.ErrorText}");
-                    }
-
-                    Runtime.Log(errors.ToString());
-                    throw new Exception(errors.ToString());
-                }
-
-                // Set the output DLL timestamp to match the source file
-
-                // This helps with change detection
-                if (File.Exists(outPath))
-                {
-                    File.SetLastWriteTime(outPath, File.GetLastWriteTime(csFile));
-                }
-
-                Runtime.Log($"Successfully compiled: {Path.GetFileName(csFile)} -> {Path.GetFileName(outPath)}");
-            }
-        }
-
-        static void UpdatePluginTimestamps()
+        public static void UpdatePluginTimestamps()
         {
             pluginTimestamps.Clear();
 
@@ -308,17 +232,17 @@ namespace Explobar
                     if (File.Exists(pluginPath))
                     {
                         pluginTimestamps[pluginPath] = File.GetLastWriteTime(pluginPath);
-                        Runtime.Log($"Tracked plugin: {pluginPath}");
+                        Runtime.Output($"Tracked plugin: {pluginPath}");
                     }
                 }
                 catch (Exception ex)
                 {
-                    Runtime.Log($"Failed to track plugin {pluginPath}: {ex.Message}");
+                    Runtime.Output($"Failed to track plugin {pluginPath}: {ex.Message}");
                 }
             }
         }
 
-        static ToolbarConfig LoadConfig()
+        internal static ToolbarConfig LoadConfig()
         {
             if (IsConfigUpToDate)
                 return currentConfig;
@@ -414,14 +338,14 @@ namespace Explobar
                     : "A default configuration has been created.";
 
                 Runtime.ShowInfo(successMessage);
-                Runtime.Log($"Config error handled: backup created, defaults loaded. Error was: {ex.Message}");
+                Runtime.Output($"Config error handled: backup created, defaults loaded. Error was: {ex.Message}");
 
                 return true; // Continue with defaults
             }
             else
             {
                 // User chose to cancel and fix manually
-                Runtime.Log($"Config load cancelled by user. Error was: {ex.Message}");
+                Runtime.Output($"Config load cancelled by user. Error was: {ex.Message}");
                 return false; // Exit application
             }
         }
@@ -442,12 +366,12 @@ namespace Explobar
 
                 File.Copy(ConfigPath, backupPath, overwrite: false);
 
-                Runtime.Log($"Config file backed up to: {backupPath}");
+                Runtime.Output($"Config file backed up to: {backupPath}");
                 return backupPath;
             }
             catch (Exception ex)
             {
-                Runtime.Log($"Failed to backup config file: {ex.Message}");
+                Runtime.Output($"Failed to backup config file: {ex.Message}");
                 return null;
             }
         }
@@ -602,11 +526,11 @@ namespace Explobar
                 var yamlWithComments = comments.ToString() + yaml;
                 File.WriteAllText(ConfigPath, yamlWithComments);
 
-                Runtime.Log($"Default config created at: {ConfigPath}");
+                Runtime.Output($"Default config created at: {ConfigPath}");
             }
             catch (Exception ex)
             {
-                Runtime.Log($"Error saving default config: {ex.Message}");
+                Runtime.Output($"Error saving default config: {ex.Message}");
             }
             return result;
         }

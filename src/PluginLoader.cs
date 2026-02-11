@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Windows.Forms;
 
 namespace Explobar
@@ -27,7 +28,7 @@ namespace Explobar
                     return null;
                 }
 
-                Runtime.Log($"Loading plugin from: {assemblyPath}" +
+                Runtime.Output($"Loading plugin from: {assemblyPath}" +
                     (className != null ? $", class: {className}" : ""));
 
                 // Load the assembly
@@ -49,7 +50,7 @@ namespace Explobar
 
                 if (!buttonTypes.Any())
                 {
-                    Runtime.Log($"No ICustomButton implementation found in: {assemblyPath}");
+                    Runtime.Output($"No ICustomButton implementation found in: {assemblyPath}");
                     return null;
                 }
 
@@ -64,7 +65,7 @@ namespace Explobar
 
                     if (buttonType == null)
                     {
-                        Runtime.Log($"Class '{className}' not found in {assemblyPath}. Available types: {string.Join(", ", buttonTypes.Select(t => t.Name))}");
+                        Runtime.Output($"Class '{className}' not found in {assemblyPath}. Available types: {string.Join(", ", buttonTypes.Select(t => t.Name))}");
                         return null;
                     }
                 }
@@ -75,20 +76,20 @@ namespace Explobar
 
                     if (buttonTypes.Count > 1)
                     {
-                        Runtime.Log($"Warning: Multiple ICustomButton implementations found in {assemblyPath}, using first one: {buttonType.FullName}. Available: {string.Join(", ", buttonTypes.Select(t => t.Name))}");
+                        Runtime.Output($"Warning: Multiple ICustomButton implementations found in {assemblyPath}, using first one: {buttonType.FullName}. Available: {string.Join(", ", buttonTypes.Select(t => t.Name))}");
                     }
                 }
 
                 // Instantiate the type
                 var instance = Activator.CreateInstance(buttonType);
 
-                Runtime.Log($"Successfully loaded plugin: {buttonType.FullName}");
+                Runtime.Output($"Successfully loaded plugin: {buttonType.FullName}");
 
                 return instance as ICustomButton;
             }
             catch (Exception ex)
             {
-                Runtime.Log($"Error loading plugin from {assemblyPath}: {ex.Message}");
+                Runtime.Output($"Error loading plugin from {assemblyPath}: {ex.Message}");
                 return null;
             }
         }
@@ -143,17 +144,109 @@ namespace Explobar
 
             if (assemblyPath.EndsWithEither(".cs"))
             {
+                var scriptFile = assemblyPath;
                 var expectedAssembly = assemblyPath + ".dll";
-                if (!File.Exists(expectedAssembly))
-                {
-                    Runtime.Log($"Plugin source file not found: {expectedAssembly}");
-                }
 
-                assemblyPath = expectedAssembly;
+                if (File.Exists(expectedAssembly) && File.GetLastWriteTimeUtc(scriptFile) == File.GetLastWriteTimeUtc(expectedAssembly))
+                {
+                    assemblyPath = expectedAssembly;
+                }
+                else
+                {
+                    var result = CompileScriptedPlugin(scriptFile, expectedAssembly);
+
+                    if (result.sucecss)
+                    {
+                        assemblyPath = expectedAssembly;
+                    }
+                    else
+                    {
+                        Runtime.Log($"Plugin source file {scriptFile} contains some errors: {result.error}");
+                        return new MisconfiguredButton(scriptFile, result.error);
+                    }
+                }
             }
 
             var customButton = LoadCustomButton(assemblyPath, className);
             return customButton as Button;
+        }
+
+        public static (bool sucecss, string error) CompileScriptedPlugin(string csFile, string outPath)
+        {
+            Runtime.Output($"Compiling scripted plugin: {csFile}");
+
+            var source = File.ReadAllText(csFile);
+
+            using (var codeProvider = new Microsoft.CSharp.CSharpCodeProvider())
+            {
+                var parameters = new System.CodeDom.Compiler.CompilerParameters
+                {
+                    GenerateExecutable = false,
+                    GenerateInMemory = false, // Output to file
+                    OutputAssembly = outPath,
+                    IncludeDebugInformation = false,
+                    TreatWarningsAsErrors = false
+                };
+
+                // Add references to required assemblies
+                parameters.ReferencedAssemblies.Add("System.dll");
+                parameters.ReferencedAssemblies.Add("System.Core.dll");
+                parameters.ReferencedAssemblies.Add("System.Windows.Forms.dll");
+                parameters.ReferencedAssemblies.Add("System.Drawing.dll");
+
+                // Add reference to the current assembly (Explobar.exe) to access ICustomButton, etc.
+                parameters.ReferencedAssemblies.Add(System.Reflection.Assembly.GetExecutingAssembly().Location);
+
+                // Add any other referenced assemblies that might be needed
+                foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+                {
+                    try
+                    {
+                        if (!assembly.IsDynamic && !string.IsNullOrEmpty(assembly.Location))
+                        {
+                            var name = assembly.GetName().Name;
+                            if (name == "Shell32" || name == "YamlDotNet" || name == "TsudaKageyu")
+                            {
+                                parameters.ReferencedAssemblies.Add(assembly.Location);
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        // Ignore assemblies we can't reference
+                    }
+                }
+
+                // Compile the code
+                var results = codeProvider.CompileAssemblyFromSource(parameters, source);
+
+                // Check for compilation errors
+                if (results.Errors.HasErrors)
+                {
+                    var errors = new StringBuilder();
+                    errors.AppendLine($"Compilation failed for {Path.GetFileName(csFile)}:");
+
+                    foreach (System.CodeDom.Compiler.CompilerError error in results.Errors)
+                    {
+                        errors.AppendLine($"  Line {error.Line}: {error.ErrorText}");
+                    }
+
+                    // Runtime.Log(errors.ToString());
+                    return (false, errors.ToString());
+                    // throw new Exception(errors.ToString());
+                }
+
+                // Set the output DLL timestamp to match the source file
+
+                // This helps with change detection
+                if (File.Exists(outPath))
+                {
+                    File.SetLastWriteTime(outPath, File.GetLastWriteTime(csFile));
+                }
+
+                Runtime.Output($"Successfully compiled: {Path.GetFileName(csFile)} -> {Path.GetFileName(outPath)}");
+                return (true, null);
+            }
         }
     }
 }

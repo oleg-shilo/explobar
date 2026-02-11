@@ -62,11 +62,11 @@ namespace Explobar
                     if (!_shortcuts.ContainsKey(key))
                     {
                         _shortcuts[key] = item;
-                        Runtime.Log($"Registered shortcut: {item.Shortcut} for {item.Path}");
+                        Runtime.Output($"Registered shortcut: {item.Shortcut} for {item.Path}");
                     }
                     else
                     {
-                        Runtime.Log($"Warning: Duplicate shortcut '{item.Shortcut}' ignored for {item.Path}");
+                        Runtime.Output($"Warning: Duplicate shortcut '{item.Shortcut}' ignored for {item.Path}");
                     }
                 }
             }
@@ -145,11 +145,11 @@ namespace Explobar
 
             // Check for toolbar item shortcuts
             var currentShortcut = GetCurrentShortcut(key);
-            // Runtime.Log($"Checking shortcut: {currentShortcut}");
+            // Runtime.Output($"Checking shortcut: {currentShortcut}");
 
             if (_shortcuts.TryGetValue(currentShortcut, out ToolbarItem item))
             {
-                Runtime.Log($"Shortcut triggered: {currentShortcut}");
+                Runtime.Output($"Shortcut triggered: {currentShortcut}");
 
                 // Execute on a separate thread
                 ApartmentState.STA.Run(() =>
@@ -170,7 +170,7 @@ namespace Explobar
                             }
                             else
                             {
-                                Runtime.Log($"No Explorer window found for shortcut: {currentShortcut}");
+                                Runtime.Output($"No Explorer window found for shortcut: {currentShortcut}");
                                 return;
                             }
                         }
@@ -185,7 +185,7 @@ namespace Explobar
                     }
                     catch (Exception ex)
                     {
-                        Runtime.Log($"Error executing shortcut: {ex.Message}");
+                        Runtime.Output($"Error executing shortcut: {ex.Message}");
                     }
                     finally
                     {
@@ -223,7 +223,7 @@ namespace Explobar
             }
             catch (Exception ex)
             {
-                Runtime.Log($"Error executing toolbar item: {ex.Message}");
+                Runtime.Output($"Error executing toolbar item: {ex.Message}");
             }
         }
 
@@ -237,7 +237,7 @@ namespace Explobar
 
             if (string.IsNullOrWhiteSpace(keyConfig))
             {
-                Runtime.Log("Empty shortcut key, using default: Escape");
+                Runtime.Output("Empty shortcut key, using default: Escape");
                 return;
             }
 
@@ -261,7 +261,7 @@ namespace Explobar
                     else if (modifier.Equals("Alt", StringComparison.OrdinalIgnoreCase))
                         _requireAlt = true;
                     else
-                        Runtime.Log($"Unknown modifier '{modifier}' in shortcut key '{keyConfig}'");
+                        Runtime.Output($"Unknown modifier '{modifier}' in shortcut key '{keyConfig}'");
                 }
 
                 // Parse main key
@@ -275,7 +275,7 @@ namespace Explobar
                 }
                 else
                 {
-                    Runtime.Log($"Invalid main key '{mainKeyStr}' in shortcut key '{keyConfig}', falling back to Escape");
+                    Runtime.Output($"Invalid main key '{mainKeyStr}' in shortcut key '{keyConfig}', falling back to Escape");
                     _configuredKey = Keys.Escape;
                 }
 
@@ -283,11 +283,11 @@ namespace Explobar
                     new[] { _requireShift ? "Shift" : null, _requireCtrl ? "Ctrl" : null, _requireAlt ? "Alt" : null }
                     .Where(m => m != null));
                 var fullKeyStr = modifierStr.HasText() ? $"{modifierStr}+{_configuredKey}" : _configuredKey.ToString();
-                Runtime.Log($"Shortcut key configured: {fullKeyStr}");
+                Runtime.Output($"Shortcut key configured: {fullKeyStr}");
             }
             catch (Exception ex)
             {
-                Runtime.Log($"Error parsing shortcut key '{keyConfig}': {ex.Message}");
+                Runtime.Output($"Error parsing shortcut key '{keyConfig}': {ex.Message}");
                 _configuredKey = Keys.Escape;
                 _requireShift = false;
                 _requireCtrl = false;

@@ -89,7 +89,7 @@ namespace Explobar
             }
             catch (Exception ex)
             {
-                Runtime.Log($"Error getting tab for path {path}: {ex.Message}");
+                Runtime.Output($"Error getting tab for path {path}: {ex.Message}");
             }
             finally
             {
@@ -106,7 +106,7 @@ namespace Explobar
             string root = null;
 
             var shell = new Shell();
-            Runtime.Log("GetSelection");
+            Runtime.Output("GetSelection");
             try
             {
                 // Get the window under mouse
@@ -170,7 +170,7 @@ namespace Explobar
             }
             catch (Exception ex)
             {
-                Runtime.Log("Error getting explorer selection: " + ex.Message);
+                Runtime.Output("Error getting explorer selection: " + ex.Message);
             }
             finally
             {
@@ -242,7 +242,7 @@ namespace Explobar
                 if (path.Contains("#"))
                 {
                     // IE: D:\dev\support\wixsharp_#1887\WixSharp Setup1\WixSharp Setup1
-                    Runtime.Log($"Path contains #, encoding as: {navigatePath}");
+                    Runtime.Output($"Path contains #, encoding as: {navigatePath}");
                     try
                     {
                         System.Diagnostics.Process.Start("explorer.exe", $"\"{path}\"");
@@ -250,7 +250,7 @@ namespace Explobar
                     }
                     catch (Exception ex)
                     {
-                        Runtime.Log($"Explorer.exe failed: {ex.Message}");
+                        Runtime.Output($"Explorer.exe failed: {ex.Message}");
                     }
                 }
                 else
@@ -258,7 +258,7 @@ namespace Explobar
             }
             catch (Exception ex)
             {
-                Runtime.Log($"Error navigating to path {path}: {ex.Message}");
+                Runtime.Output($"Error navigating to path {path}: {ex.Message}");
             }
         }
 
@@ -325,7 +325,7 @@ static class AutomationHelper
         var name = root.Current.Name;
         if (name.IsEmpty()) return null;
 
-        Runtime.Log("Foreground tabObject title: " + name);
+        Runtime.Output("Foreground tabObject title: " + name);
         return name.Contains("File Explorer") ? root : null;
     }
 

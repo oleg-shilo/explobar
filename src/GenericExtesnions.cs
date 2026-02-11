@@ -42,6 +42,19 @@ namespace Explobar
         public static string Combine(this SpecialFolder folder, string path, params string[] paths)
             => Path.Combine(Environment.GetFolderPath(folder), path, Path.Combine(paths));
 
+        public static Process GetProcess(this string id)
+        {
+            try
+            {
+                var pid = int.Parse(id);
+                return Process.GetProcessById(pid);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
         public static void InUIThread(this Control control, Action action) => control.Invoke(action);
 
         public static void Run(this ApartmentState state, Action action)
@@ -222,6 +235,7 @@ namespace Explobar
         public static Action<string> ShowWarning = (message) => ShowMessageBox(message, MessageBoxIcon.Warning);
         public static Func<string, bool> UserDecision = (message) => ShowMessageBox(message, MessageBoxIcon.Warning, MessageBoxButtons.OKCancel) == DialogResult.OK;
         public static Action<string> ShowError = (message) => ShowMessageBox(message, MessageBoxIcon.Error);
+        public static Action<string> Output = output;
         public static Action<string> Log = log;
 
         static Icon _icon;
@@ -246,7 +260,7 @@ namespace Explobar
             }
             catch (Exception ex)
             {
-                Log($"Error checking for message box window: {ex.Message}");
+                Output($"Error checking for message box window: {ex.Message}");
                 return false; // Assume not showing on error
             }
         }
@@ -283,8 +297,8 @@ namespace Explobar
             {
                 if (isMessageBoxShowing)
                 {
-                    // A message box is already showing in this process - log and return default result
-                    Log($"[MessageBox blocked - same process] Another message box is already showing. Message: {message}");
+                    // A message box is already showing in this process - output and return default result
+                    Output($"[MessageBox blocked - same process] Another message box is already showing. Message: {message}");
 
                     // Return safe default based on button type
                     return buttons == MessageBoxButtons.OKCancel ? DialogResult.Cancel : DialogResult.OK;
@@ -293,7 +307,7 @@ namespace Explobar
                 // Check if another Explobar instance is showing a message box
                 if (AnyOtherExplobarMessageBoxShowing())
                 {
-                    Log($"[MessageBox blocked - other process] Another Explobar instance is showing a message box. Message: {message}");
+                    Output($"[MessageBox blocked - other process] Another Explobar instance is showing a message box. Message: {message}");
                     return buttons == MessageBoxButtons.OKCancel ? DialogResult.Cancel : DialogResult.OK;
                 }
 
@@ -332,10 +346,36 @@ namespace Explobar
             }
         }
 
-        static void log(string message)
+        static void output(string message)
         {
             Console.WriteLine(message);
         }
+
+        static void log(string message)
+        {
+            Console.WriteLine(message);
+            ClearLogIfTooLarge();
+            File.AppendAllText(LogFilePath, $"{DateTime.Now.ToString("s")}:  {message}{Environment.NewLine}");
+        }
+
+        static void ClearLogIfTooLarge()
+        {
+            var info = new FileInfo(LogFilePath);
+            if (info.Exists && info.Length > 1 * 1024 * 1024) // 1 MB
+            {
+                try
+                {
+                    File.Copy(LogFilePath, LogFilePath + ".bk", true);
+                    File.WriteAllText(LogFilePath, $"[Output cleared at {DateTime.Now} due to size limit]\n");
+                }
+                catch
+                {
+                    // Ignore errors when trying to clear output
+                }
+            }
+        }
+
+        public static string LogFilePath = SpecialFolder.LocalApplicationData.Combine("Explobar", "output.txt");
     }
 
     static class SingleInstanceApp
