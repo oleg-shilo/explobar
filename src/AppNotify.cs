@@ -37,6 +37,11 @@ namespace Explobar
             contextMenu.Items.Add(new ToolStripMenuItem("Icon Browser", null,
                 (s, e) => IconBrowser.Show()));
 
+            var startupMenuItem = new ToolStripMenuItem("Start with Windows", null, ToggleStartup);
+            startupMenuItem.Checked = IsInStartup();
+            startupMenuItem.CheckOnClick = true;
+            contextMenu.Items.Insert(2, startupMenuItem); // Add before separator
+
             contextMenu.Items.Add(new ToolStripSeparator());
 
             // Development menu
@@ -66,10 +71,10 @@ namespace Explobar
 
             developmentMenu.DropDownItems.Add(new ToolStripSeparator());
 
-            developmentMenu.DropDownItems.Add(new ToolStripMenuItem("Restart Explorer", null,
+            developmentMenu.DropDownItems.Add(new ToolStripMenuItem("Restart Window Explorer", null,
                 (s, e) => RestartExplorer()));
 
-            developmentMenu.DropDownItems.Add(new ToolStripMenuItem("Restart App", null,
+            developmentMenu.DropDownItems.Add(new ToolStripMenuItem("Restart Application (explobar.exe)", null,
                 (s, e) => RestartApp()));
 
             contextMenu.Items.Add(developmentMenu);
@@ -98,8 +103,7 @@ namespace Explobar
             try
             {
                 var pluginDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Plugins");
-                if (!Directory.Exists(pluginDir))
-                    Directory.CreateDirectory(pluginDir);
+                pluginDir.EnsureDir();
 
                 var templateFile = Path.Combine(pluginDir, "MyCustomButton.cs");
 
@@ -208,17 +212,14 @@ namespace MyPlugins
 }
 
 ";
-
                 File.WriteAllText(templateFile, template);
 
-                var message = $"Plugin template created at:\n{templateFile}\n\nOpening in Notepad...";
-                MessageBox.Show(message, "Create Plugin", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
+                Runtime.ShowInfo($"Plugin template created at:\n{templateFile}\n\nOpening in Notepad...");
                 Process.Start("notepad.exe", templateFile);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to create plugin template:\n{ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Runtime.ShowError($"Failed to create plugin template:\n{ex.Message}");
             }
         }
 
@@ -249,7 +250,7 @@ namespace MyPlugins
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to restart Explorer:\n{ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Runtime.ShowError($"Failed to restart Explorer:\n{ex.Message}");
             }
         }
 
@@ -257,13 +258,8 @@ namespace MyPlugins
         {
             try
             {
-                var result = MessageBox.Show(
-                    "This will restart Explobar.\n\nContinue?",
-                    "Restart App",
-                    MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Question);
-
-                if (result == DialogResult.Yes)
+                var confirmed = Runtime.UserDecisionYesNo("This will restart Explobar.\n\nContinue?");
+                if (confirmed)
                 {
                     ToolbarForm.HideOnClosing = false;
                     Process.Start(Application.ExecutablePath, $"{Globals.CliArgWait}:{Process.GetCurrentProcess().Id}");
@@ -272,8 +268,40 @@ namespace MyPlugins
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to restart application:\n{ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Runtime.ShowError($"Failed to restart application:\n{ex.Message}");
             }
+        }
+
+        private static void ToggleStartup(object sender, EventArgs e)
+        {
+            try
+            {
+                var menuItem = sender as ToolStripMenuItem;
+                var startupPath = Environment.SpecialFolder.Startup.Combine("Explobar.lnk");
+
+                if (menuItem.Checked)
+                {
+                    // Add to startup
+                    Application.ExecutablePath.CreateShortcut(startupPath);
+                    Runtime.Output("Added to Windows startup");
+                }
+                else
+                {
+                    // Remove from startup
+                    startupPath.DeleteIfExists();
+                    Runtime.Output("Removed from Windows startup");
+                }
+            }
+            catch (Exception ex)
+            {
+                Runtime.ShowError($"Failed to update startup setting:\n{ex.Message}");
+            }
+        }
+
+        private static bool IsInStartup()
+        {
+            var startupPath = Environment.SpecialFolder.Startup.Combine("Explobar.lnk");
+            return File.Exists(startupPath);
         }
     }
 }

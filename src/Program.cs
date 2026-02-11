@@ -13,12 +13,13 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 
 // TODO
+//    ArePLuginsUpToDate should not be called on every keystroke but only when the config file changes (e.g. using FileSystemWatcher)
+//    Allow specifying the default button under cursor on popup
+//    Allow keyboard navigation in the toolbar
+// ✅ Allow auto-startup with Windows
 // ✅ Allow scripted buttons
 // ✅ IsConfigUpToDate should not be called on every keystroke but only when the config file changes (e.g. using FileSystemWatcher)
 // ✅ Does not show error if the configured scripted button cs and dll does not exist
-//    Allow auto-startup with Windows
-//    Allow specifying the default button under cursor on popup
-//    Allow keyboard navigation in the toolbar
 // ✅   for plugin buttons as context menu
 // ✅   - Open Location
 // ✅   - Edit script
