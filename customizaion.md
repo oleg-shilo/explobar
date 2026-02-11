@@ -459,6 +459,51 @@ Most other characters work fine with `Navigate2`. If you encounter issues with o
 
 For workflows that need more than launching applications, create custom .NET plugins.
 
+### Two Plugin Formats
+
+Explobar supports two plugin formats:
+
+**1. C# Source Files (`.cs`) - Scripted Plugins**
+- Write plugin code directly in C# files
+- Auto-compiled at runtime using CS-Script engine
+- No Visual Studio or build tools required
+- Perfect for simple plugins and quick prototyping
+- Changes applied by reloading toolbar (no restart)
+- Supports CS-Script directives (`//css_ref`, `//css_winapp`)
+
+**2. Pre-compiled DLLs (`.dll`)**
+- Traditional .NET Class Library projects
+- Full IDE support with IntelliSense and debugging
+- Better for complex workflows
+- Multiple plugins per assembly
+- Standard build and deployment
+
+Both formats work identically once loaded. Choose based on your workflow complexity and development preferences.
+
+### Plugin Template
+
+A comprehensive template is available in multiple ways:
+
+**Option 1: Generate from Tray Icon**
+- Right-click Explobar tray icon
+- Select **Development → Create Plugin**
+- Choose location and filename
+- Template file is created and opened in your default editor
+
+**Option 2: Use Included Template**
+- Located in release package: `Plugins\MyCustomButton.cs`
+- Copy to your plugins folder and customize
+
+**Template Contents:**
+- Complete implementation with detailed comments
+- Icon configuration examples
+- Context access patterns (current path, selected files)
+- Menu creation example
+- Best practices and usage patterns
+- C# 7.3 language features guide
+
+The template is ready to use - copy it, modify the class name and logic, and reference it in your configuration.
+
 ### When to Use Plugins
 
 Use plugins when you need to:
@@ -505,28 +550,110 @@ public class HelloButton : CustomButton
 
 **Important:** Plugin paths MUST be enclosed in curly brackets `{}`.
 
-Load first `ICustomButton` found in DLL
+**C# Source Files:**
 
 ```yaml
+# Single class in file
+- Path: '{C:\Plugins\MyButton.cs}'
+  Tooltip: 'My Custom Button'
+
+# With icon override
+- Path: '{C:\Plugins\HelloButton.cs}'
+  Icon: 'shell32.dll,43'
+  Tooltip: 'Say Hello'
+
+# With keyboard shortcut
+- Path: '{C:\Plugins\QuickAction.cs}'
+  Shortcut: 'Ctrl+Alt+Q'
+```
+
+**Pre-compiled DLLs:**
+
+```yaml
+# Load first ICustomButton found
 - Path: '{C:\Plugins\MyPlugin.dll}'
-```
 
-Load specific class
-
-```yaml
-- Path: '{C:\Plugins\MyPlugin.dll,HelloButton}' 
+# Load specific class
+- Path: '{C:\Plugins\MyPlugin.dll,HelloButton}'
   Tooltip: 'Say hello'
+
+# Multiple classes from same DLL
+- Path: '{C:\Plugins\Tools.dll,FolderLister}'
+- Path: '{C:\Plugins\Tools.dll,FileCounter}'
 ```
 
-**Format:** `{path\to\assembly.dll}` or `{path\to\assembly.dll,ClassName}`
+**Format:**
+- DLL: `{path\to\assembly.dll}` or `{path\to\assembly.dll,ClassName}`
+- C#: `{path\to\script.cs}` (class name detected automatically)
 
+**Path Options:**
+- Absolute paths: `{C:\Plugins\MyPlugin.dll}`
+- Relative paths: `{..\CustomPlugins\bin\Debug\CustomPlugins.dll}`
+- Environment variables: `{%LocalAppData%\Explobar\Plugins\tools.dll}`
+
+**Class Loading:**
 - Without class name: Loads first `ICustomButton` implementation found
 - With class name: Loads specified class (case-insensitive match on Name or FullName)
-- Curly brackets are required to distinguish plugins from regular executables
-- Supports relative paths: `{..\CustomPlugins\bin\Debug\CustomPlugins.dll,MyButton}`
-- Environment variables supported: `{%LocalAppData%\Explobar\Plugins\tools.dll,Tool1}`
+- For C# source files: Class name auto-detected from file
 
 If plugin fails to load, a "misconfigured button" placeholder appears with error details.
+
+### C# Script Plugins
+
+C# source files are compiled at runtime using the CS-Script engine.
+
+**Supported Features:**
+- C# 7.3 language features
+- .NET Framework 4.7.2 APIs
+- CS-Script directives for references and options
+- Automatic reference to Explobar.exe
+
+**CS-Script Directives:**
+
+```csharp
+//css_winapp                                    // Hide console window
+//css_ref D:\dev\explobar\src\bin\Debug\explobar.exe  // Reference Explobar
+//css_ref System.Windows.Forms.dll              // Additional references
+
+using Explobar;
+using System.Windows.Forms;
+
+public class MyButton : CustomButton
+{
+    // Implementation
+}
+```
+
+**Common Directives:**
+- `//css_ref <assembly>` - Add assembly reference
+- `//css_winapp` - Build as Windows application (no console)
+- `//css_include <file>` - Include another C# file
+- `//css_import <namespace>` - Import namespace
+
+**Compilation:**
+- Happens automatically on first load
+- Cached in memory for subsequent use
+- Compilation errors shown in console/logs
+- Recompiled when file timestamp changes
+
+**Debugging C# Scripts:**
+- Enable console: `ShowConsoleAtStartup: true`
+- Check logs for compilation errors
+- Use `Runtime.Output()` for logging
+- Compilation errors include line numbers
+
+**Example Template Usage:**
+
+1. Generate template:
+   - Tray icon → Development → Create Plugin, OR
+   - Copy `Plugins\MyCustomButton.cs` to your plugins folder
+2. Rename file and class: `MyAwesomeButton.cs`
+3. Modify the `OnClick` implementation
+4. Add to configuration:
+   ```yaml
+   - Path: '{C:\MyPlugins\MyAwesomeButton.cs}'
+   ```
+5. Reload toolbar to compile and load
 
 **Note:** Plugin paths must be enclosed in curly brackets `{}`.
 

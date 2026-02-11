@@ -49,7 +49,7 @@ Explobar provides immediate access to your productivity tools right where you wo
 - 🔌 **Plugin System** - Extend with .NET assemblies for complex workflows
 - 📂 **Favorites & Quick Access** - Folders and applications at your fingertips
 - 📜 **Explorer History** - Automatically tracked, always available
-- 🎨 **Icon Browser** - Preview and extract icons from any file
+- 🎨 **Icon Browser** - Preview and extract icons from any file (shell32.dll, imageres.dll, etc.)
 - 🔄 **Live Configuration** - Changes apply immediately, no restart
 
 ## Installation
@@ -117,8 +117,9 @@ Items:
 - `{from-clipboard}` - Navigate to path from clipboard
 - `{recent}` - Recently visited folders menu
 - `{favorites}` - Favorite folders menu
-- `{application}` - Favorite applications menu
+- `{applications}` - Favorite applications menu
 - `{props}` - File/folder properties dialog
+- `{icons}` - Icon browser - browse and extract icons from any file
 - `{separator}` - Visual separator
 - `{app-config}` - Configuration and tools menu
 
@@ -145,49 +146,81 @@ Items:
 
 For complete configuration reference, see [customization.md](customization.md).
 
+## Icon Browser
+
+The Icon Browser allows you to preview and extract icons from any file containing icon resources (executables, DLLs, icon files).
+
+**Access:**
+- Toolbar button: `{icons}` 
+- System tray: Right-click → "Icon Browser"
+- App Config menu: `{app-config}` → "Preview icons"
+
+**Features:**
+- Browse icons from system files (shell32.dll, imageres.dll, etc.)
+- Extract icons from executables and DLLs
+- View icon index numbers for configuration
+- Recent file history for quick access
+- Copy icon paths and indices for use in toolbar configuration
+
+**Common Icon Sources:**
+- `shell32.dll` - Classic Windows icons (folders, files, system)
+- `imageres.dll` - Modern Windows icons (Windows 7+)
+- `sud.dll` - User account and security icons
+- Any `.exe`, `.dll`, or `.ico` file
+
 ## Plugin Development
 
 Extend Explobar with custom .NET plugins for workflows that need more than launching applications.
 
-**Example:** Copy folder contents to clipboard
+### Two Approaches
+
+**1. C# Source Files (Recommended for Quick Development)**
+- Write C# code in `.cs` files
+- Auto-compiled at runtime
+- No build tools required
+- Perfect for simple plugins and quick prototyping
+- Template: Generate via System Tray → Development → Create Plugin
+
+**2. Pre-compiled DLLs (For Complex Projects)**
+- Traditional .NET development
+- Full IDE support and debugging
+- Better for complex workflows
+- Target .NET Framework 4.7.2
+
+### Quick Example
 
 ```c#
-using Explobar; 
-using System.IO; 
-using System.Text; 
+using Explobar;
 using System.Windows.Forms;
 
-public class FolderLister : CustomButton 
-{ 
-    public FolderLister() 
-    { 
-        IconIndex = 4; 
-        IconPath = "shell32.dll"; 
-        Tooltip = "Copy folder listing"; 
+public class HelloButton : CustomButton
+{
+    public HelloButton()
+    {
+        IconIndex = 1;
+        IconPath = "shell32.dll";
+        Tooltip = "Say Hello";
     }
 
     public override void OnClick(ClickArgs args)
     {
-        var content = new StringBuilder();
-        foreach (var item in Directory.GetFileSystemEntries(args.Context.RootPath))
-            content.AppendLine(Path.GetFileName(item));
-    
-        Clipboard.SetText(content.ToString());
-        MessageBox.Show("Folder listing copied!");
+        MessageBox.Show($"Hello from: {args.Context.RootPath}");
     }
 }
 ```
 
-**Configuration:**
+### Configuration
 
 ```yaml
 Items:
-  # Plugin paths MUST be enclosed in curly brackets
-  - Path: '{C:\Plugins\MyPlugin.dll,FolderLister}'
-    Tooltip: 'List folder contents'
+  # C# source file (auto-compiled)
+  - Path: '{C:\Plugins\HelloButton.cs}'
+  
+  # Pre-compiled DLL
+  - Path: '{C:\Plugins\MyTools.dll,HelloButton}'
 ```
 
-**Important:** Plugin paths must be enclosed in curly brackets `{}` to distinguish them from regular executables.
+**Important:** Plugin paths must be enclosed in curly brackets `{}`.
 
 For complete plugin development guide, see [customization.md](customization.md).
 
@@ -205,11 +238,17 @@ For complete plugin development guide, see [customization.md](customization.md).
 - Review console for errors: Set `ShowConsoleAtStartup: true`
 - Restart Explobar if necessary
 
+**Toolbar state issues**
+
+- Use "Restart Explorer" from `{app-config}` menu or system tray to reset Explorer process
+- This can resolve issues with window detection or stuck toolbar states
+
 **Plugin not loading**
 
 - Verify path uses curly brackets: `{path\to\plugin.dll}`
 - Check plugin targets .NET Framework 4.7.2
 - Enable console to see detailed error messages
+- For C# source plugins, check logs for compilation errors
 
 ## Architecture Highlights
 
@@ -223,11 +262,15 @@ For complete plugin development guide, see [customization.md](customization.md).
 
 Right-click tray icon for quick access:
 
-- Icon Browser
-- Edit Configuration
-- Toggle Console
-- About
-- Exit
+- **Icon Browser** - Browse and extract icons from system files
+- **Edit Configuration** - Open toolbar-items.yaml in Notepad
+- **Development** - Developer tools submenu
+  - **Create Plugin** - Generate plugin template file
+  - **Show/Hide Console** - Toggle debug console window
+  - **Open Logs** - Open log file directory
+- **Restart Explorer** - Restart Windows Explorer process
+- **About** - Version and copyright information
+- **Exit** - Close Explobar
 
 ## Limitations and Constraints
 
@@ -283,6 +326,10 @@ When an Explorer window contains multiple tabs open to folders with same names, 
 - Plugin assemblies are loaded via reflection and cannot be unloaded without restarting Explobar
 - COM object separation errors possible when plugins interact with stale Explorer window references
 - No hot-reload support - configuration changes require showing toolbar again
+- **C# Source Plugins:** C# files (`.cs`) are automatically compiled at runtime
+- **Template Available:** A comprehensive plugin template (`MyCustomButton.cs`) is included in the release package
+- **Language Support:** C# 7.3 targeting .NET Framework 4.7.2
+- **Compilation Errors:** Check logs (console or log files) for C# compilation errors
 
 ## Links
 
