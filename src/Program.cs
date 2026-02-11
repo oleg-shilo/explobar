@@ -14,7 +14,7 @@ using System.Windows.Forms;
 
 // TODO
 // ✅ Allow scripted buttons
-//    IsConfigUpToDate should not be called on every keystroke but only when the config file changes (e.g. using FileSystemWatcher)
+// ✅ IsConfigUpToDate should not be called on every keystroke but only when the config file changes (e.g. using FileSystemWatcher)
 //    Allow auto-startup with Windows
 //    Allow specifying the default button under cursor on popup
 //    Allow keyboard navigation in the toolbar
