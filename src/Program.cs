@@ -15,21 +15,22 @@ using System.Windows.Forms;
 // TODO
 // ✅ Allow scripted buttons
 // ✅ IsConfigUpToDate should not be called on every keystroke but only when the config file changes (e.g. using FileSystemWatcher)
+//    Does not show error if the configured scripted button cs and dll does not exist
 //    Allow auto-startup with Windows
 //    Allow specifying the default button under cursor on popup
 //    Allow keyboard navigation in the toolbar
-//    for plugin buttons ass context menu
+//    for plugin buttons as context menu
 //    - Open Location
 //    - Edit script
 //    Development options in the tray icon menu
-//    - open logs
-//    - mark in logs
-//    - create plugin
-//    - show / hide console
-//    - Open App Folder
-//    - Open Startup Folder
-//    - restart explorer
-//    - restart app
+// ✅    - open logs
+// ✅    - mark in logs
+// ✅    - create plugin
+// ✅    - show / hide console
+// ✅    - Open App Folder
+// ✅    - Open Startup Folder
+// ✅    - restart explorer
+// ✅    - restart app
 // settings:
 // ✅ configure shortcut
 // ✅ support shortcuts
@@ -70,7 +71,7 @@ namespace Explobar
         {
             try
             {
-                var otherInstanceToWaitFor = args.FirstOrDefault(x => x.StartsWith("-wait:"))?.Substring(6);
+                var otherInstanceToWaitFor = args.FirstOrDefault(x => x.StartsWith($"{Globals.CliArgWait}:"))?.Substring(6);
 
                 otherInstanceToWaitFor?.GetProcess()?.WaitForExit();
 

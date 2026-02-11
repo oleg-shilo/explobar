@@ -30,6 +30,8 @@ namespace Explobar
         public const int WindowStabilizationDelay = 2000;
         public const int ProcessWindowInitTimeout = 100;
 
+        public const string CliArgWait = "-wait";
+
         public static string ConfigFileHeader
         {
             get
