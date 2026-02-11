@@ -11,59 +11,25 @@ namespace Explobar
 {
     static class ConfigManager
     {
-        private static FileSystemWatcher configWatcher;
-        private static List<FileSystemWatcher> pluginWatchers = new List<FileSystemWatcher>();
-        private static bool isConfigUpToDate = false;
-        private static bool suppressWatcherEvents = false;
+        public static bool IsConfigLoadingInProgress { get; set; } = false;
+        public static string ConfigPath = SpecialFolder.LocalApplicationData.Combine("Explobar", "toolbar-items.yaml");
+        public static DateTime configFileTimestamp = DateTime.MinValue;
 
-        public static bool IsConfigUpToDate => isConfigUpToDate;
+        static ToolbarConfig currentConfig = null;
+        public static bool IsConfigUpToDate = false;
+        static bool arePluginsUpToDate = false;
+        static FileSystemWatcher configWatcher;
+        static List<FileSystemWatcher> pluginWatchers = new List<FileSystemWatcher>();
+        static bool suppressWatcherEvents = false; // Ignore events triggered by our own save operations
 
-        public static void Initialize()
+        public static bool ArePluginsUpToDate
         {
-            // Ensure config directory exists
-            var configDir = Path.GetDirectoryName(ConfigPath);
-            if (!Directory.Exists(configDir))
-                Directory.CreateDirectory(configDir);
-
-            // Set up file watcher for config file
-            configWatcher = new FileSystemWatcher
+            get
             {
-                Path = configDir,
-                Filter = Path.GetFileName(ConfigPath),
-                NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.CreationTime,
-                EnableRaisingEvents = true
-            };
-
-            configWatcher.Changed += OnConfigFileChanged;
-            configWatcher.Created += OnConfigFileChanged;
-            configWatcher.Deleted += OnConfigFileChanged;
-            configWatcher.Renamed += OnConfigFileChanged;
-
-            Runtime.Output($"Config file watcher initialized for: {ConfigPath}");
-
-            InitPluginWatchers();
-        }
-
-        private static void OnConfigFileChanged(object sender, FileSystemEventArgs e)
-        {
-            // Ignore events triggered by our own save operations
-            if (suppressWatcherEvents)
-                return;
-
-            ReportNewFileChange("Config file", e.FullPath, e.ChangeType);
-
-            isConfigUpToDate = false;
-        }
-
-        private static void OnPluginFileChanged(object sender, FileSystemEventArgs e)
-        {
-            // Ignore events triggered by our own save operations
-            if (suppressWatcherEvents)
-                return;
-
-            ReportNewFileChange("Plugin file", e.FullPath, e.ChangeType);
-
-            arePluginsUpToDate = false;
+                if (currentConfig?.Items == null)
+                    return true;
+                return arePluginsUpToDate;
+            }
         }
 
         static (string path, int timestamp) lastPluginChangeReport = (null, 0);
@@ -79,7 +45,25 @@ namespace Explobar
             }
         }
 
-        static bool arePluginsUpToDate;
+        public static void Initialize()
+        {
+            // Ensure config directory exists
+            ConfigPath.GetDirName().EnsureDir();
+
+            // Set up file watcher for config file
+            configWatcher = ConfigPath.WatchForChanges(onChange: (s, e) =>
+                {
+                    if (!suppressWatcherEvents)
+                    {
+                        ReportNewFileChange("Config file", e.FullPath, e.ChangeType);
+                        IsConfigUpToDate = false;
+                    }
+                }
+                                                      );
+            Runtime.Output($"Config file watcher initialized for: {ConfigPath}");
+
+            InitPluginWatchers();
+        }
 
         static void InitPluginWatchers()
         {
@@ -99,19 +83,15 @@ namespace Explobar
             {
                 try
                 {
-                    var directory = Path.GetDirectoryName(pluginPath);
-                    var fileName = Path.GetFileName(pluginPath);
-                    var watcher = new FileSystemWatcher
-                    {
-                        Path = directory,
-                        Filter = fileName,
-                        NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.CreationTime,
-                        EnableRaisingEvents = true
-                    };
-                    watcher.Changed += OnPluginFileChanged;
-                    watcher.Created += OnPluginFileChanged;
-                    watcher.Deleted += OnPluginFileChanged;
-                    watcher.Renamed += OnPluginFileChanged;
+                    var watcher = pluginPath.WatchForChanges(onChange: (s, e) =>
+                            {
+                                if (!suppressWatcherEvents)
+                                {
+                                    ReportNewFileChange("Plugin file", e.FullPath, e.ChangeType);
+                                    arePluginsUpToDate = false;
+                                }
+                            });
+
                     pluginWatchers.Add(watcher);
                     Runtime.Output($"Plugin file watcher initialized for: {pluginPath}");
                 }
@@ -120,13 +100,6 @@ namespace Explobar
                     Runtime.Output($"Failed to initialize watcher for plugin {pluginPath}: {ex.Message}");
                 }
             }
-        }
-
-        public static bool ArePluginsUpToDate()
-        {
-            if (currentConfig?.Items == null)
-                return true;
-            return arePluginsUpToDate;
         }
 
         public static ToolbarConfig LoadConfig()
@@ -191,7 +164,7 @@ namespace Explobar
                     currentConfig.Items.Resolve();
 
                     // Mark config as up to date after successful load
-                    isConfigUpToDate = true;
+                    IsConfigUpToDate = true;
 
                     return currentConfig;
                 }
@@ -333,11 +306,5 @@ namespace Explobar
             }
             return result;
         }
-
-        public static bool IsConfigLoadingInProgress { get; private set; } = false;
-        public static string ConfigPath = SpecialFolder.LocalApplicationData.Combine("Explobar", "toolbar-items.yaml");
-        static Dictionary<string, DateTime> pluginTimestamps = new Dictionary<string, DateTime>();
-        public static DateTime configFileTimestamp = DateTime.MinValue;
-        static ToolbarConfig currentConfig = null;
     }
 }

@@ -294,7 +294,7 @@ namespace Explobar
             toolbarPanel.Controls.Add(separator);
         }
 
-        private static Bitmap _defaultIcon;
+        static Bitmap _defaultIcon;
         public static Bitmap DefaultIcon => _defaultIcon ?? (_defaultIcon = (Bitmap)@"%SystemRoot%\System32\imageres.dll".ExpandEnvars().ExtractIcon(231));
 
         void AddToolbarButton(ToolbarItem info)

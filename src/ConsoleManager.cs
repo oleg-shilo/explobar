@@ -18,7 +18,7 @@ namespace Explobar
         static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
         [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern bool AttachConsole(uint dwProcessId);
+        static extern bool AttachConsole(uint dwProcessId);
 
         const int SW_HIDE = 0;
         const int SW_SHOW = 5;
@@ -47,7 +47,7 @@ namespace Explobar
             }
         }
 
-        private const uint ATTACH_PARENT_PROCESS = 0x0ffffffff; // (uint)-1;
+        const uint ATTACH_PARENT_PROCESS = 0x0ffffffff; // (uint)-1;
 
         public static void Allocate()
         {
@@ -92,13 +92,13 @@ namespace Explobar
 static class ConsoleHelper
 {
     [DllImport("kernel32.dll")]
-    private static extern bool AllocConsole();
+    static extern bool AllocConsole();
 
     [DllImport("kernel32.dll")]
-    private static extern bool FreeConsole();
+    static extern bool FreeConsole();
 
     [DllImport("kernel32.dll")]
-    private static extern IntPtr GetConsoleWindow();
+    static extern IntPtr GetConsoleWindow();
 
     public static void AttachConsole()
     {
