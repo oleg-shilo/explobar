@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Drawing;
 using static System.Environment;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Windows.Forms;
@@ -32,6 +33,8 @@ namespace Explobar
             return false;
         }
 
+        public static string GetFileNameWithoutExtension(this string path) => Path.GetFileNameWithoutExtension(path);
+
         public static string GetFileName(this string path) => Path.GetFileName(path);
 
         public static string GetDirName(this string path) => Path.GetDirectoryName(path);
@@ -55,6 +58,17 @@ namespace Explobar
             {
                 return null;
             }
+        }
+
+        public static Control NetxInFocusChain(this Control control, bool forward)
+        {
+            var controls = control.Controls.Cast<Control>().ToList();
+            if (forward)
+                return controls.SkipWhile(c => c.Focused).Skip(1).FirstOrDefault()
+                                ?? controls.FirstOrDefault();
+            else
+                return controls.TakeWhile(c => !c.Focused).LastOrDefault()
+                                ?? controls.LastOrDefault();
         }
 
         public static void InUIThread(this Control control, Action action) => control.Invoke(action);

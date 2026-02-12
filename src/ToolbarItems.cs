@@ -21,7 +21,7 @@ namespace Explobar
     {
         public ToolbarSettings Settings { get; set; } = new ToolbarSettings();
         public List<string> Favorites { get; set; } = new List<string>();
-        public List<string> Applications { get; set; } = new List<string>();
+        public List<ApplicationItem> Applications { get; set; } = new List<ApplicationItem>();
         public List<ToolbarItem> Items { get; set; } = new List<ToolbarItem>();
     }
 
@@ -31,6 +31,15 @@ namespace Explobar
         public int HistorySize { get; set; } = 10;
         public string ShortcutKey { get; set; } = "Shift+Escape";
         public bool ShowConsoleAtStartup { get; set; } = false;
+
+        /// <summary>
+        /// Controls which button appears under the mouse cursor when the toolbar pops up.
+        /// 0 = center the toolbar under cursor
+        /// Positive values = 1-based index from the left (1 = first button, 2 = second, etc.)
+        /// Negative values = 1-based index from the right (-1 = last button, -2 = second-to-last, etc.)
+        /// If the index is out of range, the toolbar will be centered.
+        /// </summary>
+        public int IndexOfButtonUnderMouse { get; set; } = 0;
     }
 
     static class ToolbarItems
@@ -38,7 +47,7 @@ namespace Explobar
         public static List<ToolbarItem> Items => ConfigManager.LoadConfig().Items;
         public static ToolbarSettings Settings => ConfigManager.LoadConfig().Settings;
         public static List<string> Favorites => ConfigManager.LoadConfig().Favorites;
-        public static List<string> Applications => ConfigManager.LoadConfig().Applications;
+        public static List<ApplicationItem> Applications => ConfigManager.LoadConfig().Applications;
 
         // Flag to indicate config loading is in progress (user is viewing error dialog)
 
@@ -51,7 +60,8 @@ namespace Explobar
                 {
                     ButtonSize = 24,
                     HistorySize = 10,
-                    ShortcutKey = "Shift+Escape"
+                    ShortcutKey = "Shift+Escape",
+                    IndexOfButtonUnderMouse = 0  // Add this line to the DefaultConfig
                 },
                 Favorites = new List<string>
                             {
@@ -59,12 +69,22 @@ namespace Explobar
                                 SpecialFolder.MyDocuments.GetPath(),
                                 SpecialFolder.UserProfile.GetPath()
                             },
-                Applications = new List<string>
+                Applications = new List<ApplicationItem>
                     {
-                        "notepad.exe",
-                        "calc.exe",
-                        "wt.exe|-d %c%",  // Terminal in current directory
-                        "powershell.exe|-NoExit|%c%"  // PowerShell with working dir set to current
+                        new ApplicationItem { Path = "notepad.exe" },
+                        new ApplicationItem { Name = "Calculator", Path = "calc.exe" },
+                        new ApplicationItem
+                        {
+                            Name = "Terminal",
+                            Path = "wt.exe",
+                            Arguments = "-d %c%"
+                        },
+                        new ApplicationItem
+                        {
+                            Name = "PowerShell",
+                            Path = "powershell.exe",
+                            Arguments = "-NoExit %c%"
+                        }
                     },
                 Items = new List<ToolbarItem>
                     {
@@ -114,6 +134,14 @@ namespace Explobar
 
         internal string IconPath => Icon.ParseIconPath().path.ResolvePath();
         internal int IconIndex => Icon.ParseIconPath().index;
+    }
+
+    public class ApplicationItem
+    {
+        public string Name { get; set; } = "";
+        public string Path { get; set; } = "";
+        public string Arguments { get; set; } = "";
+        public string WorkingDir { get; set; } = "";
     }
 
     static class ToolbarExtensions

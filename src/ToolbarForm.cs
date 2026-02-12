@@ -166,6 +166,14 @@ namespace Explobar
                     HideToolbar();
                     e.Handled = true;
                 }
+
+                // Move focus through the buttons in the toolbar for easier keyboard navigation
+                if (e.KeyCode == Keys.Right || e.KeyCode == Keys.Left)
+                {
+                    toolbarPanel
+                        .NetxInFocusChain(forward: e.KeyCode == Keys.Right)
+                        ?.Focus();
+                }
             };
 
             toolTip = new ToolTip
@@ -247,6 +255,7 @@ namespace Explobar
 
         public ToolbarForm OnVisible()
         {
+            // first, bring explorer to the full view
             SetForegroundWindow(this.ExplorerContext.HWND);
 
             Instance = this;
@@ -255,6 +264,7 @@ namespace Explobar
 
             SetWindowPos(this.Handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
             SetForegroundWindow(this.Handle);
+            this.toolbarPanel.Focus(); // to allow tab navigation
 
             if (this.IsHandleCreated)
                 Task.Run(() =>
@@ -318,6 +328,8 @@ namespace Explobar
 
                 customButton = (button as ICustomButton);
 
+                button.Name = info.Path;
+
                 // add context menu to this plugin button
                 if (isScriptedButton)
                 {
@@ -338,10 +350,11 @@ namespace Explobar
             else
             {
                 button = new Button();
+                button.Name = info.Path;
                 iconPath = info.IconPath.IfEmpty(info.Path);
                 iconIndex = info.IconIndex;
             }
-
+            button.Tag = this;
             resizedIcon = CreateButtonImage(iconPath, iconIndex);
 
             button.Width = buttonSize;
@@ -538,6 +551,61 @@ namespace Explobar
                 graphics.DrawLine(pen, arrow[0], arrow[2]);
                 graphics.DrawLine(pen, arrow[1], arrow[2]);
             }
+        }
+
+        public int CalculateButtonOffset(int buttonIndex)
+        {
+            if (this == null)
+                return 0;
+
+            // Find the toolbar panel (FlowLayoutPanel)
+            FlowLayoutPanel toolbarPanel = null;
+            foreach (Control ctrl in this.Controls)
+            {
+                if (ctrl is FlowLayoutPanel panel)
+                {
+                    toolbarPanel = panel;
+                    break;
+                }
+            }
+
+            if (toolbarPanel == null)
+                return this.Width / 2; // Fallback to center
+
+            // Build list of non-separator buttons
+            var buttons = new List<Control>();
+
+            foreach (Control control in toolbarPanel.Controls)
+            {
+                // Only count non-separator controls as buttons
+                if (control.Tag is ToolbarForm)
+                    buttons.Add(control);
+            }
+
+            if (buttons.Count == 0)
+                return this.Width / 2; // Fallback to center
+
+            // Convert 1-based index to 0-based
+            int targetIndex;
+            if (buttonIndex > 0)
+            {
+                // Positive: 1-based from left (1 = first button, 2 = second, etc.)
+                targetIndex = buttonIndex - 1;
+            }
+            else // buttonIndex < 0
+            {
+                // Negative: 1-based from right (-1 = last button, -2 = second-to-last, etc.)
+                targetIndex = buttons.Count + buttonIndex;
+            }
+
+            // Clamp to valid range
+            if (targetIndex < 0 || targetIndex >= buttons.Count)
+                return this.Width / 2; // Fallback to center if out of range
+
+            // Get the target button and calculate offset to its center
+            var targetButton = buttons[targetIndex];
+
+            return this.Padding.Left + targetButton.Left + targetButton.Width / 2;
         }
     }
 }
