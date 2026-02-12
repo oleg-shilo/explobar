@@ -59,6 +59,12 @@ namespace Explobar
             }
         }
 
+        public static void AllocateVisible()
+        {
+            ConsoleManager.Allocate();
+            _isConsoleVisible = true;
+        }
+
         public static void AllocateHidden()
         {
             ConsoleManager.Allocate();

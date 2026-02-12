@@ -72,6 +72,40 @@ namespace Explobar
         [STAThread]
         static void Main(string[] args)
         {
+            // Check for help argument
+            if (args.Any(a => a.SameAsEither(
+                                Globals.CliArgHelp,
+                                "-h", "--help",
+                                "/?", "?")))
+            {
+                ConsoleManager.AllocateVisible();
+                Console.WriteLine(Globals.CliHelpText);
+                if (args.Contains(Globals.CliArgWait))
+                {
+                    Console.WriteLine();
+                    Console.WriteLine("Press any key to exit...");
+                    Console.ReadKey();
+                }
+                return;
+            }
+
+            // Check for configuration help argument
+            if (args.Any(a => a.SameAsEither(
+                                Globals.CliArgConfigHelp,
+                                "-config-help", "--config-help")))
+            {
+                ConsoleManager.AllocateVisible();
+
+                Console.WriteLine(Globals.ConfigFileHeader.Replace("\n# ", "\n").Replace("\n#", "\n"));
+                if (args.Contains(Globals.CliArgWait))
+                {
+                    Console.WriteLine();
+                    Console.WriteLine("Press any key to exit...");
+                    Console.ReadKey();
+                }
+                return;
+            }
+
             try
             {
                 var otherInstanceToWaitFor = args.FirstOrDefault(x => x.StartsWith($"{Globals.CliArgWait}:"))?.Substring(6);

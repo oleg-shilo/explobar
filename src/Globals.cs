@@ -31,6 +31,37 @@ namespace Explobar
         public const int ProcessWindowInitTimeout = 100;
 
         public const string CliArgWait = "-wait";
+        public const string CliArgHelp = "-help";
+        public const string CliArgConfigHelp = "-confighelp";
+
+        public static string CliHelpText
+        {
+            get
+            {
+                var help = new StringBuilder();
+                help.AppendLine("Explobar - Keyboard-driven toolbar extension for Windows Explorer");
+                help.AppendLine();
+                help.AppendLine("Usage: Explobar.exe [options]");
+                help.AppendLine();
+                help.AppendLine("Options:");
+                help.AppendLine("  -help          Show this help message and exit");
+                help.AppendLine("  -confighelp    Show configuration file format documentation and exit");
+                help.AppendLine("  -wait          Wait for user input before exiting (useful for debugging)");
+                help.AppendLine();
+                help.AppendLine("When run without options, Explobar starts in system tray and monitors");
+                help.AppendLine("Windows Explorer for keyboard shortcuts.");
+                help.AppendLine();
+                help.AppendLine("Configuration:");
+                help.AppendLine($"  Config file: %LocalAppData%\\Explobar\\toolbar-items.yaml");
+                help.AppendLine($"  Log files:   %LocalAppData%\\Explobar\\logs\\");
+                help.AppendLine();
+                help.AppendLine("Default shortcut: Shift+Escape (configurable in toolbar-items.yaml)");
+                help.AppendLine();
+                help.AppendLine("For more information, visit: https://github.com/oleg-shilo/explobar");
+
+                return help.ToString();
+            }
+        }
 
         public static string ConfigFileHeader
         {
@@ -38,7 +69,7 @@ namespace Explobar
             {
                 var comments = new StringBuilder();
                 comments.AppendLine("# Explobar Toolbar Configuration");
-                comments.AppendLine("# This file defines the toolbar settings and items displayed when pressing the configured shortcut in Windows Explorer");
+                comments.AppendLine("# The config file defines the toolbar settings and items displayed when pressing the configured shortcut in Windows Explorer");
                 comments.AppendLine("#");
                 comments.AppendLine("# Settings:");
                 comments.AppendLine("#   ButtonSize: Size of toolbar button icons in pixels (default: 24)");
@@ -153,7 +184,6 @@ namespace Explobar
                 comments.AppendLine("#     - Path: '{C:\\Plugins\\MyCustomButtons.dll,FolderContentButton}'");
                 comments.AppendLine("#       Icon: 'shell32.dll,43'");
                 comments.AppendLine("#       Tooltip: 'Specific button from assembly'");
-                comments.AppendLine("#     ");
                 comments.AppendLine("#");
                 comments.AppendLine("#================================");
                 comments.AppendLine();
