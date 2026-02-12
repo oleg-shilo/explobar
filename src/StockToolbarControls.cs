@@ -215,7 +215,10 @@ namespace Explobar
 
                 foreach (string path in ExplorerHistory.GetRecentLocations())
                 {
-                    var menuItem = new ToolStripMenuItem(Path.GetFileName(path));
+                    var displayName = path.GetFileName()
+                                          .IfEmpty(path); // show full path if filename is empty (e.g. for drive letters)
+
+                    var menuItem = new ToolStripMenuItem(displayName);
                     menuItem.ToolTipText = path;
                     menuItem.Click += (s, e) =>
                     {
@@ -250,17 +253,21 @@ namespace Explobar
             {
                 var menu = new ContextMenuStrip();
 
-                foreach (string appDef in ToolbarItems.Applications)
+                foreach (var appDef in ToolbarItems.Applications)
                 {
-                    var (path, arguments, workingDir) = ParseApplicationDefinition(appDef);
+                    // var (path, arguments, workingDir) = ParseApplicationDefinition(appDef);
 
-                    var menuItem = new ToolStripMenuItem(Path.GetFileName(path));
-                    menuItem.ToolTipText = appDef;
+                    var menuItem = new ToolStripMenuItem(appDef.Name.IfEmpty(appDef.Path.GetFileNameWithoutExtension()));
+
+                    menuItem.ToolTipText = $"{appDef.Path} {appDef.Arguments}";
                     menuItem.Click += (s, e) =>
                     {
                         try
                         {
-                            LaunchApplication(path, arguments, workingDir, args.Context);
+                            LaunchApplication(
+                                appDef.Path, appDef.Arguments,
+                                appDef.WorkingDir.IfEmpty(appDef.Path.GetDirName()),
+                                args.Context);
                         }
                         catch (Exception ex)
                         {

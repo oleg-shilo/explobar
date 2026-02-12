@@ -13,9 +13,11 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 
 // TODO
-//    ArePLuginsUpToDate should not be called on every keystroke but only when the config file changes (e.g. using FileSystemWatcher)
-//    Allow specifying the default button under cursor on popup
-//    Allow keyboard navigation in the toolbar
+// ✅ Recent folders should show path if it is drive only path (e.g. "C:\") or network share (e.g. "\\server\share") instead of just the name
+// ✅ Add aliase for the configured apps
+// ✅ Allow specifying the default button under cursor on popup
+// ✅ Allow keyboard navigation in the toolbar
+// ✅ ArePLuginsUpToDate should not be called on every keystroke but only when the config file changes (e.g. using FileSystemWatcher)
 // ✅ Allow auto-startup with Windows
 // ✅ Allow scripted buttons
 // ✅ IsConfigUpToDate should not be called on every keystroke but only when the config file changes (e.g. using FileSystemWatcher)

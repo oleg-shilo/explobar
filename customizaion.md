@@ -29,8 +29,12 @@ Favorites:
 - C:\Projects 
 - %UserProfile%\Downloads
 Applications:
-- notepad.exe
-- calc.exe
+- Path: notepad.exe
+- Name: Calculator
+  Path: calc.exe
+- Name: Terminal
+  Path: wt.exe
+  Arguments: '-d %c%'
 Items:
 - Path: '{new-file}'
 - Path: 'notepad.exe' 
@@ -272,58 +276,128 @@ Favorites:
 
 ### Applications
 
-Applications that appear in the `{application}` dropdown menu.
+Applications that appear in the `{applications}` dropdown menu.
 
-**Format:** `path` or `path|arguments` or `path|arguments|workingdir`
+**Object Format:** Each application is defined with named properties:
+
+| Property | Description | Required | Example |
+|----------|-------------|----------|----------|
+| `Name` | Display name in menu | No | `Terminal` |
+| `Path` | Path to executable | Yes | `wt.exe` |
+| `Arguments` | Command line arguments | No | `-d %c%` |
+| `WorkingDir` | Working directory | No | `%c%` |
+
+**Properties:**
+- **Name** - Display name in menu (defaults to executable filename without extension if omitted)
+- **Path** - Path to the executable (required)
+- **Arguments** - Command line arguments with placeholder support (`%f%`, `%c%`, environment variables)
+- **WorkingDir** - Working directory (defaults to executable's directory if omitted)
 
 ```yaml
 Applications:
-- notepad.exe
-- notepad.exe|%f%
-- wt.exe|-d %c%
-- powershell.exe|-NoExit||%c%
-- python.exe|script.py|C:\Scripts
-- %ProgramFiles%\Git\git-bash.exe||%c%
+# Simple launch - name defaults to "notepad"
+- Path: notepad.exe
+
+# With custom name
+- Name: Calculator
+  Path: calc.exe
+
+# With arguments to open in current directory
+- Name: Terminal
+  Path: wt.exe
+  Arguments: '-d %c%'
+
+# With arguments to open selected file
+- Name: Notepad++
+  Path: notepad++.exe
+  Arguments: '%f%'
+
+# With working directory
+- Name: PowerShell
+  Path: powershell.exe
+  Arguments: '-NoExit'
+  WorkingDir: '%c%'
+
+# Full path with environment variable
+- Name: Git Bash
+  Path: '%ProgramFiles%\Git\git-bash.exe'
+  WorkingDir: '%c%'
+
+# Python script with specific working directory
+- Name: My Script
+  Path: python.exe
+  Arguments: 'script.py'
+  WorkingDir: 'C:\Scripts'
+
+# VS Code: open current folder
+- Name: VS Code
+  Path: code.exe
+  Arguments: '.'
+  WorkingDir: '%c%'
 ```
 
 **Features:**
 
 - Click to launch
-- Tooltip shows full definition
-- Same path resolution as custom commands
+- Tooltip shows command details
+- Same path resolution as toolbar items
 - Arguments support same placeholders as toolbar items (`%f%`, `%c%`, environment variables)
-- Working directory can be set to current Explorer folder using `%c%`
+- Working directory defaults to executable's folder but can be overridden
 - Non-existent files are skipped
+- Name field is optional and defaults to executable filename
 
-**Examples:**
+**Placeholder Support:**
 
-#### Applications:
+- **`%f%`** - First selected file (full path, quoted)
+- **`%c%`** - Current directory (full path, quoted)
+- **`%Variable%`** - Any environment variable (e.g., `%UserProfile%`, `%ProgramFiles%`)
 
-Simple launch
-- notepad.exe
+**Example Configurations:**
 
-Open selected file
-- notepad.exe|%f%
+```yaml
+Applications:
+# Simple application launch
+- Path: notepad.exe
 
-Terminal in current directory
-- wt.exe|-d %c%
- 
-PowerShell with working directory set to current folder (empty arguments)
-- powershell.exe|-NoExit||%c%
- 
-Python script with specific working directory
-- python.exe|script.py|C:\Scripts
+# Open selected file in editor
+- Name: Edit with Notepad++
+  Path: notepad++.exe
+  Arguments: '%f%'
 
-VS Code: open current folder
-- code.exe|.|%c%
+# Terminal in current directory
+- Name: Windows Terminal Here
+  Path: wt.exe
+  Arguments: '-d %c%'
 
-Command prompt in current folder
-- cmd.exe|/K||%c%
+# PowerShell with no exit, in current folder
+- Name: PowerShell Here
+  Path: powershell.exe
+  Arguments: '-NoExit'
+  WorkingDir: '%c%'
 
+# Command prompt in current folder
+- Name: CMD Here
+  Path: cmd.exe
+  Arguments: '/K'
+  WorkingDir: '%c%'
 
-**Special Cases:**
-- `app||workdir` - Empty arguments but custom working directory
-- `app|args|` - Custom arguments but default working directory (executable's folder)
+# Python script with specific working directory
+- Name: Run Backup Script
+  Path: python.exe
+  Arguments: 'backup.py'
+  WorkingDir: 'C:\Scripts'
+
+# Git Bash in current directory
+- Name: Git Bash
+  Path: '%ProgramFiles%\Git\git-bash.exe'
+  WorkingDir: '%c%'
+
+# VS Code in current folder
+- Name: Open in VS Code
+  Path: code.exe
+  Arguments: '.'
+  WorkingDir: '%c%'
+```
 
 
 ---
@@ -1000,9 +1074,19 @@ Favorites:
 - %UserProfile%\Documents
 - D:\Work
 Applications:
-- notepad.exe
-- calc.exe
-- C:\Program Files\Notepad++\notepad++.exe
+- Path: notepad.exe
+- Name: Calculator
+  Path: calc.exe
+- Name: Notepad++
+  Path: 'C:\Program Files\Notepad++\notepad++.exe'
+  Arguments: '%f%'
+- Name: Terminal Here
+  Path: wt.exe
+  Arguments: '-d %c%'
+- Name: PowerShell Here
+  Path: powershell.exe
+  Arguments: '-NoExit'
+  WorkingDir: '%c%'
 Items:
 # Stock buttons
 - Path: '{new-tab}'

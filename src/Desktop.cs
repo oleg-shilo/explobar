@@ -46,15 +46,29 @@ namespace Explobar
 
             form.StartPosition = FormStartPosition.Manual;
 
-            int offsetX = 0 - form.Width / 2;
-            int offsetY = 0 - form.Height / 2;
+            // Calculate offset based on IndexOfButtonUnderMouse setting
+            int buttonIndex = ToolbarItems.Settings.IndexOfButtonUnderMouse;
+            int offsetX;
+
+            if (buttonIndex == 0)
+            {
+                // Center-based offset calculation
+                offsetX = form.Width / 2;
+            }
+            else
+            {
+                // Position specific button under cursor (1-based, supports negative for right-side)
+                offsetX = form.CalculateButtonOffset(buttonIndex);
+            }
+
+            int offsetY = form.Height / 2;
 
             // Get screen bounds to ensure form is visible
             var cursorPos = Cursor.Position;
 
             var screen = Screen.FromPoint(cursorPos);
-            int formX = Math.Min(cursorPos.X + offsetX, screen.WorkingArea.Right - form.Width);
-            int formY = Math.Min(cursorPos.Y + offsetY, screen.WorkingArea.Bottom - form.Height);
+            int formX = Math.Min(cursorPos.X - offsetX, screen.WorkingArea.Right - form.Width);
+            int formY = Math.Min(cursorPos.Y - offsetY, screen.WorkingArea.Bottom - form.Height);
 
             // Ensure it's not off the left or top edge
             formX = Math.Max(formX, screen.WorkingArea.Left);

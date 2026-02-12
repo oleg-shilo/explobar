@@ -79,6 +79,13 @@ Configuration file: `%LocalAppData%\Explobar\toolbar-items.yaml`
 Settings: 
   ButtonSize: 24 
   ShortcutKey: Shift+Escape
+Applications:
+  - Path: notepad.exe
+  - Name: Calculator
+    Path: calc.exe
+  - Name: Terminal
+    Path: wt.exe
+    Arguments: '-d %c%'
 Items:
  - Path: '{new-file}'           # Built-in: create text file
  - Path: '{new-folder}'         # Built-in: create folder
@@ -101,7 +108,7 @@ Items:
 
 **Favorites:** Quick-access folder list
 
-**Applications:** Quick-launch application list
+**Applications:** Quick-launch application list (object format with Name, Path, Arguments, WorkingDir)
 
 ### Placeholders
 
