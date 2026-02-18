@@ -79,6 +79,9 @@ namespace Explobar
 
             contextMenu.Items.Add(developmentMenu);
 
+            // contextMenu.Items.Add(new ToolStripMenuItem("Test", null,
+            //     (s, e) => Desktop.StartMonitoringAllExplorerWindows()));
+
             contextMenu.Items.Add(new ToolStripSeparator());
 
             contextMenu.Items.Add(new ToolStripMenuItem("About", null,

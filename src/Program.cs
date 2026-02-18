@@ -18,6 +18,8 @@ using System.Windows.Forms;
 // ✅ Allow specifying the default button under cursor on popup
 // ✅ Allow keyboard navigation in the toolbar
 // ✅ ArePLuginsUpToDate should not be called on every keystroke but only when the config file changes (e.g. using FileSystemWatcher)
+//    Add aliase for teh configured apps
+//    Add explorer button for poping toolbar up
 // ✅ Allow auto-startup with Windows
 // ✅ Allow scripted buttons
 // ✅ IsConfigUpToDate should not be called on every keystroke but only when the config file changes (e.g. using FileSystemWatcher)
@@ -142,6 +144,8 @@ namespace Explobar
                 ToolbarForm.Preheat();
                 Profiler.Reset();
 
+                Desktop.StartMonitoringAllExplorerWindows();
+
                 Application.Run();
 
                 SingleInstanceApp.Clear();
@@ -154,7 +158,7 @@ namespace Explobar
 
         static bool _isProcessing = false;
 
-        static void OnShortcutPressed(Keys key)
+        public static void OnShortcutPressed(Keys key)
         {
             // Ignore keystrokes while config is loading or error dialog is shown
             if (ConfigManager.IsConfigLoadingInProgress)

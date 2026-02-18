@@ -58,6 +58,7 @@
     </Compile>
     <Compile Include="AppNotify.cs" />
     <Compile Include="ConfigManager.cs" />
+    <Compile Include="CustomButtonForm.cs" />
     <Compile Include="Desktop.cs" />
     <Compile Include="Explorer.cs" />
     <Compile Include="ExplorerHistory.cs" />
