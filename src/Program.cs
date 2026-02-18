@@ -46,7 +46,7 @@ using System.Windows.Forms;
 // ✅ navigate from clipboard content
 // ✅ button separator
 // ✅ favorites
-//     apps
+// ✅ applications
 // ✅ recent folders
 // ✅ config button should pop up the menu for
 //    ✅ edit config

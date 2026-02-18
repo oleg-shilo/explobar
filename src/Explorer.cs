@@ -131,8 +131,7 @@ namespace Explobar
                     bool hasMouseOver = windowHandle == rootWindowUnderMouse;
                     bool hasFocus = windowHandle == foregroundWindow;
 
-                    // Only process if the window has both mouse over AND focus
-                    // if (!hasMouseOver || !hasFocus)
+                    // Only process if the window has mouse over
                     if (!hasMouseOver)
                         continue;
 
@@ -164,8 +163,6 @@ namespace Explobar
 
                         foreach (FolderItem item in explorerWindow.Document.SelectedItems())
                             selectedPaths.Add(item.Path);
-
-                        Desktop.SetForegroundWindow(windowHandle);
                     }
 
                     break;
