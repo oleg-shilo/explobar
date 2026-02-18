@@ -74,85 +74,87 @@ namespace Explobar
         [STAThread]
         static void Main(string[] args)
         {
-            // Check for help argument
-            if (args.Any(a => a.SameAsEither(
-                                Globals.CliArgHelp,
-                                "-h", "--help",
-                                "/?", "?")))
+            if (args.Any(a => a.SameAsEither(Globals.CliArgHelp, "-h", "--help", "/?", "?")))
             {
-                ConsoleManager.AllocateVisible();
-                Console.WriteLine(Globals.CliHelpText);
-                if (args.Contains(Globals.CliArgWait))
-                {
-                    Console.WriteLine();
-                    Console.WriteLine("Press any key to exit...");
-                    Console.ReadKey();
-                }
-                return;
+                PrintGenericHelp(args);
             }
-
-            // Check for configuration help argument
-            if (args.Any(a => a.SameAsEither(
-                                Globals.CliArgConfigHelp,
-                                "-config-help", "--config-help")))
+            else if (args.Any(a => a.SameAsEither(Globals.CliArgConfigHelp, "-config-help", "--config-help")))
             {
-                ConsoleManager.AllocateVisible();
-
-                Console.WriteLine(Globals.ConfigFileHeader.Replace("\n# ", "\n").Replace("\n#", "\n"));
-                if (args.Contains(Globals.CliArgWait))
-                {
-                    Console.WriteLine();
-                    Console.WriteLine("Press any key to exit...");
-                    Console.ReadKey();
-                }
-                return;
+                PrintConfigHelp(args);
             }
-
-            try
+            else
             {
-                var otherInstanceToWaitFor = args.FirstOrDefault(x => x.StartsWith($"{Globals.CliArgWait}:"))?.Substring(6);
-
-                otherInstanceToWaitFor?.GetProcess()?.WaitForExit();
-
-                if (SingleInstanceApp.AnotherInstanceDetected())
+                try
                 {
-                    Runtime.ShowError("Explobar is already running.");
-                    return;
-                }
+                    var otherInstanceToWaitFor = args.FirstOrDefault(x => x.StartsWith($"{Globals.CliArgWait}:"))?.Substring(6);
 
-                Application.EnableVisualStyles();
-                Application.SetCompatibleTextRenderingDefault(false);
+                    otherInstanceToWaitFor?.GetProcess()?.WaitForExit();
 
-                ConsoleManager.AllocateHidden();
+                    if (SingleInstanceApp.AnotherInstanceDetected())
+                    {
+                        Runtime.ShowError("Explobar is already running.");
+                        return;
+                    }
 
-                if (ToolbarItems.Settings.ShowConsoleAtStartup)
-                    ConsoleManager.Show();
+                    Application.EnableVisualStyles();
+                    Application.SetCompatibleTextRenderingDefault(false);
 
-                UserInputMonitor.StartMonitor(OnShortcutPressed);
-                ExplorerHistory.StartMonitor();
-                AppNotify.Setup();
+                    ConsoleManager.AllocateHidden();
 
-                Application.ApplicationExit += (s, e) =>
-                {
-                    ExplorerHistory.StopMonitor();
-                    UserInputMonitor.StopMonitor();
-                    AppNotify.Dispose();
-                    ConsoleManager.Hide();
+                    if (ToolbarItems.Settings.ShowConsoleAtStartup)
+                        ConsoleManager.Show();
+
+                    UserInputMonitor.StartMonitor(OnShortcutPressed);
+                    ExplorerHistory.StartMonitor();
+                    Desktop.StartMonitoringAllExplorerWindows();
+
+                    AppNotify.Setup();
+
+                    Application.ApplicationExit += (s, e) =>
+                    {
+                        ExplorerHistory.StopMonitor();
+                        UserInputMonitor.StopMonitor();
+                        AppNotify.Dispose();
+                        ConsoleManager.Hide();
+                        SingleInstanceApp.Clear();
+                    };
+
+                    ToolbarForm.Preheat();
+                    Profiler.Reset();
+
+                    Application.Run();
+
                     SingleInstanceApp.Clear();
-                };
-
-                ToolbarForm.Preheat();
-                Profiler.Reset();
-
-                Desktop.StartMonitoringAllExplorerWindows();
-
-                Application.Run();
-
-                SingleInstanceApp.Clear();
+                }
+                catch (Exception ex)
+                {
+                    Runtime.Log("An unexpected error occurred: " + ex.Message);
+                }
             }
-            catch (Exception ex)
+        }
+
+        static void PrintGenericHelp(string[] args)
+        {
+            ConsoleManager.AllocateVisible();
+            Console.WriteLine(Globals.CliHelpText);
+            if (args.Contains(Globals.CliArgWait))
             {
-                Runtime.Log("An unexpected error occurred: " + ex.Message);
+                Console.WriteLine();
+                Console.WriteLine("Press any key to exit...");
+                Console.ReadKey();
+            }
+        }
+
+        static void PrintConfigHelp(string[] args)
+        {
+            ConsoleManager.AllocateVisible();
+
+            Console.WriteLine(Globals.ConfigFileHeader.Replace("\n# ", "\n").Replace("\n#", "\n"));
+            if (args.Contains(Globals.CliArgWait))
+            {
+                Console.WriteLine();
+                Console.WriteLine("Press any key to exit...");
+                Console.ReadKey();
             }
         }
 

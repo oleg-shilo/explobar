@@ -214,8 +214,8 @@ namespace Explobar
 
         const int SHCNE_CREATE = 0x00000002;
         const int SHCNF_PATHW = 0x0005;
-        private const int explorerButtonXOffset = 200;
-        private const int explorerButtonYOffset = -1;
+        const int explorerButtonXOffset = 200;
+        const int explorerButtonYOffset = -1;
 
         public static void NotifyFileCreated(string path)
         {
@@ -225,10 +225,10 @@ namespace Explobar
         }
 
         // Explorer button monitoring - managing multiple explorer instances
-        private static Dictionary<IntPtr, ExplorerButtonInfo> explorerButtons = new Dictionary<IntPtr, ExplorerButtonInfo>();
-        private static System.Windows.Forms.Timer explorerMonitorTimer = null;
+        static Dictionary<IntPtr, ExplorerButtonInfo> explorerButtons = new Dictionary<IntPtr, ExplorerButtonInfo>();
+        static System.Windows.Forms.Timer explorerMonitorTimer = null;
 
-        private class ExplorerButtonInfo
+        class ExplorerButtonInfo
         {
             public IntPtr ExplorerHandle { get; set; }
             public IntPtr DetailsViewHandle { get; set; }
@@ -264,7 +264,7 @@ namespace Explobar
             CleanupAllButtons();
         }
 
-        private static void UpdateExplorerButtons()
+        static void UpdateExplorerButtons()
         {
             var shell = new Shell();
             var currentExplorerHandles = new HashSet<IntPtr>();
@@ -301,7 +301,7 @@ namespace Explobar
             }
         }
 
-        private static void AddButtonToExplorer(IntPtr explorerHandle, IntPtr detailsViewHandle)
+        static void AddButtonToExplorer(IntPtr explorerHandle, IntPtr detailsViewHandle)
         {
             try
             {
@@ -361,7 +361,7 @@ namespace Explobar
             }
         }
 
-        private static void RemoveButtonFromExplorer(IntPtr explorerHandle)
+        static void RemoveButtonFromExplorer(IntPtr explorerHandle)
         {
             if (explorerButtons.ContainsKey(explorerHandle))
             {
@@ -389,7 +389,7 @@ namespace Explobar
             }
         }
 
-        private static void CleanupAllButtons()
+        static void CleanupAllButtons()
         {
             var allExplorers = explorerButtons.Keys.ToList();
             foreach (var explorer in allExplorers)
@@ -399,7 +399,7 @@ namespace Explobar
             explorerButtons.Clear();
         }
 
-        private static IntPtr FindDetailsView(IntPtr explorerHandle)
+        static IntPtr FindDetailsView(IntPtr explorerHandle)
         {
             // Explorer window hierarchy:
             // CabinetWClass / ExplorerWClass (main window)
@@ -448,7 +448,7 @@ namespace Explobar
             var button = CreateButtonForWindow(targetWindow, x, y);
         }
 
-        private static Control CreateButtonForWindow(IntPtr targetWindow, int x, int y)
+        static Control CreateButtonForWindow(IntPtr targetWindow, int x, int y)
         {
             // Create a custom-drawn button form
             var buttonHost = new CustomButtonForm
