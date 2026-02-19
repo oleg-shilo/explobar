@@ -7,7 +7,7 @@ The config file defines the toolbar settings and items displayed when pressing t
 - **ShortcutKey**: Keyboard key combination to trigger the toolbar (default: Shift+Escape).<br>
    Valid values: `Escape, F1-F12, OemTilde, Shift+Escape, Ctrl+F1, Alt+F2`, etc.<br>
    Supported modifiers: `Shift, Ctrl, Alt` (can be combined with +)<br>
-   Examples: `'F1', 'Shift+F1', 'Ctrl+Alt+F12', 'OemTilde' (~)`
+   _Examples:_ `'F1', 'Shift+F1', 'Ctrl+Alt+F12', 'OemTilde' (~)`
 - **ShowConsoleAtStartup**: Show debug console window on application startup (default: false).<br>
    Console can be toggled later via tray icon or toolbar menu.
 
@@ -29,31 +29,31 @@ Each application can have the following properties:
 - **Arguments**: Command line arguments (optional)
 - **Icon**: Custom icon path with optional index (optional - defaults to executable icon)
  
-Arguments and Icon support placeholders: %f% (selected file), %c% (current directory).
+Arguments and Icon support placeholders: `%f%` (selected file), `%c%` (current directory).
 Path resolution follows same rules as toolbar items (searches system paths)
  
-Examples:
+_Examples:_
 ```yaml
-- Name: "Notepad"
-  Path: "notepad.exe"
-- Name: "Calculator"
-  Path: "calc.exe"
+- Name: Notepad
+  Path: notepad.exe
+- Name: Calculator
+  Path: calc.exe
 
-- Name: "Windows Terminal"
-  Path: "wt.exe"
-  Arguments: "-d %c%"
-  Icon: "cmd.exe"
+- Name: Windows Terminal
+  Path: wt.exe
+  Arguments: '-d %c%'
+  Icon: cmd.exe
 
-- Name: "PowerShell Here"
-  Path: "powershell.exe"
-  Arguments: "-NoExit -Command Set-Location %c%"
+- Name: PowerShell Here
+  Path: powershell.exe
+  Arguments: '-NoExit -Command Set-Location %c%'
 
-- Path: "notepad.exe"           # Name optional - will show 'notepad'
+- Path: notepad.exe           # Name optional - will show 'notepad'
 
-- Name: "Edit in VS Code"
-  Path: "%LocalAppData%\Programs\Microsoft VS Code\Code.exe"
-  Arguments: "%f%"
-  Icon: "%LocalAppData%\Programs\Microsoft VS Code\Code.exe"
+- Name: Edit in VS Code
+  Path: '%LocalAppData%\Programs\Microsoft VS Code\Code.exe'
+  Arguments: %f%
+  Icon: '%LocalAppData%\Programs\Microsoft VS Code\Code.exe'
 ```
 
 ## Stock Toolbar Buttons (built-in functionality):
