@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 
@@ -74,7 +75,7 @@ namespace Explobar
         [STAThread]
         static void Main(string[] args)
         {
-            if (args.Any(a => a.SameAsEither(Globals.CliArgHelp, "-h", "--help", "/?", "?")))
+            if (args.Any(a => a.SameAsEither(Globals.CliArgHelp, "-h", "--help", "/?", "?", "-?")))
             {
                 PrintGenericHelp(args);
             }
@@ -135,27 +136,22 @@ namespace Explobar
 
         static void PrintGenericHelp(string[] args)
         {
-            ConsoleManager.AllocateVisible();
-            Console.WriteLine(Globals.CliHelpText);
-            if (args.Contains(Globals.CliArgWait))
-            {
-                Console.WriteLine();
-                Console.WriteLine("Press any key to exit...");
-                Console.ReadKey();
-            }
+            var outFile = args.Skip(1).FirstOrDefault() ?? "help.txt";
+            var helpText = Globals.CliHelpText;
+            File.WriteAllText(outFile, helpText);
+            Process.Start(new ProcessStartInfo(outFile) { UseShellExecute = true });
         }
 
         static void PrintConfigHelp(string[] args)
         {
-            ConsoleManager.AllocateVisible();
-
-            Console.WriteLine(Globals.ConfigFileHeader.Replace("\n# ", "\n").Replace("\n#", "\n"));
-            if (args.Contains(Globals.CliArgWait))
+            var outFile = args.Skip(1).FirstOrDefault() ?? "config-help.txt";
+            var helpText = Globals.ConfigFileHelp.Replace("\n# ", "\n").Replace("\n#", "\n");
+            if (outFile.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
             {
-                Console.WriteLine();
-                Console.WriteLine("Press any key to exit...");
-                Console.ReadKey();
+                // helpText = helpText.Replace("\n", "  \n");
             }
+            File.WriteAllText(outFile, helpText);
+            Process.Start(new ProcessStartInfo(outFile) { UseShellExecute = true });
         }
 
         static bool _isProcessing = false;

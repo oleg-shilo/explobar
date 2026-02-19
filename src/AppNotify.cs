@@ -84,6 +84,18 @@ namespace Explobar
 
             contextMenu.Items.Add(new ToolStripSeparator());
 
+            contextMenu.Items.Add(new ToolStripMenuItem("Help", null,
+                 (s, e) =>
+                 {
+                     var outFile = "explobar-help.txt";
+                     var helpText =
+                            $"{Globals.CliHelpText}{Environment.NewLine}" +
+                            $"==================={Environment.NewLine}" +
+                            $"{Globals.ConfigFileHeader.Replace("\n#", "\n")}";
+                     File.WriteAllText(outFile, helpText);
+                     Process.Start(new ProcessStartInfo(outFile) { UseShellExecute = true });
+                 }));
+
             contextMenu.Items.Add(new ToolStripMenuItem("About", null,
                 (s, e) => AboutBox.Show()));
 
