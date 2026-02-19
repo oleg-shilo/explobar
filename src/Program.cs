@@ -17,61 +17,9 @@ using System.Windows.Forms;
 //    visibility of explorer button should be configurable (e.g. only show if the current folder is not the same as the one in the toolbar)
 //    theme for explorer button (e.g. dark / light / system)
 //    drugging explorer button 
+//    CLI -kill to kill any running instance
 //    print default config file
-// ✅ Recent folders should show path if it is drive only path (e.g. "C:\") or network share (e.g. "\\server\share") instead of just the name
-// ✅ Add aliase for the configured apps
-// ✅ Allow specifying the default button under cursor on popup
-// ✅ Allow keyboard navigation in the toolbar
-// ✅ ArePLuginsUpToDate should not be called on every keystroke but only when the config file changes (e.g. using FileSystemWatcher)
-//    Add aliase for teh configured apps
-//    Add explorer button for poping toolbar up
-// ✅ Allow auto-startup with Windows
-// ✅ Allow scripted buttons
-// ✅ IsConfigUpToDate should not be called on every keystroke but only when the config file changes (e.g. using FileSystemWatcher)
-// ✅ Does not show error if the configured scripted button cs and dll does not exist
-// ✅   for plugin buttons as context menu
-// ✅   - Open Location
-// ✅   - Edit script
-// ✅ Development options in the tray icon menu
-// ✅    - open logs
-// ✅    - mark in logs
-// ✅    - create plugin
-// ✅    - show / hide console
-// ✅    - Open App Folder
-// ✅    - Open Startup Folder
-// ✅    - restart explorer
-// ✅    - restart app
-// settings:
-// ✅ configure shortcut
-// ✅ support shortcuts
-//
-// buttons:
-// ✅ create new file
-// ✅ create new folder
-// ✅ create new tab
-// ✅ show selected file properties
-// ✅ navigate from clipboard content
-// ✅ button separator
-// ✅ favorites
-// ✅ applications
-// ✅ recent folders
-// ✅ config button should pop up the menu for
-//    ✅ edit config
-//    ✅ explore icons
-//    ✅ about box
-//
-// misc:
-// ✅  Keep history of Icon explorer navigation
-// ✅  Tray Icon support
-// ✅  App Singleton
-// ✅  Button default icon
-// ✅  Profiler
-// ✅  Shortcut in tooltip
-// ✅  app icon
-// ✅  taskbar icon for Icon Browser
-// ✅  recent for Icon Browser
-// make navigation warning more user friendly (e.g. "The folder you are trying to navigate to does not exist. Do you want to remove it from the history?")
-// and chaed; do not show the warning if it is still being doisplayed
+// ✅ Add explorer button for popping toolbar up
 namespace Explobar
 {
     internal class Program
@@ -149,10 +97,11 @@ namespace Explobar
         static void PrintConfigHelp(string[] args)
         {
             var outFile = args.Skip(1).FirstOrDefault() ?? "config-help.txt";
-            var helpText = Globals.ConfigFileHelp.Replace("\n# ", "\n").Replace("\n#", "\n");
-            if (outFile.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
+            var helpText = Globals.ConfigFileHelp;
+            if (!outFile.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
             {
-                // helpText = helpText.Replace("\n", "  \n");
+                // clear MD markdown formatting for better readability in plain text
+                helpText = helpText.ClearMdMarkup();
             }
             File.WriteAllText(outFile, helpText);
             Process.Start(new ProcessStartInfo(outFile) { UseShellExecute = true });
