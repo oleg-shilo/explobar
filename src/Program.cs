@@ -14,6 +14,10 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 
 // TODO
+//    visibility of explorer button should be configurable (e.g. only show if the current folder is not the same as the one in the toolbar)
+//    theme for explorer button (e.g. dark / light / system)
+//    drugging explorer button 
+//    print default config file
 // ✅ Recent folders should show path if it is drive only path (e.g. "C:\") or network share (e.g. "\\server\share") instead of just the name
 // ✅ Add aliase for the configured apps
 // ✅ Allow specifying the default button under cursor on popup
