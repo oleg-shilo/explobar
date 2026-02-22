@@ -214,8 +214,8 @@ namespace Explobar
 
         const int SHCNE_CREATE = 0x00000002;
         const int SHCNF_PATHW = 0x0005;
-        private const int explorerButtonXOffset = 200;
-        private const int explorerButtonYOffset = -1;
+        const int explorerButtonXOffset = 200;
+        const int explorerButtonYOffset = -1;
 
         public static void NotifyFileCreated(string path)
         {
@@ -268,105 +268,103 @@ namespace Explobar
 
         private static void UpdateExplorerButtons()
         {
+            if (ConfigManager.CurrentConfigUnsafe?.Settings?.DisableExploerLaunchButton == true)
+            {
+                Thread.Sleep(5000);
+                return;
+            }
+
+            var shell = new Shell();
+            var currentExplorerHandles = new HashSet<IntPtr>();
+
             try
             {
-                var shell = new Shell();
-                var currentExplorerHandles = new HashSet<IntPtr>();
+                // Group tabs by their HWND to find the active tab for each Explorer window
+                var tabsByWindow = new Dictionary<IntPtr, List<dynamic>>();
 
-                try
+                foreach (dynamic window in shell.Windows())
                 {
-                    // Group tabs by their HWND to find the active tab for each Explorer window
-                    var tabsByWindow = new Dictionary<IntPtr, List<dynamic>>();
+                    if (!window.FullName.EndsWith("explorer.exe", StringComparison.OrdinalIgnoreCase))
+                        continue;
 
-                    foreach (dynamic window in shell.Windows())
-                    {
-                        if (!window.FullName.EndsWith("explorer.exe", StringComparison.OrdinalIgnoreCase))
-                            continue;
+                    IntPtr explorerHandle = new IntPtr(window.HWND);
+                    currentExplorerHandles.Add(explorerHandle);
 
-                        IntPtr explorerHandle = new IntPtr(window.HWND);
-                        currentExplorerHandles.Add(explorerHandle);
+                    if (!tabsByWindow.ContainsKey(explorerHandle))
+                        tabsByWindow[explorerHandle] = new List<dynamic>();
 
-                        if (!tabsByWindow.ContainsKey(explorerHandle))
-                            tabsByWindow[explorerHandle] = new List<dynamic>();
-
-                        tabsByWindow[explorerHandle].Add(window);
-                    }
-
-                    // Process each Explorer window
-                    foreach (var kvp in tabsByWindow)
-                    {
-                        IntPtr explorerHandle = kvp.Key;
-                        List<dynamic> tabs = kvp.Value;
-
-                        // Find the details view - this will be for the currently active tab
-                        IntPtr detailsViewHandle = FindDetailsView(explorerHandle);
-                        if (detailsViewHandle == IntPtr.Zero)
-                            continue;
-
-                        // Get the path of the active tab (the one whose details view we found)
-                        string activeTabPath = null;
-                        try
-                        {
-                            // The active tab is the one whose LocationURL matches the details view
-                            // For simplicity, we'll use the first tab's path if we can't determine the active one
-                            // In Windows 11 multi-tab, we need to detect which tab is actually active
-                            activeTabPath = GetActiveTabPath(explorerHandle, tabs);
-                        }
-                        catch { }
-
-                        if (activeTabPath == null && tabs.Count > 0)
-                            activeTabPath = tabs[0].Document?.Folder?.Self?.Path?.ToString() ?? "";
-
-                        // Check if we need to update the button for this Explorer window
-                        bool needsNewButton = false;
-                        bool needsButtonMove = false;
-
-                        if (!explorerButtons.ContainsKey(explorerHandle))
-                        {
-                            needsNewButton = true;
-                        }
-                        else
-                        {
-                            var info = explorerButtons[explorerHandle];
-
-                            // Check if details view still exists
-                            if (!IsWindow(info.DetailsViewHandle))
-                            {
-                                needsButtonMove = true;
-                            }
-                            // Check if the active tab changed (user switched tabs)
-                            else if (info.LastActiveTabPath != activeTabPath)
-                            {
-                                needsButtonMove = true;
-                            }
-                        }
-
-                        if (needsNewButton)
-                        {
-                            AddButtonToExplorer(explorerHandle, detailsViewHandle, activeTabPath);
-                        }
-                        else if (needsButtonMove)
-                        {
-                            UpdateButtonForExplorer(explorerHandle, detailsViewHandle, activeTabPath);
-                        }
-                    }
-                }
-                finally
-                {
-                    Marshal.ReleaseComObject(shell);
+                    tabsByWindow[explorerHandle].Add(window);
                 }
 
-                // Remove buttons from closed explorer instances
-                var closedExplorers = explorerButtons.Keys.Where(h => !currentExplorerHandles.Contains(h)).ToList();
-                foreach (var closedExplorer in closedExplorers)
+                // Process each Explorer window
+                foreach (var kvp in tabsByWindow)
                 {
-                    RemoveButtonFromExplorer(closedExplorer);
+                    IntPtr explorerHandle = kvp.Key;
+                    List<dynamic> tabs = kvp.Value;
+
+                    // Find the details view - this will be for the currently active tab
+                    IntPtr detailsViewHandle = FindDetailsView(explorerHandle);
+                    if (detailsViewHandle == IntPtr.Zero)
+                        continue;
+
+                    // Get the path of the active tab (the one whose details view we found)
+                    string activeTabPath = null;
+                    try
+                    {
+                        // The active tab is the one whose LocationURL matches the details view
+                        // For simplicity, we'll use the first tab's path if we can't determine the active one
+                        // In Windows 11 multi-tab, we need to detect which tab is actually active
+                        activeTabPath = GetActiveTabPath(explorerHandle, tabs);
+                    }
+                    catch { }
+
+                    if (activeTabPath == null && tabs.Count > 0)
+                        activeTabPath = tabs[0].Document?.Folder?.Self?.Path?.ToString() ?? "";
+
+                    // Check if we need to update the button for this Explorer window
+                    bool needsNewButton = false;
+                    bool needsButtonMove = false;
+
+                    if (!explorerButtons.ContainsKey(explorerHandle))
+                    {
+                        needsNewButton = true;
+                    }
+                    else
+                    {
+                        var info = explorerButtons[explorerHandle];
+
+                        // Check if details view still exists
+                        if (!IsWindow(info.DetailsViewHandle))
+                        {
+                            needsButtonMove = true;
+                        }
+                        // Check if the active tab changed (user switched tabs)
+                        else if (info.LastActiveTabPath != activeTabPath)
+                        {
+                            needsButtonMove = true;
+                        }
+                    }
+
+                    if (needsNewButton)
+                    {
+                        AddButtonToExplorer(explorerHandle, detailsViewHandle, activeTabPath);
+                    }
+                    else if (needsButtonMove)
+                    {
+                        UpdateButtonForExplorer(explorerHandle, detailsViewHandle, activeTabPath);
+                    }
                 }
             }
-            catch (Exception ex)
+            finally
             {
-                // noncritical failure
-                Runtime.Log(ex.ToString());
+                Marshal.ReleaseComObject(shell);
+            }
+
+            // Remove buttons from closed explorer instances
+            var closedExplorers = explorerButtons.Keys.Where(h => !currentExplorerHandles.Contains(h)).ToList();
+            foreach (var closedExplorer in closedExplorers)
+            {
+                RemoveButtonFromExplorer(closedExplorer);
             }
         }
 
@@ -447,9 +445,9 @@ namespace Explobar
             if (explorerButtons.ContainsKey(explorerHandle))
             {
                 var info = explorerButtons[explorerHandle];
+
                 try
                 {
-
                     // Dispose button
                     if (info.Button != null && !info.Button.IsDisposed)
                     {
@@ -473,7 +471,7 @@ namespace Explobar
             explorerButtons.Clear();
         }
 
-        private static IntPtr FindDetailsView(IntPtr explorerHandle)
+        static IntPtr FindDetailsView(IntPtr explorerHandle)
         {
             // Explorer window hierarchy:
             // CabinetWClass / ExplorerWClass (main window)
@@ -522,7 +520,7 @@ namespace Explobar
             var button = CreateButtonForWindow(targetWindow, x, y);
         }
 
-        private static Control CreateButtonForWindow(IntPtr targetWindow, int x, int y)
+        static Control CreateButtonForWindow(IntPtr targetWindow, int x, int y)
         {
             // Create a custom-drawn button form
             var buttonHost = new CustomButtonForm

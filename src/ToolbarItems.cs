@@ -27,6 +27,7 @@ namespace Explobar
 
     class ToolbarSettings
     {
+        public bool DisableExploerLaunchButton { get; set; } = false;
         public int ButtonSize { get; set; } = 24;
         public int HistorySize { get; set; } = 10;
         public string ShortcutKey { get; set; } = "Shift+Escape";

@@ -102,6 +102,8 @@ namespace Explobar
             }
         }
 
+        public static ToolbarConfig CurrentConfigUnsafe => currentConfig;
+
         public static ToolbarConfig LoadConfig()
         {
             lock (typeof(ConfigManager))

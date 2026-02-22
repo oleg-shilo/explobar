@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Windows.Forms;
+using static System.Environment;
 
 namespace Explobar
 {
@@ -67,7 +68,7 @@ namespace Explobar
                 (s, e) => Process.Start("explorer.exe", AppDomain.CurrentDomain.BaseDirectory)));
 
             developmentMenu.DropDownItems.Add(new ToolStripMenuItem("Open Startup Folder", null,
-                (s, e) => Process.Start("explorer.exe", Environment.GetFolderPath(Environment.SpecialFolder.Startup))));
+                (s, e) => Process.Start("explorer.exe", SpecialFolder.Startup.GetPath())));
 
             developmentMenu.DropDownItems.Add(new ToolStripSeparator());
 
@@ -83,6 +84,21 @@ namespace Explobar
             //     (s, e) => Desktop.StartMonitoringAllExplorerWindows()));
 
             contextMenu.Items.Add(new ToolStripSeparator());
+
+            contextMenu.Items.Add(new ToolStripMenuItem("Help", null,
+                 (s, e) =>
+                 {
+                     var outFile = "explobar-help.txt";
+                     var helpText =
+                            $"Full documentation: https://github.com/oleg-shilo/explobar{NewLine}" +
+                            $"==================={NewLine}" +
+                            $"CLI{NewLine}" +
+                            $"{Globals.CliHelpText}{NewLine}" +
+                            $"==================={NewLine}" +
+                            $"{Globals.ConfigFileHelp.ClearMdMarkup()}";
+                     File.WriteAllText(outFile, helpText);
+                     Process.Start(new ProcessStartInfo(outFile) { UseShellExecute = true });
+                 }));
 
             contextMenu.Items.Add(new ToolStripMenuItem("About", null,
                 (s, e) => AboutBox.Show()));
@@ -280,7 +296,7 @@ namespace MyPlugins
             try
             {
                 var menuItem = sender as ToolStripMenuItem;
-                var startupPath = Environment.SpecialFolder.Startup.Combine("Explobar.lnk");
+                var startupPath = SpecialFolder.Startup.Combine("Explobar.lnk");
 
                 if (menuItem.Checked)
                 {
@@ -303,7 +319,7 @@ namespace MyPlugins
 
         static bool IsInStartup()
         {
-            var startupPath = Environment.SpecialFolder.Startup.Combine("Explobar.lnk");
+            var startupPath = SpecialFolder.Startup.Combine("Explobar.lnk");
             return File.Exists(startupPath);
         }
     }

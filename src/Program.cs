@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 
@@ -13,60 +14,12 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 
 // TODO
-// ✅ Recent folders should show path if it is drive only path (e.g. "C:\") or network share (e.g. "\\server\share") instead of just the name
-// ✅ Add aliase for the configured apps
-// ✅ Allow specifying the default button under cursor on popup
-// ✅ Allow keyboard navigation in the toolbar
-// ✅ ArePLuginsUpToDate should not be called on every keystroke but only when the config file changes (e.g. using FileSystemWatcher)
-//    Add aliase for teh configured apps
-//    Add explorer button for poping toolbar up
-// ✅ Allow auto-startup with Windows
-// ✅ Allow scripted buttons
-// ✅ IsConfigUpToDate should not be called on every keystroke but only when the config file changes (e.g. using FileSystemWatcher)
-// ✅ Does not show error if the configured scripted button cs and dll does not exist
-// ✅   for plugin buttons as context menu
-// ✅   - Open Location
-// ✅   - Edit script
-// ✅ Development options in the tray icon menu
-// ✅    - open logs
-// ✅    - mark in logs
-// ✅    - create plugin
-// ✅    - show / hide console
-// ✅    - Open App Folder
-// ✅    - Open Startup Folder
-// ✅    - restart explorer
-// ✅    - restart app
-// settings:
-// ✅ configure shortcut
-// ✅ support shortcuts
-//
-// buttons:
-// ✅ create new file
-// ✅ create new folder
-// ✅ create new tab
-// ✅ show selected file properties
-// ✅ navigate from clipboard content
-// ✅ button separator
-// ✅ favorites
-// ✅ applications
-// ✅ recent folders
-// ✅ config button should pop up the menu for
-//    ✅ edit config
-//    ✅ explore icons
-//    ✅ about box
-//
-// misc:
-// ✅  Keep history of Icon explorer navigation
-// ✅  Tray Icon support
-// ✅  App Singleton
-// ✅  Button default icon
-// ✅  Profiler
-// ✅  Shortcut in tooltip
-// ✅  app icon
-// ✅  taskbar icon for Icon Browser
-// ✅  recent for Icon Browser
-// make navigation warning more user friendly (e.g. "The folder you are trying to navigate to does not exist. Do you want to remove it from the history?")
-// and chaed; do not show the warning if it is still being doisplayed
+//    visibility of explorer button should be configurable (e.g. only show if the current folder is not the same as the one in the toolbar)
+//    theme for explorer button (e.g. dark / light / system)
+//    drugging explorer button 
+//    CLI -kill to kill any running instance
+//    print default config file
+// ✅ Add explorer button for popping toolbar up
 namespace Explobar
 {
     internal class Program
@@ -74,86 +27,84 @@ namespace Explobar
         [STAThread]
         static void Main(string[] args)
         {
-            // Check for help argument
-            if (args.Any(a => a.SameAsEither(
-                                Globals.CliArgHelp,
-                                "-h", "--help",
-                                "/?", "?")))
+            if (args.Any(a => a.SameAsEither(Globals.CliArgHelp, "-h", "--help", "/?", "?", "-?")))
             {
-                ConsoleManager.AllocateVisible();
-                Console.WriteLine(Globals.CliHelpText);
-                if (args.Contains(Globals.CliArgWait))
-                {
-                    Console.WriteLine();
-                    Console.WriteLine("Press any key to exit...");
-                    Console.ReadKey();
-                }
-                return;
+                PrintGenericHelp(args);
             }
-
-            // Check for configuration help argument
-            if (args.Any(a => a.SameAsEither(
-                                Globals.CliArgConfigHelp,
-                                "-config-help", "--config-help")))
+            else if (args.Any(a => a.SameAsEither(Globals.CliArgConfigHelp, "-config-help", "--config-help")))
             {
-                ConsoleManager.AllocateVisible();
-
-                Console.WriteLine(Globals.ConfigFileHeader.Replace("\n# ", "\n").Replace("\n#", "\n"));
-                if (args.Contains(Globals.CliArgWait))
-                {
-                    Console.WriteLine();
-                    Console.WriteLine("Press any key to exit...");
-                    Console.ReadKey();
-                }
-                return;
+                PrintConfigHelp(args);
             }
-
-            try
+            else
             {
-                var otherInstanceToWaitFor = args.FirstOrDefault(x => x.StartsWith($"{Globals.CliArgWait}:"))?.Substring(6);
-
-                otherInstanceToWaitFor?.GetProcess()?.WaitForExit();
-
-                if (SingleInstanceApp.AnotherInstanceDetected())
+                try
                 {
-                    Runtime.ShowError("Explobar is already running.");
-                    return;
-                }
+                    var otherInstanceToWaitFor = args.FirstOrDefault(x => x.StartsWith($"{Globals.CliArgWait}:"))?.Substring(6);
 
-                Application.EnableVisualStyles();
-                Application.SetCompatibleTextRenderingDefault(false);
+                    otherInstanceToWaitFor?.GetProcess()?.WaitForExit();
 
-                ConsoleManager.AllocateHidden();
+                    if (SingleInstanceApp.AnotherInstanceDetected())
+                    {
+                        Runtime.ShowError("Explobar is already running.");
+                        return;
+                    }
 
-                if (ToolbarItems.Settings.ShowConsoleAtStartup)
-                    ConsoleManager.Show();
+                    Application.EnableVisualStyles();
+                    Application.SetCompatibleTextRenderingDefault(false);
 
-                UserInputMonitor.StartMonitor(OnShortcutPressed);
-                ExplorerHistory.StartMonitor();
-                AppNotify.Setup();
+                    ConsoleManager.AllocateHidden();
 
-                Application.ApplicationExit += (s, e) =>
-                {
-                    ExplorerHistory.StopMonitor();
-                    UserInputMonitor.StopMonitor();
-                    AppNotify.Dispose();
-                    ConsoleManager.Hide();
+                    if (ToolbarItems.Settings.ShowConsoleAtStartup)
+                        ConsoleManager.Show();
+
+                    UserInputMonitor.StartMonitor(OnShortcutPressed);
+                    ExplorerHistory.StartMonitor();
+                    Desktop.StartMonitoringAllExplorerWindows();
+
+                    AppNotify.Setup();
+
+                    Application.ApplicationExit += (s, e) =>
+                    {
+                        ExplorerHistory.StopMonitor();
+                        UserInputMonitor.StopMonitor();
+                        AppNotify.Dispose();
+                        ConsoleManager.Hide();
+                        SingleInstanceApp.Clear();
+                    };
+
+                    ToolbarForm.Preheat();
+                    Profiler.Reset();
+
+                    Application.Run();
+
                     SingleInstanceApp.Clear();
-                };
-
-                ToolbarForm.Preheat();
-                Profiler.Reset();
-
-                Desktop.StartMonitoringAllExplorerWindows();
-
-                Application.Run();
-
-                SingleInstanceApp.Clear();
+                }
+                catch (Exception ex)
+                {
+                    Runtime.Log("An unexpected error occurred: " + ex.Message);
+                }
             }
-            catch (Exception ex)
+        }
+
+        static void PrintGenericHelp(string[] args)
+        {
+            var outFile = args.Skip(1).FirstOrDefault() ?? "help.txt";
+            var helpText = Globals.CliHelpText;
+            File.WriteAllText(outFile, helpText);
+            Process.Start(new ProcessStartInfo(outFile) { UseShellExecute = true });
+        }
+
+        static void PrintConfigHelp(string[] args)
+        {
+            var outFile = args.Skip(1).FirstOrDefault() ?? "config-help.txt";
+            var helpText = Globals.ConfigFileHelp;
+            if (!outFile.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
             {
-                Runtime.Log("An unexpected error occurred: " + ex.Message);
+                // clear MD markdown formatting for better readability in plain text
+                helpText = helpText.ClearMdMarkup();
             }
+            File.WriteAllText(outFile, helpText);
+            Process.Start(new ProcessStartInfo(outFile) { UseShellExecute = true });
         }
 
         static bool _isProcessing = false;

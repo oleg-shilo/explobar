@@ -7,20 +7,29 @@ namespace Explobar
     class DisableDesigner
     {
     }
+
     // Custom form with button-like appearance
     class CustomButtonForm : Form
     {
-        private bool isHovered = false;
-        private bool isPressed = false;
-        private ToolTip toolTip = new ToolTip();
+        bool isHovered = false;
+        bool isPressed = false;
+        ToolTip toolTip;
 
         public CustomButtonForm()
         {
             SetStyle(ControlStyles.UserPaint |
-                    ControlStyles.AllPaintingInWmPaint |
-                    ControlStyles.DoubleBuffer |
-                    ControlStyles.ResizeRedraw, true);
+                     ControlStyles.AllPaintingInWmPaint |
+                     ControlStyles.DoubleBuffer |
+                     ControlStyles.ResizeRedraw, true);
 
+            toolTip = new ToolTip
+            {
+                AutoPopDelay = 5000,
+                InitialDelay = 500,
+                ReshowDelay = 100,
+                ShowAlways = true,
+                Active = true
+            };
             toolTip.SetToolTip(this, "Open Explobar toolbar");
         }
 
@@ -136,6 +145,7 @@ namespace Explobar
                 g.DrawLines(iconPen, chevronPoints);
             }
         }
+
         public static void PlaceButtonOnWindow(IntPtr buttonHandle, IntPtr targetWindow, int x, int y)
         {
             // Set the button as a child window of the target window
