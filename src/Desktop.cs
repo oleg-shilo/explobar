@@ -1,4 +1,3 @@
-using Shell32;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -8,6 +7,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
+using Shell32;
 using YamlDotNet.Core.Tokens;
 
 namespace Explobar
@@ -226,6 +226,7 @@ namespace Explobar
 
         // Explorer button monitoring - managing multiple explorer instances
         private static Dictionary<IntPtr, ExplorerButtonInfo> explorerButtons = new Dictionary<IntPtr, ExplorerButtonInfo>();
+
         private static System.Windows.Forms.Timer explorerMonitorTimer = null;
 
         private class ExplorerButtonInfo
@@ -234,6 +235,7 @@ namespace Explobar
             public IntPtr DetailsViewHandle { get; set; }
             public Control Button { get; set; }
             public System.Windows.Forms.Timer NavigationMonitor { get; set; }
+            public string LastActiveTabPath { get; set; } // Track which tab was last active
         }
 
         public static void StartMonitoringAllExplorerWindows()
@@ -245,7 +247,7 @@ namespace Explobar
             if (explorerMonitorTimer == null)
             {
                 explorerMonitorTimer = new System.Windows.Forms.Timer();
-                explorerMonitorTimer.Interval = 4000; // Check every 4 seconds for new/closed explorer windows
+                explorerMonitorTimer.Interval = 2000; // Check every 2 seconds (increased frequency for better tab switching detection)
                 explorerMonitorTimer.Tick += (s, e) => UpdateExplorerButtons();
             }
 
@@ -266,98 +268,177 @@ namespace Explobar
 
         private static void UpdateExplorerButtons()
         {
-            var shell = new Shell();
-            var currentExplorerHandles = new HashSet<IntPtr>();
-
             try
             {
-                // Find all current explorer windows
-                foreach (dynamic window in shell.Windows())
-                {
-                    IntPtr explorerHandle = new IntPtr(window.HWND);
-                    currentExplorerHandles.Add(explorerHandle);
+                var shell = new Shell();
+                var currentExplorerHandles = new HashSet<IntPtr>();
 
-                    // Add button if this is a new explorer instance
-                    if (!explorerButtons.ContainsKey(explorerHandle))
+                try
+                {
+                    // Group tabs by their HWND to find the active tab for each Explorer window
+                    var tabsByWindow = new Dictionary<IntPtr, List<dynamic>>();
+
+                    foreach (dynamic window in shell.Windows())
                     {
+                        if (!window.FullName.EndsWith("explorer.exe", StringComparison.OrdinalIgnoreCase))
+                            continue;
+
+                        IntPtr explorerHandle = new IntPtr(window.HWND);
+                        currentExplorerHandles.Add(explorerHandle);
+
+                        if (!tabsByWindow.ContainsKey(explorerHandle))
+                            tabsByWindow[explorerHandle] = new List<dynamic>();
+
+                        tabsByWindow[explorerHandle].Add(window);
+                    }
+
+                    // Process each Explorer window
+                    foreach (var kvp in tabsByWindow)
+                    {
+                        IntPtr explorerHandle = kvp.Key;
+                        List<dynamic> tabs = kvp.Value;
+
+                        // Find the details view - this will be for the currently active tab
                         IntPtr detailsViewHandle = FindDetailsView(explorerHandle);
-                        if (detailsViewHandle != IntPtr.Zero)
+                        if (detailsViewHandle == IntPtr.Zero)
+                            continue;
+
+                        // Get the path of the active tab (the one whose details view we found)
+                        string activeTabPath = null;
+                        try
                         {
-                            AddButtonToExplorer(explorerHandle, detailsViewHandle);
+                            // The active tab is the one whose LocationURL matches the details view
+                            // For simplicity, we'll use the first tab's path if we can't determine the active one
+                            // In Windows 11 multi-tab, we need to detect which tab is actually active
+                            activeTabPath = GetActiveTabPath(explorerHandle, tabs);
+                        }
+                        catch { }
+
+                        if (activeTabPath == null && tabs.Count > 0)
+                            activeTabPath = tabs[0].Document?.Folder?.Self?.Path?.ToString() ?? "";
+
+                        // Check if we need to update the button for this Explorer window
+                        bool needsNewButton = false;
+                        bool needsButtonMove = false;
+
+                        if (!explorerButtons.ContainsKey(explorerHandle))
+                        {
+                            needsNewButton = true;
+                        }
+                        else
+                        {
+                            var info = explorerButtons[explorerHandle];
+
+                            // Check if details view still exists
+                            if (!IsWindow(info.DetailsViewHandle))
+                            {
+                                needsButtonMove = true;
+                            }
+                            // Check if the active tab changed (user switched tabs)
+                            else if (info.LastActiveTabPath != activeTabPath)
+                            {
+                                needsButtonMove = true;
+                            }
+                        }
+
+                        if (needsNewButton)
+                        {
+                            AddButtonToExplorer(explorerHandle, detailsViewHandle, activeTabPath);
+                        }
+                        else if (needsButtonMove)
+                        {
+                            UpdateButtonForExplorer(explorerHandle, detailsViewHandle, activeTabPath);
                         }
                     }
                 }
-            }
-            finally
-            {
-                Marshal.ReleaseComObject(shell);
-            }
+                finally
+                {
+                    Marshal.ReleaseComObject(shell);
+                }
 
-            // Remove buttons from closed explorer instances
-            var closedExplorers = explorerButtons.Keys.Where(h => !currentExplorerHandles.Contains(h)).ToList();
-            foreach (var closedExplorer in closedExplorers)
+                // Remove buttons from closed explorer instances
+                var closedExplorers = explorerButtons.Keys.Where(h => !currentExplorerHandles.Contains(h)).ToList();
+                foreach (var closedExplorer in closedExplorers)
+                {
+                    RemoveButtonFromExplorer(closedExplorer);
+                }
+            }
+            catch (Exception ex)
             {
-                RemoveButtonFromExplorer(closedExplorer);
+                // noncritical failure
+                Runtime.Log(ex.ToString());
             }
         }
 
-        private static void AddButtonToExplorer(IntPtr explorerHandle, IntPtr detailsViewHandle)
+        private static string GetActiveTabPath(IntPtr explorerHandle, List<dynamic> tabs)
+        {
+            // Try to use UI Automation to get the active tab's name
+            try
+            {
+                if (tabs.Count > 1)
+                {
+                    // Use the same logic as ResolveActiveTabInMultiTabWindow
+                    string activeTabPath = AutomationHelper.GetExplorerRoot(tabs[0]);
+                    return activeTabPath?.GetSpecialFolderCLSID();
+                }
+                else if (tabs.Count == 1)
+                {
+                    return tabs[0].Document?.Folder?.Self?.Path?.ToString();
+                }
+            }
+            catch { }
+
+            return null;
+        }
+
+        private static void AddButtonToExplorer(IntPtr explorerHandle, IntPtr detailsViewHandle, string activeTabPath)
         {
             try
             {
                 var button = CreateButtonForWindow(detailsViewHandle, explorerButtonXOffset, explorerButtonYOffset);
-
-                // Create navigation monitor for this specific explorer instance
-                var navigationMonitor = new System.Windows.Forms.Timer();
-                navigationMonitor.Interval = 2000; // Check every 2 seconds for navigation
-                navigationMonitor.Tag = explorerHandle; // Store explorer handle for reference
-
-                navigationMonitor.Tick += (s, e) =>
-                {
-                    var timer = s as System.Windows.Forms.Timer;
-                    IntPtr explorer = (IntPtr)timer.Tag;
-
-                    if (explorerButtons.ContainsKey(explorer))
-                    {
-                        var info = explorerButtons[explorer];
-
-                        // Check if details view still exists (navigation destroys it)
-                        if (!IsWindow(info.DetailsViewHandle))
-                        {
-                            // Navigation occurred, find new details view and recreate button
-                            IntPtr newDetailsView = FindDetailsView(explorer);
-                            if (newDetailsView != IntPtr.Zero)
-                            {
-                                // Dispose old button
-                                if (info.Button != null && !info.Button.IsDisposed)
-                                {
-                                    info.Button.Dispose();
-                                }
-
-                                // Create new button on new details view
-                                info.Button = CreateButtonForWindow(newDetailsView, explorerButtonXOffset, explorerButtonYOffset);
-                                info.DetailsViewHandle = newDetailsView;
-                            }
-                        }
-                    }
-                };
-
-                navigationMonitor.Start();
 
                 var buttonInfo = new ExplorerButtonInfo
                 {
                     ExplorerHandle = explorerHandle,
                     DetailsViewHandle = detailsViewHandle,
                     Button = button,
-                    NavigationMonitor = navigationMonitor
+                    LastActiveTabPath = activeTabPath
                 };
 
                 explorerButtons[explorerHandle] = buttonInfo;
-                Runtime.Log($"Added button to explorer instance: 0x{explorerHandle.ToInt64():X}");
+                Runtime.Log($"Added button to explorer window: 0x{explorerHandle.ToInt64():X}, tab: {activeTabPath}");
             }
             catch (Exception ex)
             {
                 Runtime.Log($"Error adding button to explorer: {ex.Message}");
+            }
+        }
+
+        private static void UpdateButtonForExplorer(IntPtr explorerHandle, IntPtr newDetailsViewHandle, string newActiveTabPath)
+        {
+            if (!explorerButtons.ContainsKey(explorerHandle))
+                return;
+
+            var info = explorerButtons[explorerHandle];
+
+            try
+            {
+                // Dispose old button
+                if (info.Button != null && !info.Button.IsDisposed)
+                {
+                    info.Button.Dispose();
+                }
+
+                // Create new button on new details view
+                info.Button = CreateButtonForWindow(newDetailsViewHandle, explorerButtonXOffset, explorerButtonYOffset);
+                info.DetailsViewHandle = newDetailsViewHandle;
+                info.LastActiveTabPath = newActiveTabPath;
+
+                Runtime.Log($"Updated button for explorer window: 0x{explorerHandle.ToInt64():X}, new tab: {newActiveTabPath}");
+            }
+            catch (Exception ex)
+            {
+                Runtime.Log($"Error updating button: {ex.Message}");
             }
         }
 
@@ -366,15 +447,8 @@ namespace Explobar
             if (explorerButtons.ContainsKey(explorerHandle))
             {
                 var info = explorerButtons[explorerHandle];
-
                 try
                 {
-                    // Stop navigation monitoring
-                    if (info.NavigationMonitor != null)
-                    {
-                        info.NavigationMonitor.Stop();
-                        info.NavigationMonitor.Dispose();
-                    }
 
                     // Dispose button
                     if (info.Button != null && !info.Button.IsDisposed)
@@ -478,6 +552,5 @@ namespace Explobar
 
             return buttonHost;
         }
-
     }
 }
