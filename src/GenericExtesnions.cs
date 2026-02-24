@@ -15,14 +15,15 @@ namespace Explobar
     {
         // clear MD markdown formatting for better readability in plain text
         public static string ClearMdMarkup(this string text) =>
-                text.Replace("### ", "") // headers
-                    .Replace("## ", "")
-                    .Replace("# ", "")
-                    .Replace("**", "")  // bold
-                    .Replace("```yaml", "")
-                    .Replace("`", "")
-                    .Replace("*", "")   // italics
-                    .Replace("_", "");  // underline or italics
+               text.Replace("### ", "") // headers
+                   .Replace("## ", "")
+                   .Replace("# ", "")
+                   .Replace("**", "")  // bold
+                   .Replace("```yaml", "")
+                   .Replace("`", "")
+                   .Replace("*", "")   // italics
+                   .Replace("_", "");  // underline or italics
+
         public static bool IsEmpty(this string text) => string.IsNullOrEmpty(text);
 
         public static string IfEmpty(this string text, string alternative) => string.IsNullOrEmpty(text) ? alternative : text;
@@ -210,6 +211,9 @@ namespace Explobar
             Directory.CreateDirectory(Path.GetDirectoryName(path));
             return path;
         }
+
+        public static string ChangeFileName(this string filePath, string newFileName)
+        => Path.Combine(Path.GetDirectoryName(filePath), newFileName);
 
         public static void CreateShortcut(this string targetPath, string shortcutPath)
         {

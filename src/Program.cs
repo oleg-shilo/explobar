@@ -1,22 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
-
-// using System.Reflection.Metadata;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 // TODO
 //    drugging explorer button
-//    print default config file
 //    theme for explorer button (e.g. dark / light / system)
+// ✅ print default config file
 // ✅ App -kill to kill any running instance
 // ✅ open config folder
 // ✅ visibility of explorer button should be configurable (e.g. only show if the current folder is not the same as the one in the toolbar)

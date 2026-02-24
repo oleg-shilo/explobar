@@ -263,12 +263,14 @@ namespace Explobar
             }
         }
 
-        static ToolbarConfig SaveDefaultConfig()
+        public static ToolbarConfig SaveDefaultConfig(string coutputPath = null)
         {
             var result = ToolbarItems.DefaultConfig;
 
             try
             {
+                var outputPath = coutputPath ?? ConfigPath;
+
                 // Suppress watcher events during our own save
                 suppressWatcherEvents = true;
                 try
@@ -290,11 +292,11 @@ namespace Explobar
                     // Add comments at the start of the file
                     var comments = Globals.ConfigFileHeader;
 
-                    ConfigPath.EnsureFileDir();
+                    outputPath.EnsureFileDir();
                     var yamlWithComments = comments + yaml;
-                    File.WriteAllText(ConfigPath, yamlWithComments);
+                    File.WriteAllText(outputPath, yamlWithComments);
 
-                    Runtime.Output($"Default config created at: {ConfigPath}");
+                    Runtime.Output($"Default config created at: {outputPath}");
                 }
                 finally
                 {

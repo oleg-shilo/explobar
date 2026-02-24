@@ -127,5 +127,28 @@ namespace Explobar
                 Console.WriteLine("Done.");
             }
         }
+
+        public static void ShowDefaultConfig()
+        {
+            try
+            {
+                // Get the config folder path
+                string defaultConfigFile = ConfigManager.ConfigPath.ChangeFileName("default-config.yaml");
+
+                ConfigManager.SaveDefaultConfig(defaultConfigFile);
+
+                Console.WriteLine($"Default configuration saved to: {defaultConfigFile}");
+
+                // Open with default text viewer
+                Process.Start(new ProcessStartInfo(defaultConfigFile) { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error printing default config: {ex.Message}");
+                Console.WriteLine();
+                Console.WriteLine("Press any key to exit...");
+                Console.ReadKey();
+            }
+        }
     }
 }

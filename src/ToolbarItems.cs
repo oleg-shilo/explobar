@@ -89,7 +89,7 @@ namespace Explobar
                     },
                 Items = new List<ToolbarItem>
                     {
-                        new ToolbarItem() { Path = ConfigConstants.new_tab },
+                        // new ToolbarItem() { Path = ConfigConstants.new_tab }, // may not be reliable across different explorer versions
                         new ToolbarItem() { Path = ConfigConstants.from_clip },
                         new ToolbarItem() { Path = ConfigConstants.separator },
                         new ToolbarItem() { Path = ConfigConstants.new_file },

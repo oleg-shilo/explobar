@@ -144,7 +144,7 @@ Examples:
                 comments.AppendLine();
                 comments.AppendLine("### Stock Toolbar Buttons (built-in functionality):");
                 comments.AppendLine();
-                comments.AppendLine($"- `{ConfigConstants.new_tab}`: Opens a new Explorer tab");
+                comments.AppendLine($"- `{ConfigConstants.new_tab}`: Opens a new Explorer tab; Due to the limited Explorer automation this button uses user input simulation, which may fail under some circumstances.");
                 comments.AppendLine($"- `{ConfigConstants.new_file}`: Creates a new text file in the current directory");
                 comments.AppendLine($"- `{ConfigConstants.new_folder}`: Creates a new folder in the current directory");
                 comments.AppendLine($"- `{ConfigConstants.from_clip}`: Navigates to path from clipboard (Ctrl-press opens in new tab)");

@@ -73,6 +73,9 @@ namespace Explobar
             developmentMenu.DropDownItems.Add(new ToolStripMenuItem("Open Startup Folder", null,
                 (s, e) => Process.Start("explorer.exe", SpecialFolder.Startup.GetPath())));
 
+            developmentMenu.DropDownItems.Add(new ToolStripMenuItem("Show Default Config File", null,
+                (s, e) => App.ShowDefaultConfig()));
+
             developmentMenu.DropDownItems.Add(new ToolStripSeparator());
 
             developmentMenu.DropDownItems.Add(new ToolStripMenuItem("Restart Window Explorer", null,
