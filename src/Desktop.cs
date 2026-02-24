@@ -534,7 +534,7 @@ namespace Explobar
             buttonHost.Click += (s, e) =>
             {
                 Runtime.Log("Button clicked, sending shortcut to open context menu");
-                Program.OnShortcutPressed(Keys.None);
+                App.OnShortcutPressed(Keys.None);
             };
 
             if (!buttonHost.IsHandleCreated)

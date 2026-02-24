@@ -40,17 +40,16 @@ namespace Explobar
 
             _monitorThread = new Thread(() =>
             {
-                while (true)
+                try
                 {
-                    try
+                    while (true)
                     {
-                        ScanExplorerWindows();
+                        try { ScanExplorerWindows(); }
+                        catch { }
+                        Thread.Sleep(30000);
                     }
-                    catch
-                    {
-                    }
-                    Thread.Sleep(30000);
                 }
+                catch { }
             });
             _monitorThread.SetApartmentState(ApartmentState.STA);
             _monitorThread.Start();

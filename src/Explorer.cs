@@ -238,7 +238,7 @@ namespace Explobar
                 var navigatePath = path.Replace("\\\\?\\", "");
 
                 // explorerWindow.Navigate2 does not work with paths containing # character,
-                // it seems to be a bug in explorer. So we need use CLI interface instead.
+                // it seems to be a bug in explorer. So we need use App interface instead.
                 if (path.Contains("#"))
                 {
                     // IE: D:\dev\support\wixsharp_#1887\WixSharp Setup1\WixSharp Setup1
@@ -287,7 +287,6 @@ namespace Explobar
 }
 
 static class AutomationHelper
-
 {
     public static string GetExplorerRoot(dynamic window)
     {

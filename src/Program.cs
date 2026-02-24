@@ -14,11 +14,12 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 
 // TODO
-//    visibility of explorer button should be configurable (e.g. only show if the current folder is not the same as the one in the toolbar)
-//    theme for explorer button (e.g. dark / light / system)
-//    drugging explorer button 
-//    CLI -kill to kill any running instance
+//    drugging explorer button
 //    print default config file
+//    theme for explorer button (e.g. dark / light / system)
+// ✅ App -kill to kill any running instance
+// ✅ open config folder
+// ✅ visibility of explorer button should be configurable (e.g. only show if the current folder is not the same as the one in the toolbar)
 // ✅ Add explorer button for popping toolbar up
 namespace Explobar
 {
@@ -29,19 +30,22 @@ namespace Explobar
         {
             if (args.Any(a => a.SameAsEither(Globals.CliArgHelp, "-h", "--help", "/?", "?", "-?")))
             {
-                PrintGenericHelp(args);
+                App.PrintGenericHelp(args);
             }
             else if (args.Any(a => a.SameAsEither(Globals.CliArgConfigHelp, "-config-help", "--config-help")))
             {
-                PrintConfigHelp(args);
+                App.PrintConfigHelp(args);
+            }
+            else if (args.Any(a => a.SameAsEither(Globals.CliArgKill, "--kill")))
+            {
+                App.KillRunningInstances();
             }
             else
             {
                 try
                 {
-                    var otherInstanceToWaitFor = args.FirstOrDefault(x => x.StartsWith($"{Globals.CliArgWait}:"))?.Substring(6);
-
-                    otherInstanceToWaitFor?.GetProcess()?.WaitForExit();
+                    string otherInstancePidToWaitFor = args.FirstOrDefault(x => x.StartsWith($"{Globals.CliArgWait}:"))?.Substring(6);
+                    otherInstancePidToWaitFor?.GetProcess()?.WaitForExit();
 
                     if (SingleInstanceApp.AnotherInstanceDetected())
                     {
@@ -57,7 +61,7 @@ namespace Explobar
                     if (ToolbarItems.Settings.ShowConsoleAtStartup)
                         ConsoleManager.Show();
 
-                    UserInputMonitor.StartMonitor(OnShortcutPressed);
+                    UserInputMonitor.StartMonitor(App.OnShortcutPressed);
                     ExplorerHistory.StartMonitor();
                     Desktop.StartMonitoringAllExplorerWindows();
 
@@ -84,81 +88,6 @@ namespace Explobar
                     Runtime.Log("An unexpected error occurred: " + ex.Message);
                 }
             }
-        }
-
-        static void PrintGenericHelp(string[] args)
-        {
-            var outFile = args.Skip(1).FirstOrDefault() ?? "help.txt";
-            var helpText = Globals.CliHelpText;
-            File.WriteAllText(outFile, helpText);
-            Process.Start(new ProcessStartInfo(outFile) { UseShellExecute = true });
-        }
-
-        static void PrintConfigHelp(string[] args)
-        {
-            var outFile = args.Skip(1).FirstOrDefault() ?? "config-help.txt";
-            var helpText = Globals.ConfigFileHelp;
-            if (!outFile.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
-            {
-                // clear MD markdown formatting for better readability in plain text
-                helpText = helpText.ClearMdMarkup();
-            }
-            File.WriteAllText(outFile, helpText);
-            Process.Start(new ProcessStartInfo(outFile) { UseShellExecute = true });
-        }
-
-        static bool _isProcessing = false;
-
-        public static void OnShortcutPressed(Keys key)
-        {
-            // Ignore keystrokes while config is loading or error dialog is shown
-            if (ConfigManager.IsConfigLoadingInProgress)
-            {
-                Runtime.Output("Keystroke ignored - config loading in progress");
-                return;
-            }
-
-            if (_isProcessing)
-                return;
-
-            _isProcessing = true;
-
-            Profiler.Start();
-
-            ApartmentState.STA.Run(() => // Execute on a new STA thread to avoid COM issues
-            {
-                try
-                {
-                    (var root, var selection, var window) = Explorer.GetSelection();
-                    Profiler.Log();
-
-                    if (root != null)
-                    {
-                        bool isToolbarHidden = (ToolbarForm.Instance?.IsInitializedButHidden() == true);
-
-                        if (isToolbarHidden)
-                        {
-                            // ShowToolbarForm will not block because we're unhiding an existing form (createNew: false)
-                            Action unhide = () => Desktop.ShowToolbarForm(root, selection, window, createNew: false);
-                            ToolbarForm.Instance.Invoke(unhide);
-                        }
-                        else
-                        {
-                            // ShowToolbarForm will block until the form is closed
-                            Desktop.ShowToolbarForm(root, selection, window, createNew: true);
-                        }
-                    }
-                    else
-                        Profiler.Reset();
-                }
-                finally
-                {
-                    _isProcessing = false;
-                }
-            });
-
-            if (ToolbarForm.HideOnClosing)
-                _isProcessing = false;
         }
     }
 }

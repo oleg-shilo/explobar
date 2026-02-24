@@ -1,4 +1,7 @@
+using System;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace Explobar
@@ -33,34 +36,24 @@ namespace Explobar
         public const string CliArgWait = "-wait";
         public const string CliArgHelp = "-help";
         public const string CliArgConfigHelp = "-confighelp";
+        public const string CliArgKill = "-kill";
 
-        public static string CliHelpText
-        {
-            get
-            {
-                var help = new StringBuilder();
-                help.AppendLine("Explobar - Keyboard-driven toolbar extension for Windows Explorer");
-                help.AppendLine();
-                help.AppendLine("Usage: explobar.exe [options]");
-                help.AppendLine();
-                help.AppendLine("Options:");
-                help.AppendLine("  " + Globals.CliArgHelp + "          Show this CLI help text");
-                help.AppendLine("  " + Globals.CliArgConfigHelp + "    Show configuration file format documentation");
-                help.AppendLine();
-                help.AppendLine("When run without options, Explobar starts in system tray and monitors");
-                help.AppendLine("Windows Explorer for keyboard shortcuts.");
-                help.AppendLine();
-                help.AppendLine("Configuration:");
-                help.AppendLine($"  Config file: %LocalAppData%\\Explobar\\toolbar-items.yaml");
-                help.AppendLine($"  Log files:   %LocalAppData%\\Explobar\\logs\\");
-                help.AppendLine();
-                help.AppendLine("Default shortcut: Shift+Escape (configurable in toolbar-items.yaml)");
-                help.AppendLine();
-                help.AppendLine("For more information, visit: https://github.com/oleg-shilo/explobar");
+        public static string CliHelpText => @"
+Explobar - Explorer Toolbar Utility
 
-                return help.ToString();
-            }
-        }
+Usage: explobar.exe [options]
+
+Options:
+  -help, --help, -h, /?, ?     Show this help message
+  -config-help, --config-help  Show configuration file help
+  -kill, --kill                Kill any running instances of Explobar
+  -wait:<pid>                  Wait for process with specified PID to exit
+
+Examples:
+  explobar.exe -help
+  explobar.exe -config-help
+  explobar.exe -kill
+";
 
         public static string ConfigFileHeader
         {
@@ -68,6 +61,7 @@ namespace Explobar
             {
                 var comments = new StringBuilder();
                 comments.AppendLine("# Explobar Toolbar Configuration");
+                comments.AppendLine("# ");
                 comments.AppendLine("# You can find out about config file format either by:");
                 comments.AppendLine("#  - right-clicking tray icon > Help");
                 comments.AppendLine("#  - visiting For more information: https://github.com/oleg-shilo/explobar/config-help.md");

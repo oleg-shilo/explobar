@@ -1,9 +1,9 @@
 using System;
 using System.Diagnostics;
+using static System.Environment;
 using System.IO;
 using System.Reflection;
 using System.Windows.Forms;
-using static System.Environment;
 
 namespace Explobar
 {
@@ -64,6 +64,9 @@ namespace Explobar
 
             developmentMenu.DropDownItems.Add(new ToolStripSeparator());
 
+            developmentMenu.DropDownItems.Add(new ToolStripMenuItem("Open Config Folder", null,
+                (s, e) => Process.Start("explorer.exe", ConfigManager.ConfigPath.GetDirName())));
+
             developmentMenu.DropDownItems.Add(new ToolStripMenuItem("Open App Folder", null,
                 (s, e) => Process.Start("explorer.exe", AppDomain.CurrentDomain.BaseDirectory)));
 
@@ -86,13 +89,13 @@ namespace Explobar
             contextMenu.Items.Add(new ToolStripSeparator());
 
             contextMenu.Items.Add(new ToolStripMenuItem("Help", null,
-                 (s, e) =>
+                (s, e) =>
                  {
                      var outFile = "explobar-help.txt";
                      var helpText =
                             $"Full documentation: https://github.com/oleg-shilo/explobar{NewLine}" +
                             $"==================={NewLine}" +
-                            $"CLI{NewLine}" +
+                            $"App{NewLine}" +
                             $"{Globals.CliHelpText}{NewLine}" +
                             $"==================={NewLine}" +
                             $"{Globals.ConfigFileHelp.ClearMdMarkup()}";
