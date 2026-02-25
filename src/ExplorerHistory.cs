@@ -19,6 +19,7 @@ namespace Explobar
         static object _lock = new object();
         static Thread _monitorThread;
         static HashSet<string> _lastKnownPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        static bool _stopMonitoring = false;
 
         static List<string> History
         {
@@ -38,27 +39,35 @@ namespace Explobar
             if (_monitorThread != null)
                 return;
 
+            _stopMonitoring = false;
+
             _monitorThread = new Thread(() =>
             {
                 try
                 {
-                    while (true)
+                    while (!_stopMonitoring)
                     {
                         try { ScanExplorerWindows(); }
                         catch { }
-                        Thread.Sleep(30000);
+
+                        // Sleep in small chunks to allow quick exit
+                        for (int i = 0; i < 30 && !_stopMonitoring; i++)
+                        {
+                            Thread.Sleep(1000);
+                        }
                     }
                 }
                 catch { }
             });
             _monitorThread.SetApartmentState(ApartmentState.STA);
+            _monitorThread.IsBackground = true; // Keep this!
             _monitorThread.Start();
             Runtime.Output("Explorer history monitoring started");
         }
 
         public static void StopMonitor()
         {
-            _monitorThread.Abort();
+            _stopMonitoring = true; // Signal stop instead of Abort
             _monitorThread = null;
             Runtime.Output("Explorer history monitoring stopped");
         }
