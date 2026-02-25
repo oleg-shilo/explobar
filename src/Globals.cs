@@ -92,6 +92,15 @@ Examples:
                 comments.AppendLine("   _Examples:_ `F1, Shift+F1, Ctrl+Alt+F12, OemTilde (~)`");
                 comments.AppendLine("- **ShowConsoleAtStartup**: Show debug console window on application startup (default: false).<br>");
                 comments.AppendLine("   Console can be toggled later via tray icon or toolbar menu.");
+                comments.AppendLine("- **IndexOfButtonUnderMouse**: Controls which button appears under the mouse cursor when toolbar pops up (default: 0).<br>");
+                comments.AppendLine("   `0` = center the toolbar under cursor<br>");
+                comments.AppendLine("   Positive values = 1-based index from the left (1 = first button, 2 = second, etc.)<br>");
+                comments.AppendLine("   Negative values = 1-based index from the right (-1 = last button, -2 = second-to-last, etc.)<br>");
+                comments.AppendLine("   If the index is out of range, the toolbar will be centered.");
+                comments.AppendLine("- **DisableExplorerLaunchButton**: Disable the small button that appears in Explorer windows (default: false).<br>");
+                comments.AppendLine("   When disabled, you can only open the toolbar using the keyboard shortcut.");
+                comments.AppendLine("- **ExplorerButtonXPosition**: Horizontal position of the Explorer launch button from the left edge in pixels (default: 200).<br>");
+                comments.AppendLine("   Adjust this value if the button overlaps with other Explorer UI elements.");
                 comments.AppendLine();
                 comments.AppendLine("### Favorites:");
                 comments.AppendLine();

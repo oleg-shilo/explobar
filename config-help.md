@@ -11,6 +11,15 @@ The config file defines the toolbar settings and items displayed when pressing t
    _Examples:_ `F1, Shift+F1, Ctrl+Alt+F12, OemTilde (~)`
 - **ShowConsoleAtStartup**: Show debug console window on application startup (default: false).<br>
    Console can be toggled later via tray icon or toolbar menu.
+- **IndexOfButtonUnderMouse**: Controls which button appears under the mouse cursor when toolbar pops up (default: 0).<br>
+   `0` = center the toolbar under cursor<br>
+   Positive values = 1-based index from the left (1 = first button, 2 = second, etc.)<br>
+   Negative values = 1-based index from the right (-1 = last button, -2 = second-to-last, etc.)<br>
+   If the index is out of range, the toolbar will be centered.
+- **DisableExplorerLaunchButton**: Disable the small button that appears in Explorer windows (default: false).<br>
+   When disabled, you can only open the toolbar using the keyboard shortcut.
+- **ExplorerButtonXPosition**: Horizontal position of the Explorer launch button from the left edge in pixels (default: 200).<br>
+   Adjust this value if the button overlaps with other Explorer UI elements.
 
 ### Favorites:
 
@@ -63,7 +72,7 @@ _Examples:_
 
 ### Stock Toolbar Buttons (built-in functionality):
 
-- `{new-tab}`: Opens a new Explorer tab
+- `{new-tab}`: Opens a new Explorer tab; Due to the limited Explorer automation this button uses user input simulation, which may fail under some circumstances.
 - `{new-file}`: Creates a new text file in the current directory
 - `{new-folder}`: Creates a new folder in the current directory
 - `{from-clipboard}`: Navigates to path from clipboard (Ctrl-press opens in new tab)
