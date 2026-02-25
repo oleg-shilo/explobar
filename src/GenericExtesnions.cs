@@ -28,6 +28,8 @@ namespace Explobar
 
         public static string IfEmpty(this string text, string alternative) => string.IsNullOrEmpty(text) ? alternative : text;
 
+        public static string EnquoteAsPath(this string text) => text.Contains(" ") ? $"\"{text}\"" : text;
+
         public static bool HasText(this string text) => !string.IsNullOrEmpty(text);
 
         public static bool SameAsEither(this string text, params string[] patterns)
@@ -339,15 +341,12 @@ namespace Explobar
 
         const string MESSAGE_BOX_MARKER = "Explobar_MessageBox_Marker_7F8E9A2B";
 
-        [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
-        static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
-
         public static bool AnyOtherExplobarMessageBoxShowing()
         {
             try
             {
                 // Search for a window with our distinctive title
-                IntPtr hWnd = FindWindow(null, MESSAGE_BOX_MARKER);
+                IntPtr hWnd = Desktop.FindWindow(null, MESSAGE_BOX_MARKER);
 
                 // If found and it's not zero, another Explobar instance has a message box showing
                 return hWnd != IntPtr.Zero;

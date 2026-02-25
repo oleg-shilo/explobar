@@ -127,7 +127,10 @@ namespace Explobar
         public string Path { get; set; } = "";
         public string Arguments { get; set; } = "";
         public string WorkingDir { get; set; } = "";
+
+        // public bool GrabFocus { get; set; } = true;
         public string Icon { get; set; } = "";
+
         public string Tooltip { get; set; } = "";
         public string Shortcut { get; set; } = "";
         public bool Hidden { get; set; } = false;
@@ -165,8 +168,8 @@ namespace Explobar
                 }
 
                 var args = info.Arguments?
-                    .Replace(ConfigConstants.SelectedFile, $"\"{firstItem}\"")
-                    .Replace(ConfigConstants.CurrDir, $"\"{currDir}\"")
+                    .Replace(ConfigConstants.SelectedFile, firstItem.EnquoteAsPath())
+                    .Replace(ConfigConstants.CurrDir, currDir.EnquoteAsPath())
                     ?? "";
 
                 var workDir = info.WorkingDir?
@@ -204,7 +207,7 @@ namespace Explobar
                     if (process.WaitForInputIdle(Globals.WindowStabilizationDelay))
                     {
                         Thread.Sleep(100);
-                        if (process.MainWindowHandle != IntPtr.Zero)
+                        if (!process.HasExited && process.MainWindowHandle != IntPtr.Zero)
                             Desktop.SetForegroundWindow(process.MainWindowHandle);
                     }
                 }

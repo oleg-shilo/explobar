@@ -12,6 +12,12 @@ using YamlDotNet.Core.Tokens;
 
 namespace Explobar
 {
+    static class Win32
+    {
+        [DllImport("user32.dll")]
+        public static extern bool SetForegroundWindow(IntPtr hWnd);
+    }
+
     static class Desktop
     {
         [DllImport("user32.dll")]
@@ -20,8 +26,11 @@ namespace Explobar
         [DllImport("user32.dll")]
         public static extern IntPtr GetAncestor(IntPtr hwnd, uint gaFlags);
 
-        [DllImport("user32.dll")]
-        public static extern bool SetForegroundWindow(IntPtr hWnd);
+        public static bool SetForegroundWindow(IntPtr hWnd)
+        {
+            Runtime.Output("SetForegroundWindow");
+            return Win32.SetForegroundWindow(hWnd);
+        }
 
         [DllImport("user32.dll")]
         public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
@@ -31,6 +40,9 @@ namespace Explobar
 
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
         public static extern IntPtr FindWindowEx(IntPtr hwndParent, IntPtr hwndChildAfter, string lpszClass, string lpszWindow);
+
+        [DllImport("user32.dll")]
+        public static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
 
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
         public static extern int GetClassName(IntPtr hWnd, System.Text.StringBuilder lpClassName, int nMaxCount);

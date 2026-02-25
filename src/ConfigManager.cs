@@ -134,7 +134,7 @@ namespace Explobar
                             {
                                 currentConfig = aggresiveDeserializer.Deserialize<ToolbarConfig>(yaml);
                             }
-                            catch (YamlDotNet.Core.SyntaxErrorException exc)
+                            catch (YamlDotNet.Core.YamlException exc)
                             {
                                 // If aggressive deserialization fails due to syntax errors, try forgiving deserialization
                                 currentConfig = forgivingDeserializer.Deserialize<ToolbarConfig>(yaml);
@@ -152,7 +152,7 @@ namespace Explobar
                             currentConfig = SaveDefaultConfig();
                         }
                     }
-                    catch (YamlDotNet.Core.SyntaxErrorException ex)
+                    catch (YamlDotNet.Core.YamlException ex)
                     {
                         if (!HandleConfigLoadError(ex, isYamlError: true))
                         {

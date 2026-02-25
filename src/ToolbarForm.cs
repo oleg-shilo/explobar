@@ -414,7 +414,7 @@ namespace Explobar
                         if (!clickArgs.DoNotHideToolbar)
                         {
                             HideToolbar();
-                            SetForegroundWindow((IntPtr)ExplorerContext.HWND);
+                            // SetForegroundWindow((IntPtr)ExplorerContext.HWND);
                         }
                     }
                     catch (Exception e)
@@ -506,7 +506,7 @@ namespace Explobar
                 // Runtime.Output("Closing toolbar");
                 this.Close();
             }
-            SetForegroundWindow((IntPtr)ExplorerContext.HWND);
+            // SetForegroundWindow((IntPtr)ExplorerContext.HWND);
         }
 
         void CheckMouseTimer_Tick(object sender, EventArgs e)
