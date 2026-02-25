@@ -28,6 +28,12 @@ namespace Explobar
         // Toolbar item shortcuts
         Dictionary<string, ToolbarItem> _shortcuts = new Dictionary<string, ToolbarItem>();
 
+        // Debouncing: track last executed shortcut and timestamp
+        private string _lastShortcut = null;
+
+        private DateTime _lastShortcutTime = DateTime.MinValue;
+        private const int DEBOUNCE_MS = 300; // Prevent same shortcut within 300ms
+
         public event Action<Keys> OnShortcutPressed;
 
         public void Start()
@@ -145,10 +151,21 @@ namespace Explobar
 
             // Check for toolbar item shortcuts
             var currentShortcut = GetCurrentShortcut(key);
-            // Runtime.Output($"Checking shortcut: {currentShortcut}");
+
+            // Debounce: prevent same shortcut from executing multiple times
+            if (_lastShortcut == currentShortcut &&
+                (DateTime.Now - _lastShortcutTime).TotalMilliseconds < DEBOUNCE_MS)
+            {
+                // Same shortcut pressed too quickly - ignore
+                return;
+            }
 
             if (_shortcuts.TryGetValue(currentShortcut, out ToolbarItem item))
             {
+                // Update debounce tracking
+                _lastShortcut = currentShortcut;
+                _lastShortcutTime = DateTime.Now;
+
                 Runtime.Output($"Shortcut triggered: {currentShortcut}");
 
                 // Execute on a separate thread
