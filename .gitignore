@@ -60,3 +60,4 @@ nunit-*.xml
 .veracode
 /src/logo
 /CustomPlugins/MyScriptedButton.cs.dll
+/src/CustomPlugins/MyScriptedButton.cs.dll

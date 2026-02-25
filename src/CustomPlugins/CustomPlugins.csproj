@@ -49,7 +49,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\explorer\explobar.csproj">
+    <ProjectReference Include="..\explobar\explobar.csproj">
       <Project>{b20bca5c-b689-43ec-83d3-500946901a86}</Project>
       <Name>explobar</Name>
     </ProjectReference>

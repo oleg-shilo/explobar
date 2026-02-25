@@ -64,7 +64,7 @@ Examples:
                 comments.AppendLine("# ");
                 comments.AppendLine("# You can find out about config file format either by:");
                 comments.AppendLine("#  - right-clicking tray icon > Help");
-                comments.AppendLine("#  - visiting For more information: https://github.com/oleg-shilo/explobar/config-help.md");
+                comments.AppendLine("#  - visiting For more information: https://github.com/oleg-shilo/explobar/blob/main/docs/config-help.md");
                 comments.AppendLine("#  - executing explobar.exe -config-help");
                 comments.AppendLine("# ");
                 comments.AppendLine("# ================================");

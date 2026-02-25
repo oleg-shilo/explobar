@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
 VisualStudioVersion = 18.2.11408.102
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "explobar", "explobar.csproj", "{B20BCA5C-B689-43EC-83D3-500946901A86}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "explobar", "explobar\explobar.csproj", "{B20BCA5C-B689-43EC-83D3-500946901A86}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CustomPlugins", "..\CustomPlugins\CustomPlugins.csproj", "{50A6334A-4D40-488F-AF78-ABDF02822A71}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CustomPlugins", "CustomPlugins\CustomPlugins.csproj", "{50A6334A-4D40-488F-AF78-ABDF02822A71}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
