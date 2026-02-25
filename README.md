@@ -60,7 +60,7 @@ Explobar provides immediate access to your productivity tools right where you wo
 2. Extract `Explobar.exe` and `YamlDotNet.dll`
 3. Run `Explobar.exe` (runs in system tray)
 
-**Requirements:** Windows 10/11, .NET Framework 4.7.2+
+**Requirements:** Windows 10/11, .NET Framework 4.8.1+
 
 ## Quick Start
 
