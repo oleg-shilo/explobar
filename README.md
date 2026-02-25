@@ -174,7 +174,7 @@ Settings:
   # DisableExplorerLaunchButton: true  # Uncomment to hide the button entirely
 ```
 
-For complete configuration reference, see [customization.md](customization.md).
+For complete configuration reference, see [docs\customization.md](docs\customization.md).
 
 ## Icon Browser
 

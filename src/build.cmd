@@ -1,7 +1,7 @@
 echo off
-cd src\explobar
+cd explobar
 set PATH=%PATH%;C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Current\Bin
 msbuild explobar.csproj /t:Clean,Build /p:Configuration=Release
 bin\Release\explobar.exe -config-help ..\..\docs\config-help.md
-cd ..\..
+cd ..
 pause 
