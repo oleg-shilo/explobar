@@ -2,14 +2,6 @@
 using System.Linq;
 using System.Windows.Forms;
 
-// TODO
-//    drugging explorer button
-//    theme for explorer button (e.g. dark / light / system)
-// ✅ print default config file
-// ✅ App -kill to kill any running instance
-// ✅ open config folder
-// ✅ visibility of explorer button should be configurable (e.g. only show if the current folder is not the same as the one in the toolbar)
-// ✅ Add explorer button for popping toolbar up
 namespace Explobar
 {
     internal class Program

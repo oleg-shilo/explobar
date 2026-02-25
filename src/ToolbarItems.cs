@@ -27,7 +27,7 @@ namespace Explobar
 
     class ToolbarSettings
     {
-        public bool DisableExploerLaunchButton { get; set; } = false;
+        public bool DisableExplorerLaunchButton { get; set; } = false;
         public int ButtonSize { get; set; } = 24;
         public int HistorySize { get; set; } = 10;
         public string ShortcutKey { get; set; } = "Shift+Escape";
@@ -41,6 +41,12 @@ namespace Explobar
         /// If the index is out of range, the toolbar will be centered.
         /// </summary>
         public int IndexOfButtonUnderMouse { get; set; } = 0;
+
+        /// <summary>
+        /// Horizontal position of the explorer launch button from the left edge (in pixels).
+        /// Default: 200
+        /// </summary>
+        public int ExplorerButtonXPosition { get; set; } = 200;
     }
 
     static class ToolbarItems

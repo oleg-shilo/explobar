@@ -226,7 +226,7 @@ namespace Explobar
 
         const int SHCNE_CREATE = 0x00000002;
         const int SHCNF_PATHW = 0x0005;
-        const int explorerButtonXOffset = 200;
+        static int explorerButtonXOffset => ToolbarItems.Settings.ExplorerButtonXPosition;
         const int explorerButtonYOffset = -1;
 
         public static void NotifyFileCreated(string path)
@@ -280,7 +280,14 @@ namespace Explobar
 
         private static void UpdateExplorerButtons()
         {
-            if (ConfigManager.CurrentConfigUnsafe?.Settings?.DisableExploerLaunchButton == true)
+            // If config has been reloaded, remove all existing buttons so they get recreated with new settings
+            if (!ConfigManager.IsConfigUpToDate)
+            {
+                CleanupAllButtons();
+                Runtime.Log("Config reloaded - removed all explorer buttons, will recreate with new settings");
+            }
+
+            if (ConfigManager.CurrentConfigUnsafe?.Settings?.DisableExplorerLaunchButton == true)
             {
                 Thread.Sleep(5000);
                 return;
