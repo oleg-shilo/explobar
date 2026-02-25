@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using static System.Environment;
 using System.IO;
 using System.Linq;
@@ -104,6 +105,15 @@ namespace Explobar
 
         public static ToolbarConfig CurrentConfigUnsafe => currentConfig;
 
+        static IDeserializer aggresiveDeserializer = new DeserializerBuilder()
+                                 .WithNamingConvention(PascalCaseNamingConvention.Instance)
+                                 .Build();
+
+        static IDeserializer forgivingDeserializer = new DeserializerBuilder()
+                                 .WithNamingConvention(PascalCaseNamingConvention.Instance)
+                                 .IgnoreUnmatchedProperties()
+                                 .Build();
+
         public static ToolbarConfig LoadConfig()
         {
             lock (typeof(ConfigManager))
@@ -119,11 +129,20 @@ namespace Explobar
                         if (File.Exists(ConfigPath))
                         {
                             var yaml = File.ReadAllText(ConfigPath);
-                            var deserializer = new DeserializerBuilder()
-                                .WithNamingConvention(PascalCaseNamingConvention.Instance)
-                                .Build();
 
-                            currentConfig = deserializer.Deserialize<ToolbarConfig>(yaml);
+                            try
+                            {
+                                currentConfig = aggresiveDeserializer.Deserialize<ToolbarConfig>(yaml);
+                            }
+                            catch (YamlDotNet.Core.SyntaxErrorException exc)
+                            {
+                                // If aggressive deserialization fails due to syntax errors, try forgiving deserialization
+                                currentConfig = forgivingDeserializer.Deserialize<ToolbarConfig>(yaml);
+                                Runtime.ShowError("The configuration file has been loaded but some of the settings will be ignored due to the syntax error:\n\n" +
+                                    $"{exc.Message}\n\n" +
+                                    "Review the file and address syntax issue(s).");
+                                Process.Start(new ProcessStartInfo(ConfigPath) { UseShellExecute = true });
+                            }
 
                             if (currentConfig?.Items == null || !currentConfig.Items.Any())
                                 currentConfig = SaveDefaultConfig();
