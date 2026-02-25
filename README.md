@@ -12,6 +12,8 @@ While brilliant tools like QTTabBar have extended Windows functionality dramatic
 
 Explobar provides immediate access to your productivity tools right where you work - in Explorer. Press a keyboard shortcut, and a toolbar appears at your cursor with instant access to any command, application, or custom action. No copying paths. No switching windows. No mouse hunting. Just navigation → selection → action.
 
+![image](docs/explobar.gif)
+
 ## Key Principles
 
 **Zero Friction UX**
