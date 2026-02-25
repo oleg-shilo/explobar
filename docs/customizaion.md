@@ -116,6 +116,7 @@ Console can also be toggled at runtime via:
 - Toolbar → `{app-config}` → "Show/Hide Console"
 
 **Note:** When running as Windows Application, console output is only visible when the console window is shown.
+
 ---
 
 ## Stock Toolbar Buttons
