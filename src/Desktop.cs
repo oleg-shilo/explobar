@@ -237,11 +237,11 @@ namespace Explobar
         }
 
         // Explorer button monitoring - managing multiple explorer instances
-        private static Dictionary<IntPtr, ExplorerButtonInfo> explorerButtons = new Dictionary<IntPtr, ExplorerButtonInfo>();
+        static Dictionary<IntPtr, ExplorerButtonInfo> explorerButtons = new Dictionary<IntPtr, ExplorerButtonInfo>();
 
-        private static System.Windows.Forms.Timer explorerMonitorTimer = null;
+        static System.Windows.Forms.Timer explorerMonitorTimer = null;
 
-        private class ExplorerButtonInfo
+        class ExplorerButtonInfo
         {
             public IntPtr ExplorerHandle { get; set; }
             public IntPtr DetailsViewHandle { get; set; }
@@ -278,7 +278,7 @@ namespace Explobar
             CleanupAllButtons();
         }
 
-        private static void UpdateExplorerButtons()
+        static void UpdateExplorerButtons()
         {
             // If config has been reloaded, remove all existing buttons so they get recreated with new settings
             if (!ConfigManager.IsConfigUpToDate)
@@ -387,7 +387,7 @@ namespace Explobar
             }
         }
 
-        private static string GetActiveTabPath(IntPtr explorerHandle, List<dynamic> tabs)
+        static string GetActiveTabPath(IntPtr explorerHandle, List<dynamic> tabs)
         {
             // Try to use UI Automation to get the active tab's name
             try
@@ -408,7 +408,7 @@ namespace Explobar
             return null;
         }
 
-        private static void AddButtonToExplorer(IntPtr explorerHandle, IntPtr detailsViewHandle, string activeTabPath)
+        static void AddButtonToExplorer(IntPtr explorerHandle, IntPtr detailsViewHandle, string activeTabPath)
         {
             try
             {
@@ -431,7 +431,7 @@ namespace Explobar
             }
         }
 
-        private static void UpdateButtonForExplorer(IntPtr explorerHandle, IntPtr newDetailsViewHandle, string newActiveTabPath)
+        static void UpdateButtonForExplorer(IntPtr explorerHandle, IntPtr newDetailsViewHandle, string newActiveTabPath)
         {
             if (!explorerButtons.ContainsKey(explorerHandle))
                 return;
@@ -459,7 +459,7 @@ namespace Explobar
             }
         }
 
-        private static void RemoveButtonFromExplorer(IntPtr explorerHandle)
+        static void RemoveButtonFromExplorer(IntPtr explorerHandle)
         {
             if (explorerButtons.ContainsKey(explorerHandle))
             {
@@ -480,7 +480,7 @@ namespace Explobar
             }
         }
 
-        private static void CleanupAllButtons()
+        static void CleanupAllButtons()
         {
             var allExplorers = explorerButtons.Keys.ToList();
             foreach (var explorer in allExplorers)

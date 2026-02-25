@@ -29,10 +29,10 @@ namespace Explobar
         Dictionary<string, ToolbarItem> _shortcuts = new Dictionary<string, ToolbarItem>();
 
         // Debouncing: track last executed shortcut and timestamp
-        private string _lastShortcut = null;
+        string _lastShortcut = null;
 
-        private DateTime _lastShortcutTime = DateTime.MinValue;
-        private const int DEBOUNCE_MS = 300; // Prevent same shortcut within 300ms
+        DateTime _lastShortcutTime = DateTime.MinValue;
+        const int DEBOUNCE_MS = 300; // Prevent same shortcut within 300ms
 
         public event Action<Keys> OnShortcutPressed;
 
