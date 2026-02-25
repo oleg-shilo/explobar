@@ -1,5 +1,7 @@
 ﻿# Explobar
 
+See also: [customization.md](docs/customizaion.md)
+
 A keyboard-driven toolbar extension for Windows Explorer that eliminates the friction between file navigation and productivity tools.
 
 ## The Problem
@@ -174,7 +176,7 @@ Settings:
   # DisableExplorerLaunchButton: true  # Uncomment to hide the button entirely
 ```
 
-For complete configuration reference, see [docs\customization.md](docs\customization.md).
+For complete configuration reference, see [docs/customizaion.md](docs/customizaion.md).
 
 ## Icon Browser
 
