@@ -12,6 +12,8 @@ While brilliant tools like QTTabBar have extended Windows functionality dramatic
 
 Explobar provides immediate access to your productivity tools right where you work - in Explorer. Press a keyboard shortcut, and a toolbar appears at your cursor with instant access to any command, application, or custom action. No copying paths. No switching windows. No mouse hunting. Just navigation → selection → action.
 
+![image](docs\explobar.gif)
+
 ## Key Principles
 
 **Zero Friction UX**
@@ -64,10 +66,21 @@ Explobar provides immediate access to your productivity tools right where you wo
 
 1. **Launch:** Run Explobar.exe (minimizes to system tray)
 2. **Navigate:** Open any folder in Windows Explorer
-3. **Activate:** Press `Shift+Escape` (configurable)
+3. **Activate:** Press `Shift+Escape` (configurable) OR click the embedded Explorer button
 4. **Execute:** Click any button or press `Escape` to dismiss
 
 The toolbar appears where your cursor is, with full context of your current folder and selected files.
+
+### Explorer Launch Button
+
+Explobar automatically embeds a small clickable button in each Explorer window for instant toolbar access:
+
+- **Location:** Appears in the upper area of each Explorer window (default: 200 pixels from left edge)
+- **Function:** Click to launch the toolbar at your cursor position
+- **Multi-Tab Support:** Works with Windows 11 multi-tab Explorer, adapting as you switch tabs
+- **Customization:** Position can be adjusted or button can be disabled entirely (see Configuration)
+
+This provides a mouse-friendly alternative to the keyboard shortcut, keeping toolbar access always visible and just one click away.
 
 ## Basic Configuration
 
@@ -103,6 +116,8 @@ Items:
 - `ShortcutKey` - Keyboard shortcut to show toolbar (default: Shift+Escape)
 - `HistorySize` - Number of recent folders to remember (default: 10)
 - `ShowConsoleAtStartup` - Show debug console on startup (default: false)
+- `DisableExplorerLaunchButton` - Hide the embedded Explorer button (default: false)
+- `ExplorerButtonXPosition` - Horizontal position of Explorer button from left edge in pixels (default: 200)
 
 **Items:** Toolbar buttons (stock or custom)
 
@@ -149,6 +164,14 @@ Items:
   Shortcut: 'Ctrl+Alt+C' 
   SystemWide: true      # Works even when Explorer isn't focused 
   Hidden: true          # No toolbar button, keyboard-only
+```
+
+### Example: Customizing Explorer Button
+
+```yaml
+Settings:
+  ExplorerButtonXPosition: 150    # Move button to 150px from left edge
+  # DisableExplorerLaunchButton: true  # Uncomment to hide the button entirely
 ```
 
 For complete configuration reference, see [customization.md](customization.md).
