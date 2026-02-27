@@ -374,6 +374,14 @@ namespace Explobar
                     }
                 }
             }
+            catch (System.Runtime.InteropServices.COMException)
+            {
+                // ignore all COM exception. Win Explorer is full of them :)
+            }
+            catch (Exception ex)
+            {
+                Runtime.ShowError($"Failed to open link: {ex.Message}");
+            }
             finally
             {
                 Marshal.ReleaseComObject(shell);

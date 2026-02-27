@@ -89,24 +89,66 @@ namespace Explobar
             g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
             g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
 
-            // Determine colors based on state
+            // Get dark theme setting from config
+            bool useDarkTheme = false;
+            try
+            {
+                useDarkTheme = ToolbarItems.Settings?.DarkTheme ?? false;
+            }
+            catch
+            {
+                // If config is not available, default to light theme
+                useDarkTheme = false;
+            }
+
+            // Determine colors based on state and theme
             Color backgroundColor;
             Color borderColor;
+            Color iconColor;
 
-            if (isPressed)
+            if (useDarkTheme)
             {
-                backgroundColor = Color.FromArgb(204, 228, 247); // Light blue
-                borderColor = Color.FromArgb(0, 120, 215);
-            }
-            else if (isHovered)
-            {
-                backgroundColor = Color.FromArgb(229, 241, 251); // Very light blue
-                borderColor = Color.FromArgb(0, 120, 215);
+                // Dark theme colors
+                if (isPressed)
+                {
+                    backgroundColor = Color.FromArgb(60, 60, 60); // Dark gray pressed
+                    borderColor = Color.FromArgb(100, 100, 100);
+                    iconColor = Color.FromArgb(200, 200, 200);
+                }
+                else if (isHovered)
+                {
+                    backgroundColor = Color.FromArgb(70, 70, 70); // Dark gray hover
+                    borderColor = Color.FromArgb(110, 110, 110);
+                    iconColor = Color.FromArgb(220, 220, 220);
+                }
+                else
+                {
+                    backgroundColor = Color.FromArgb(45, 45, 45); // Dark gray normal
+                    borderColor = Color.FromArgb(80, 80, 80);
+                    iconColor = Color.FromArgb(160, 160, 160);
+                }
             }
             else
             {
-                backgroundColor = Color.FromArgb(240, 240, 240); // Light gray
-                borderColor = Color.FromArgb(173, 173, 173);
+                // Light theme colors (original)
+                if (isPressed)
+                {
+                    backgroundColor = Color.FromArgb(204, 228, 247); // Light blue
+                    borderColor = Color.FromArgb(0, 120, 215);
+                    iconColor = Color.FromArgb(140, 140, 140);
+                }
+                else if (isHovered)
+                {
+                    backgroundColor = Color.FromArgb(229, 241, 251); // Very light blue
+                    borderColor = Color.FromArgb(0, 120, 215);
+                    iconColor = Color.FromArgb(140, 140, 140);
+                }
+                else
+                {
+                    backgroundColor = Color.FromArgb(240, 240, 240); // Light gray
+                    borderColor = Color.FromArgb(173, 173, 173);
+                    iconColor = Color.FromArgb(140, 140, 140);
+                }
             }
 
             // Draw background
@@ -123,7 +165,7 @@ namespace Explobar
             }
 
             // Draw expand symbol (chevron down)
-            using (Pen iconPen = new Pen(Color.FromArgb(140, 140, 140), 1))
+            using (Pen iconPen = new Pen(iconColor, 1))
             {
                 iconPen.LineJoin = System.Drawing.Drawing2D.LineJoin.Round;
                 iconPen.StartCap = System.Drawing.Drawing2D.LineCap.Round;

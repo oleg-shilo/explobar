@@ -32,6 +32,7 @@ namespace Explobar
         public int HistorySize { get; set; } = 10;
         public string ShortcutKey { get; set; } = "Shift+Escape";
         public bool ShowConsoleAtStartup { get; set; } = false;
+        public bool DarkTheme { get; set; } = false;
 
         /// <summary>
         /// Controls which button appears under the mouse cursor when the toolbar pops up.

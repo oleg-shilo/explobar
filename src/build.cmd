@@ -9,4 +9,8 @@ md distro
 del /q distro\*.*
 copy explobar\bin\Release\* distro\
 
+cd distro
+7z a explobar.7z *.*
+cd ..
+
 pause 
