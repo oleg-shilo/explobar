@@ -92,6 +92,8 @@ Examples:
                 comments.AppendLine("   _Examples:_ `F1, Shift+F1, Ctrl+Alt+F12, OemTilde (~)`");
                 comments.AppendLine("- **ShowConsoleAtStartup**: Show debug console window on application startup (default: false).<br>");
                 comments.AppendLine("   Console can be toggled later via tray icon or toolbar menu.");
+                comments.AppendLine("- **DarkTheme**: Enable dark theme for toolbar appearance (default: false).<br>");
+                comments.AppendLine("   When enabled, the toolbar uses dark background and light text colors.");
                 comments.AppendLine("- **IndexOfButtonUnderMouse**: Controls which button appears under the mouse cursor when toolbar pops up (default: 0).<br>");
                 comments.AppendLine("   `0` = center the toolbar under cursor<br>");
                 comments.AppendLine("   Positive values = 1-based index from the left (1 = first button, 2 = second, etc.)<br>");

@@ -31,6 +31,7 @@ namespace Explobar
 
             // Create context menu
             var contextMenu = new ContextMenuStrip();
+            contextMenu.ApplyTheme();
 
             contextMenu.Items.Add(new ToolStripMenuItem("Configuration", null,
                 (s, e) => Process.Start("notepad.exe", ConfigManager.ConfigPath)));

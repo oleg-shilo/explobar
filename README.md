@@ -118,8 +118,13 @@ Items:
 - `ShortcutKey` - Keyboard shortcut to show toolbar (default: Shift+Escape)
 - `HistorySize` - Number of recent folders to remember (default: 10)
 - `ShowConsoleAtStartup` - Show debug console on startup (default: false)
+- `DarkTheme` - Enable dark theme for toolbar (default: false)
 - `DisableExplorerLaunchButton` - Hide the embedded Explorer button (default: false)
 - `ExplorerButtonXPosition` - Horizontal position of Explorer button from left edge in pixels (default: 200)
+- `IndexOfButtonUnderMouse` - Controls which button appears under cursor when toolbar opens (default: 0)
+  - `0` = Center the toolbar under cursor
+  - Positive values = 1-based index from left (1 = first button, 2 = second, etc.)
+  - Negative values = 1-based index from right (-1 = last button, -2 = second-to-last, etc.)
 
 **Items:** Toolbar buttons (stock or custom)
 

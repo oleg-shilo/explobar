@@ -65,6 +65,52 @@ namespace Explobar
         }
     }
 
+    // Dark theme support for context menus
+    class DarkThemeMenuRenderer : ToolStripProfessionalRenderer
+    {
+        public DarkThemeMenuRenderer() : base(new DarkColorTable())
+        {
+        }
+
+        protected override void OnRenderArrow(ToolStripArrowRenderEventArgs e)
+        {
+            e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            var rect = new Rectangle(e.ArrowRectangle.Location, e.ArrowRectangle.Size);
+            var arrowColor = e.Item.Enabled ? Color.FromArgb(220, 220, 220) : Color.FromArgb(120, 120, 120);
+            using (var brush = new SolidBrush(arrowColor))
+            {
+                var arrow = new Point[]
+                {
+                    new Point(rect.Left + rect.Width / 3, rect.Top + rect.Height / 3),
+                    new Point(rect.Left + rect.Width / 3, rect.Bottom - rect.Height / 3),
+                    new Point(rect.Right - rect.Width / 3, rect.Top + rect.Height / 2)
+                };
+                e.Graphics.FillPolygon(brush, arrow);
+            }
+        }
+
+        protected override void OnRenderItemText(ToolStripItemTextRenderEventArgs e)
+        {
+            e.TextColor = e.Item.Enabled ? Color.FromArgb(220, 220, 220) : Color.FromArgb(120, 120, 120);
+            base.OnRenderItemText(e);
+        }
+    }
+
+    class DarkColorTable : ProfessionalColorTable
+    {
+        public override Color MenuItemSelected => Color.FromArgb(60, 60, 60);
+        public override Color MenuItemSelectedGradientBegin => Color.FromArgb(60, 60, 60);
+        public override Color MenuItemSelectedGradientEnd => Color.FromArgb(60, 60, 60);
+        public override Color MenuItemBorder => Color.FromArgb(80, 80, 80);
+        public override Color MenuBorder => Color.FromArgb(60, 60, 60);
+        public override Color MenuItemPressedGradientBegin => Color.FromArgb(50, 50, 50);
+        public override Color MenuItemPressedGradientEnd => Color.FromArgb(50, 50, 50);
+        public override Color ImageMarginGradientBegin => Color.FromArgb(45, 45, 45);
+        public override Color ImageMarginGradientMiddle => Color.FromArgb(45, 45, 45);
+        public override Color ImageMarginGradientEnd => Color.FromArgb(45, 45, 45);
+        public override Color ToolStripDropDownBackground => Color.FromArgb(45, 45, 45);
+    }
+
     public class ToolbarForm : Form
     {
         // In order to reduce flickering when showing the toolbar, there are three modes of operation:
@@ -147,13 +193,17 @@ namespace Explobar
         public ToolbarForm Init()
         {
             var items = ConfigManager.LoadConfig().Items;
+            var settings = ConfigManager.LoadConfig().Settings;
 
             this.Text = "Selected Items";
             this.TopMost = true;
             this.FormBorderStyle = FormBorderStyle.None;
             this.KeyPreview = true;
             this.ShowInTaskbar = false;
-            this.BackColor = Color.DarkGray;
+
+            // Apply dark theme colors
+            bool useDarkTheme = settings?.DarkTheme ?? false;
+            this.BackColor = useDarkTheme ? Color.FromArgb(30, 30, 30) : Color.DarkGray;
             this.Padding = new Padding(1);
             this.AutoSize = true;
             this.AutoSizeMode = AutoSizeMode.GrowAndShrink;
@@ -187,7 +237,7 @@ namespace Explobar
             toolbarPanel = new FlowLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                BackColor = Color.WhiteSmoke,
+                BackColor = useDarkTheme ? Color.FromArgb(45, 45, 45) : Color.WhiteSmoke,
                 AutoSize = true,
                 AutoSizeMode = AutoSizeMode.GrowAndShrink
             };
@@ -200,9 +250,9 @@ namespace Explobar
                     continue; // Skip hidden items - they're only accessible via shortcuts
 
                 if (item.Path == "{separator}")
-                    AddToolbarGroupSeparator();
+                    AddToolbarGroupSeparator(useDarkTheme);
                 else
-                    AddToolbarButton(item);
+                    AddToolbarButton(item, useDarkTheme);
             }
 
             if (checkMouseTimer == null)
@@ -292,13 +342,13 @@ namespace Explobar
 
         int buttonSize => ToolbarItems.Settings.ButtonSize;
 
-        void AddToolbarGroupSeparator()
+        void AddToolbarGroupSeparator(bool useDarkTheme = false)
         {
             var separator = new Panel
             {
                 Width = 1,
                 Height = buttonSize,
-                BackColor = Color.Gray,
+                BackColor = useDarkTheme ? Color.FromArgb(80, 80, 80) : Color.Gray,
                 Margin = new Padding(imagePadding, imagePadding, imagePadding, imagePadding)
             };
             toolbarPanel.Controls.Add(separator);
@@ -307,7 +357,7 @@ namespace Explobar
         static Bitmap _defaultIcon;
         public static Bitmap DefaultIcon => _defaultIcon ?? (_defaultIcon = (Bitmap)@"%SystemRoot%\System32\imageres.dll".ExpandEnvars().ExtractIcon(231));
 
-        void AddToolbarButton(ToolbarItem info)
+        void AddToolbarButton(ToolbarItem info, bool useDarkTheme = false)
         {
             Button button;
             Bitmap resizedIcon;
@@ -335,6 +385,7 @@ namespace Explobar
                 {
                     var script = info.Path.Trim('{', '}');
                     var menu = new ContextMenuStrip();
+                    menu.ApplyTheme();
                     menu.Items.Add("Edit Source", null, (s, ev) => Process.Start("notepad.exe", $"\"{script}\""));
                     menu.Items.Add("Open Location", null, (s, ev) => Process.Start("explorer.exe", $"\"{Path.GetDirectoryName(script)}\""));
                     button.MouseUp += (s, ev) =>
@@ -365,9 +416,11 @@ namespace Explobar
             button.BackColor = Color.Transparent;
             button.Cursor = Cursors.Hand;
 
-            // Configure border and appearance
+            // Configure border and appearance with dark theme support
             button.FlatAppearance.BorderSize = 0;
-            button.FlatAppearance.MouseOverBackColor = Color.FromArgb(64, Color.LightBlue);
+            button.FlatAppearance.MouseOverBackColor = useDarkTheme
+                ? Color.FromArgb(64, 70, 70, 70)
+                : Color.FromArgb(64, Color.LightBlue);
             button.FlatAppearance.MouseDownBackColor = Color.Transparent;
 
             // Add dropdown indicator for expandable buttons
@@ -385,7 +438,7 @@ namespace Explobar
                         indicatorSize,
                         indicatorSize
                                                            );
-                    DrawExpandIndicator(e.Graphics, indicatorRect);
+                    DrawExpandIndicator(e.Graphics, indicatorRect, useDarkTheme);
                 };
             }
 
@@ -531,7 +584,7 @@ namespace Explobar
             }
         }
 
-        void DrawExpandIndicator(Graphics graphics, Rectangle rect)
+        void DrawExpandIndicator(Graphics graphics, Rectangle rect, bool useDarkTheme = false)
         {
             graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
 
@@ -546,7 +599,9 @@ namespace Explobar
                 new Point(centerX + arrowSize, centerY - 1),
                 new Point(centerX, centerY + arrowSize - 1)
             };
-            using (var pen = new Pen(Color.FromArgb(96, 96, 96), 1.5f))
+
+            Color arrowColor = useDarkTheme ? Color.FromArgb(180, 180, 180) : Color.FromArgb(96, 96, 96);
+            using (var pen = new Pen(arrowColor, 1.5f))
             {
                 graphics.DrawLine(pen, arrow[0], arrow[2]);
                 graphics.DrawLine(pen, arrow[1], arrow[2]);

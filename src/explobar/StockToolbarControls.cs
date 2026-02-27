@@ -155,6 +155,7 @@ namespace Explobar
             CustomButton.PopupMenu(this, args, () =>
             {
                 var menu = new ContextMenuStrip();
+                menu.ApplyTheme();
 
                 void addMenuItem(string text, string tooltip, Action onClick)
                 {
@@ -212,6 +213,7 @@ namespace Explobar
             CustomButton.PopupMenu(this, args, () =>
             {
                 var menu = new ContextMenuStrip();
+                menu.ApplyTheme();
 
                 foreach (string path in ExplorerHistory.GetRecentLocations())
                 {
@@ -278,6 +280,7 @@ namespace Explobar
                     };
                     menu.Items.Add(menuItem);
                 }
+                menu.ApplyTheme();
                 return menu;
             });
         }
@@ -381,6 +384,7 @@ namespace Explobar
             CustomButton.PopupMenu(this, args, () =>
             {
                 var menu = new ContextMenuStrip();
+                menu.ApplyTheme();
 
                 foreach (string path in ToolbarItems.Favorites)
                 {

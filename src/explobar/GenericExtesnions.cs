@@ -279,6 +279,98 @@ namespace Explobar
             }
             return null;
         }
+
+        public static string ResolvedPath(this string path)
+        {
+            // If it's a special folder CLSID, get the actual path
+            if (path.StartsWith("::{") && path.Contains("}"))
+            {
+                try
+                {
+                    var folderName = path.GetSpecialFolderName();
+                    if (folderName != path) // Resolved to a valid name
+                    {
+                        path = folderName;
+                    }
+                }
+                catch { }
+            }
+
+            // Expand environment variables
+
+            return path.ExpandEnvars();
+        }
+
+        // Dark theme support classes
+        class DarkThemeMenuRenderer : ToolStripProfessionalRenderer
+        {
+            public DarkThemeMenuRenderer() : base(new DarkColorTable())
+            {
+            }
+
+            protected override void OnRenderArrow(ToolStripArrowRenderEventArgs e)
+            {
+                e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                var rect = new Rectangle(e.ArrowRectangle.Location, e.ArrowRectangle.Size);
+                var arrowColor = e.Item.Enabled ? Color.FromArgb(220, 220, 220) : Color.FromArgb(120, 120, 120);
+                using (var brush = new SolidBrush(arrowColor))
+                {
+                    var arrow = new Point[]
+                    {
+                        new Point(rect.Left + rect.Width / 3, rect.Top + rect.Height / 3),
+                        new Point(rect.Left + rect.Width / 3, rect.Bottom - rect.Height / 3),
+                        new Point(rect.Right - rect.Width / 3, rect.Top + rect.Height / 2)
+                    };
+                    e.Graphics.FillPolygon(brush, arrow);
+                }
+            }
+
+            protected override void OnRenderItemText(ToolStripItemTextRenderEventArgs e)
+            {
+                e.TextColor = e.Item.Enabled ? Color.FromArgb(220, 220, 220) : Color.FromArgb(120, 120, 120);
+                base.OnRenderItemText(e);
+            }
+        }
+
+        class DarkColorTable : ProfessionalColorTable
+        {
+            public override Color MenuItemSelected => Color.FromArgb(60, 60, 60);
+            public override Color MenuItemSelectedGradientBegin => Color.FromArgb(60, 60, 60);
+            public override Color MenuItemSelectedGradientEnd => Color.FromArgb(60, 60, 60);
+            public override Color MenuItemBorder => Color.FromArgb(80, 80, 80);
+            public override Color MenuBorder => Color.FromArgb(60, 60, 60);
+            public override Color MenuItemPressedGradientBegin => Color.FromArgb(50, 50, 50);
+            public override Color MenuItemPressedGradientEnd => Color.FromArgb(50, 50, 50);
+            public override Color ImageMarginGradientBegin => Color.FromArgb(45, 45, 45);
+            public override Color ImageMarginGradientMiddle => Color.FromArgb(45, 45, 45);
+            public override Color ImageMarginGradientEnd => Color.FromArgb(45, 45, 45);
+            public override Color ToolStripDropDownBackground => Color.FromArgb(45, 45, 45);
+        }
+    }
+
+    static class ThemeExtensions
+    {
+        public static void ApplyTheme(this ContextMenuStrip menu)
+        {
+            if (IsDarkThemeEnabled())
+            {
+                menu.Renderer = new DarkThemeMenuRenderer();
+                menu.BackColor = Color.FromArgb(45, 45, 45);
+                menu.ForeColor = Color.FromArgb(220, 220, 220);
+            }
+        }
+
+        public static bool IsDarkThemeEnabled()
+        {
+            try
+            {
+                return ToolbarItems.Settings?.DarkTheme ?? false;
+            }
+            catch
+            {
+                return false;
+            }
+        }
     }
 
     static class Profiler
