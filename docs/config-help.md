@@ -11,6 +11,8 @@ The config file defines the toolbar settings and items displayed when pressing t
    _Examples:_ `F1, Shift+F1, Ctrl+Alt+F12, OemTilde (~)`
 - **ShowConsoleAtStartup**: Show debug console window on application startup (default: false).<br>
    Console can be toggled later via tray icon or toolbar menu.
+- **DarkTheme**: Enable dark theme for toolbar appearance (default: false).<br>
+   When enabled, the toolbar uses dark background and light text colors.
 - **IndexOfButtonUnderMouse**: Controls which button appears under the mouse cursor when toolbar pops up (default: 0).<br>
    `0` = center the toolbar under cursor<br>
    Positive values = 1-based index from the left (1 = first button, 2 = second, etc.)<br>

@@ -55,12 +55,13 @@ Explobar provides immediate access to your productivity tools right where you wo
 - 📜 **Explorer History** - Automatically tracked, always available
 - 🎨 **Icon Browser** - Preview and extract icons from any file (shell32.dll, imageres.dll, etc.)
 - 🔄 **Live Configuration** - Changes apply immediately, no restart
+- 🌙 **Dark Theme** - Optional dark mode for comfortable low-light use
 
 ## Installation
 
-1. Download from [GitHub Releases](https://github.com/oleg-shilo/explobar/releases)
-2. Extract `Explobar.exe` and `YamlDotNet.dll`
-3. Run `Explobar.exe` (runs in system tray)
+1. In th command prompt execute: `nuget install explobar`
+2. Start Explobar with `Win+R > Type "explobar" > Press Enter`.
+3. If you want to start it with Windows, right-click the tray menu and select `Start with Windows`.
 
 **Requirements:** Windows 10/11, .NET Framework 4.8.1+
 
