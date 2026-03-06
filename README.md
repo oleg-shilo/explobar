@@ -16,7 +16,7 @@ Explobar provides immediate access to your productivity tools right where you wo
 
 ![image](docs/explobar.gif)
 
-The customisation of Explobar is going far beyond controlling the user experience. Is it better to be compared to the concept of automation? Anything you can do on your OS, you can trigger from the toolbar that you fully control. Below is an example of a SW developer toolbar customised with the additional buttons:  
+The customisation of Explobar is going far beyond controlling the user experience. It is better to be compared to the concept of automation. Anything you can do on your OS, you can trigger from the toolbar that you fully control. Below is an example of a SW developer toolbar customised with the additional buttons:  
 
 <img width="700" height="182" alt="image" src="https://github.com/user-attachments/assets/00c02e8c-973e-43f3-b40f-d8235f33503b" />
 
