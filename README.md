@@ -6,15 +6,19 @@ A keyboard-driven toolbar extension for Windows Explorer that eliminates the fri
 
 ## The Problem
 
-Windows Explorer offers virtually no customization beyond appearance. When you need to open a terminal, launch an editor, or run a script on files you're viewing, you face constant friction: copying paths, switching windows, typing commands, or navigating through nested context menus. Every action requires multiple intermediate steps that break your flow.
+Windows Explorer offers virtually no customisation beyond appearance. When you need to open a terminal, launch an editor, or run a script on files you're viewing, you face constant friction: copying paths, switching windows, typing commands, or navigating through nested context menus. Every action requires multiple intermediate steps that break your flow.
 
-While brilliant tools like QTTabBar have extended Windows functionality dramatically, they have become increasingly fragile due to being tightly coupled with Explorer internals. Microsoft's dramatic changes to these internals in Windows 11 have rendered QTTabBar (and similar tools) unreliable. Thus in some cases QTTabBar is unable to even start.
+While brilliant tools like QTTabBar have extended Windows functionality dramatically and almost addressed those concerns, they have become increasingly fragile due to being tightly coupled with Explorer internals. Microsoft's dramatic changes to these internals in Windows 11 have rendered QTTabBar (and similar tools) unreliable. Thus, in some cases, QTTabBar is unable to even start.
 
 ## The Solution
 
-Explobar provides immediate access to your productivity tools right where you work - in Explorer. Press a keyboard shortcut, and a toolbar appears at your cursor with instant access to any command, application, or custom action. No copying paths. No switching windows. No mouse hunting. Just navigation → selection → action.
+Explobar provides immediate access to your productivity tools right where you work - in Explorer. Press a keyboard shortcut (or the launch), and a toolbar appears at your cursor with instant access to any command, application, or custom action. No copying paths. No switching windows. No mouse hunting. Just navigation → selection → action.
 
 ![image](docs/explobar.gif)
+
+The customisation of Explobar is going far beyond controlling the user experience. It is better to be compared to the concept of automation. Anything you can do on your OS, you can trigger from the toolbar that you fully control. Below is an example of a SW developer toolbar customised with the additional buttons:  
+
+<img width="700" height="182" alt="image" src="https://github.com/user-attachments/assets/00c02e8c-973e-43f3-b40f-d8235f33503b" />
 
 ## Key Principles
 
@@ -25,7 +29,7 @@ Explobar provides immediate access to your productivity tools right where you wo
 - Single keypress or click executes any action
 - No intermediate steps between thought and execution
 
-**Customization for Everyone**
+**Customisation for Everyone**
 
 - **Simple:** Edit a YAML file to add buttons and shortcuts
 - **Powerful:** Write .NET plugins for complex workflows
@@ -40,7 +44,7 @@ Explobar provides immediate access to your productivity tools right where you wo
 
 **Zero-Friction Deployment**
 
-- Just an executable and `YamlDotNet.dll`
+- Just an executable and `YamlDotNet.dll` (get it with WinGet)
 - Run it once, configure once, forget it
 - WinGet and Chocolatey packages coming soon
 
@@ -59,7 +63,7 @@ Explobar provides immediate access to your productivity tools right where you wo
 
 ## Installation
 
-1. In th command prompt execute: `nuget install explobar`
+1. In th command prompt, execute: `winget install explobar`
 2. Start Explobar with `Win+R > Type "explobar" > Press Enter`.
 3. If you want to start it with Windows, right-click the tray menu and select `Start with Windows`.
 
