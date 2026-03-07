@@ -57,8 +57,11 @@ namespace Explobar
 
             developmentMenu.DropDownItems.Add(new ToolStripSeparator());
 
-            developmentMenu.DropDownItems.Add(new ToolStripMenuItem("Create Plugin", null,
-                (s, e) => CreatePluginTemplate()));
+            developmentMenu.DropDownItems.Add(new ToolStripMenuItem("Create Simple Button", null,
+                (s, e) => CreatePluginTemplate(true)));
+
+            developmentMenu.DropDownItems.Add(new ToolStripMenuItem("Create Menu Button", null,
+                (s, e) => CreatePluginTemplate(false)));
 
             developmentMenu.DropDownItems.Add(new ToolStripMenuItem("Show/Hide Console", null,
                 (s, e) => ConsoleManager.Toggle()));
@@ -124,28 +127,15 @@ namespace Explobar
             _trayIcon.DoubleClick += (s, e) => Process.Start("notepad.exe", ConfigManager.ConfigPath);
         }
 
-        static void CreatePluginTemplate()
+        static void CreatePluginTemplate(bool simpleButton)
         {
             try
             {
                 var pluginDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Plugins");
                 pluginDir.EnsureDir();
 
-                var templateFile = Path.Combine(pluginDir, "MyCustomButton.cs");
-
-                if (File.Exists(templateFile))
-                {
-                    var result = MessageBox.Show(
-                        $"Plugin template already exists at:\n{templateFile}\n\nDo you want to open it?",
-                        "Create Plugin",
-                        MessageBoxButtons.YesNo,
-                        MessageBoxIcon.Question);
-
-                    if (result == DialogResult.Yes)
-                        Process.Start("notepad.exe", templateFile);
-
-                    return;
-                }
+                // If MyCustomButton.cs exists, this returns MyCustomButton (2).cs, (3).cs, ...
+                var templateFile = pluginDir.NextAvailableName("MyCustomButton.cs");
 
                 var template = @"//css_winapp
 //css_ref " + Assembly.GetExecutingAssembly().Location + @"
@@ -154,19 +144,11 @@ using System.Windows.Forms;
 using Explobar;
 
 // ============================================================================
-// Explobar Custom Button Plugin Template
+// Explobar Custom Button
 // ============================================================================
 // C# Language Version: 7.3
 // Target Framework: .NET Framework 4.7.2
 // ============================================================================
-//
-// To use this plugin:
-// 1. Save this file to a location of your choice (e.g., C:\Explobar\Plugins\)
-// 2. Add to your toolbar-items.yaml:
-//    - Path: '{C:\Explobar\Plugins\MyCustomButton.cs}'
-//      Icon: 'shell32.dll,43'
-//      Tooltip: 'My Custom Button'
-//
 // The plugin will be automatically compiled when the toolbar loads.
 // Check logs (tray icon > Development > Open Logs) for compilation errors.
 // ============================================================================
@@ -183,41 +165,16 @@ namespace MyPlugins
             Tooltip = ""My Custom Button"";
 
             // Set to true if this button shows a dropdown menu
-            IsExpandabe = false;
-        }
-
-        public override void OnInit(ToolbarItem item, ExplorerContext context)
-        {
-            // Called once when button is initialized
-            // You can access item configuration and initial context here
-
-            string rootPath = context.RootPath;
-            Runtime.Output(""MyCustomButton initialized for path: "" + rootPath);
+            IsExpandabe = true;
         }
 
         public override void OnClick(ClickArgs args)
         {
-            // Called when button is clicked
-            // Access current Explorer context through args.Context
-
-            string currentPath = args.Context.RootPath;
-            var selectedFiles = args.Context.SelectedItems;
-            int fileCount = selectedFiles.Count;
-
-            MessageBox.Show(
-                ""Current Path: "" + currentPath + ""\nSelected Files: "" + fileCount,
-                ""Custom Button Clicked"",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Information);
-
             // To keep toolbar open after click (useful for menu buttons):
-            // args.DoNotHideToolbar = true;
-
-            // Example: Show a dropdown menu
-            // CustomButton.PopupMenu(this, args, BuildMenu);
+            args.DoNotHideToolbar = true;
+            CustomButton.PopupMenu(this, args, BuildMenu);
         }
 
-        // Example: Menu builder method (C# 7.3 local function would work inside OnClick too)
         ContextMenuStrip BuildMenu()
         {
             var menu = new ContextMenuStrip();
@@ -236,17 +193,92 @@ namespace MyPlugins
         }
     }
 }
-
 ";
-                File.WriteAllText(templateFile, template);
+                var simpleTemplate = @"//css_winapp
+//css_ref " + Assembly.GetExecutingAssembly().Location + @"
+using System;
+using System.Windows.Forms;
+using Explobar;
 
-                Runtime.ShowInfo($"Plugin template created at:\n{templateFile}\n\nOpening in Notepad...");
+// ============================================================================
+// Explobar Custom Button
+// ============================================================================
+// C# Language Version: 7.3
+// Target Framework: .NET Framework 4.7.2
+// ============================================================================
+// The plugin will be automatically compiled when the toolbar loads.
+// Check logs (tray icon > Development > Open Logs) for compilation errors.
+// ============================================================================
+
+namespace MyPlugins
+{
+    public class MyCustomButton : CustomButton
+    {
+        public MyCustomButton()
+        {
+            // Set icon properties
+            IconIndex = 43;
+            IconPath = @""%SystemRoot%\System32\shell32.dll"";
+            Tooltip = ""My Custom Button"";
+        }
+
+        public override void OnClick(ClickArgs args)
+        {
+            string currentPath = args.Context.RootPath;
+            var selectedFiles = args.Context.SelectedItems;
+            int fileCount = selectedFiles.Count;
+
+            MessageBox.Show(""Current Path: "" + currentPath + ""\nSelected Files: "" + fileCount, ""Explobar - Custom Button"");
+        }
+    }
+}
+";
+
+                File.WriteAllText(templateFile, simpleButton ? simpleTemplate : template);
+
+                AddPluginTemplateToToolbarItems(templateFile);
+
+                Runtime.ShowInfo($"Plugin template created at:\n{templateFile}\n\nAdded to toolbar-items.yaml.\n\nOpening in Notepad...");
                 Process.Start("notepad.exe", templateFile);
             }
             catch (Exception ex)
             {
                 Runtime.ShowError($"Failed to create plugin template:\n{ex.Message}");
             }
+        }
+
+        static void AddPluginTemplateToToolbarItems(string templateFile)
+        {
+            var configPath = ConfigManager.ConfigPath;
+
+            if (!File.Exists(configPath))
+                ConfigManager.SaveDefaultConfig();
+
+            var yaml = File.ReadAllText(configPath);
+
+            if (!yaml.Contains($"{NewLine}Items:{NewLine}") && !yaml.StartsWith("Items:" + NewLine))
+            {
+                if (!yaml.EndsWith(NewLine))
+                    yaml += NewLine;
+                yaml += "Items:" + NewLine;
+            }
+
+            if (!yaml.EndsWith(NewLine))
+                yaml += NewLine;
+
+            var escapedPath = templateFile.Replace("'", "''");
+            var itemName = Path.GetFileNameWithoutExtension(templateFile).Replace("'", "''");
+
+            var entry =
+                $"- Path: '{{{escapedPath}}}'{NewLine}" +
+                $"  Icon: 'shell32.dll,43'{NewLine}" +
+                $"  Tooltip: '{itemName}'{NewLine}";
+
+            yaml += entry;
+            File.WriteAllText(configPath, yaml);
+
+            // Force config refresh in runtime
+            ConfigManager.IsConfigUpToDate = false;
         }
 
         static void RestartExplorer()
