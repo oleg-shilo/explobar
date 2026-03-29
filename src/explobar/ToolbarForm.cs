@@ -257,7 +257,7 @@ namespace Explobar
 
             if (checkMouseTimer == null)
             {
-                checkMouseTimer = new System.Windows.Forms.Timer { Interval = 100 };
+                checkMouseTimer = new System.Windows.Forms.Timer { Interval = 300 };
                 checkMouseTimer.Tick += CheckMouseTimer_Tick;
             }
 
@@ -391,8 +391,16 @@ namespace Explobar
                     button.MouseUp += (s, ev) =>
                     {
                         if (ev.Button == MouseButtons.Right)
+                        {
+                            enableMouseCheck = false;
                             menu.Show(button, ev.Location);
+                        }
                     };
+
+                    menu.MouseLeave += (s, ev) => menu.Close();
+
+                    menu.Closed += (s, ev) =>
+                        enableMouseCheck = true;
                 }
 
                 iconPath = info.IconPath.IfEmpty(customButton.IconPath.ExpandEnvars());
@@ -562,6 +570,8 @@ namespace Explobar
             // SetForegroundWindow((IntPtr)ExplorerContext.HWND);
         }
 
+        int mouseOutsideCounter = 0;
+
         void CheckMouseTimer_Tick(object sender, EventArgs e)
         {
             if (enableMouseCheck)
@@ -574,7 +584,13 @@ namespace Explobar
 
                     if (!formBounds.Contains(cursorPos))
                     {
-                        HideToolbar();
+                        mouseOutsideCounter++;
+                        if (mouseOutsideCounter >= 2) // require 2 consecutive ticks outside the form
+                        {
+                            enableMouseCheck = false; // disable further checks until the toolbar is shown again
+                            mouseOutsideCounter = 0; // reset counter when mouse check is disabled
+                            HideToolbar();
+                        }
                     }
                 }
                 catch
@@ -582,6 +598,8 @@ namespace Explobar
                     // Ignore errors - we may fail if the for is disposed by other means
                 }
             }
+            else
+                mouseOutsideCounter = 0; // reset counter when mouse check is disabled
         }
 
         void DrawExpandIndicator(Graphics graphics, Rectangle rect, bool useDarkTheme = false)

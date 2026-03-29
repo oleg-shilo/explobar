@@ -75,6 +75,7 @@ namespace Explobar
             {
                 toolbarForm.SuspendMouseCheck();
 
+                menu.MouseLeave += (s, ev) => menu.Close();
                 menu.Closed += (s, e) =>
                 {
                     toolbarForm.ResumeMouseCheck();
