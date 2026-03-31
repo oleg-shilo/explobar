@@ -454,7 +454,7 @@ namespace Explobar
                     info.Button.Dispose();
                 }
 
-                // Create new button on new details view
+                // Create new button on new explorer details view
                 info.Button = CreateButtonForWindow(newDetailsViewHandle, explorerButtonXOffset, explorerButtonYOffset);
                 info.DetailsViewHandle = newDetailsViewHandle;
                 info.LastActiveTabPath = newActiveTabPath;

@@ -33,6 +33,17 @@ namespace Explobar
             toolTip.SetToolTip(this, "Open Explobar toolbar");
         }
 
+        protected override CreateParams CreateParams
+        {
+            get
+            {
+                const int WS_EX_TOOLWINDOW = 0x00000080;
+                var cp = base.CreateParams;
+                cp.ExStyle |= WS_EX_TOOLWINDOW;
+                return cp;
+            }
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)
