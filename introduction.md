@@ -71,15 +71,15 @@ And more of this:
 
 That is the core idea: reduce the distance between seeing something and doing something.
 
-Just as importantly, Explobar avoids the integration model that made older Explorer extensions fragile. It is not a shell extension tightly embedded into Explorer. It is a simple standalone, zero-dependency app running outside the Explorer process.
+Just as importantly, Explobar avoids the integration model that made older Explorer extensions fragile. It is not a shell extension tightly embedded into Explorer. It is a simple, standalone, zero-dependency app running outside the Explorer process.
 
 That design choice matters. If Explorer changes internally, Explobar is far less exposed than tools that live inside Explorer itself.
 
 ## Why this is interesting
 
-Explobar is lightweight in concept, but it opens up a very useful layer of customization.
+Explobar is lightweight in concept, but it opens up a very useful layer of customisation.
 
-At the center of the app is a very practical idea: the toolbar is just a set of buttons and actions fully defined by the user in a declarative config file.
+At the centre of the app is a very practical idea: the toolbar is just a set of buttons and actions fully defined by the user in a declarative config file.
 
 You can keep it simple with a YAML config and a few buttons for Terminal, Notepad, recent folders, or file actions. That alone removes plenty of friction.
 
@@ -100,7 +100,7 @@ Explobar is a good fit if:
 - you often launch tools from folders or file selections
 - you want less context-switching between browsing and doing
 
-If your workflow already begins and ends in PowerShell, Bash, or Windows Terminal, you may not need it.
+If your workflow already begins and ends in PowerShell, Bash, or Windows Terminal, the benefit may be limited.
 
 If your workflow regularly begins in Explorer, Explobar makes a lot more sense.
 
