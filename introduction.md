@@ -1,5 +1,7 @@
 # Explobar: fixing a surprisingly annoying Windows dev problem
 
+_Base for the [dev.to article](https://dev.to/olegshilo/explobar-fixing-that-surprisingly-annoying-friction-in-windows-explorer-27e1)_
+
 If you do most of your work in a terminal, this post may feel only mildly relevant.
 
 But if your day often starts in Windows Explorer, the gap between browsing files and acting on them can be surprisingly clumsy.
