@@ -3,6 +3,9 @@
 See also: [customization.md](docs/customizaion.md)
 
 A keyboard-driven toolbar extension for Windows Explorer that eliminates the friction between file navigation and productivity tools.
+```txt
+winget install explobar
+```
 
 ## The Problem
 
