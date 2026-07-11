@@ -1,118 +1,104 @@
 ## Why?
 
-If you do most of your work in a terminal, this post may feel only mildly relevant.
+If you live in a terminal, skip this one — it won't do much for you.
 
-But if your day often starts in Windows Explorer, the gap between browsing files and acting on them can be surprisingly clumsy.
+But if your day starts in Windows Explorer, you already know the gap I'm talking about: browsing files is easy, doing anything with them is not.
 
-You open a folder, inspect files, jump between project directories, right-click things, copy paths, open terminals, launch editors, and repeat the same small rituals dozens of times a day. None of these steps is difficult on its own but together they quietly drain momentum.
+You open a folder, poke around, jump between project directories, right-click, copy a path, open a terminal, paste the path, launch an editor, repeat. None of it is hard. It's just a lot of tiny rituals, done dozens of times a day, and they add up to a surprising amount of drag.
 
-That is the problem Explobar is built to solve.
+Explobar exists to cut that drag out.
 
 ## The Windows Explorer gap
 
-Windows Explorer is often the default workspace for many developers on Windows. Not for everything, of course, but for plenty of real work:
+For a lot of Windows developers, Explorer is the default workspace — not for everything, but for plenty of real work:
 
 - opening a repo you just cloned
-- browsing generated files
-- inspecting logs, assets, build output, config files, etc.
+- browsing generated output
+- digging through logs, build artifacts, config files
 - comparing folders
-- jumping into the right directory before launching tools
+- getting to the right directory before launching a tool
 
-This is especially common in what can be call a *gemba* workflow: you start where the work physically is, in the file system, and act from there.
+I think of this as a *gemba* habit: you go to where the work physically lives — the file system — and act from there.
 
-The issue is not that Explorer is bad at browsing files. The issue is that acting on those files usually takes too many steps. Open Terminal. Copy path. Paste path. Launch an editor. Run a helper script. Open properties. Create a file. Create a folder. Jump to a recent location.
+Explorer isn't bad at browsing. It's bad at acting. Open a terminal. Copy the path. Paste it. Launch the editor. Run the helper script. Open properties. Create a file. Create a folder. Find your way back to a folder you were just in an hour ago.
 
-Explorer makes these actions possible, but not fluid.
+None of that is fluid.
 
 ### A note on QTTabBar
 
-It is worth acknowledging QTTabBar here. For years, it was the tool that made Explorer genuinely usable for power users and developers.
+QTTabBar deserves a mention here. For years it was the thing that made Explorer actually usable if you were a power user — it showed what Explorer could be with the right extensions bolted on.
 
-It proved that Explorer could become far more productive with the right extensions around it.
+But the extension approach hasn't aged well. Windows 10 and 11 changed how Explorer hosts add-ins, and that quietly broke the assumptions QTTabBar (and tools like it) depended on. A great extension point turned into an ongoing maintenance headache.
 
-The problem is that the "extensions approach" has become much less viable over the time. Windows 10/11 has changed the Explorer hosting model and that effectively broke the assumptions tools like QTTabBar depended on. What used to be a powerful extension point turned into a fragile maintenance problem.
+None of this is a knock on QTTabBar — it was, and still is, excellent. It's just that Windows moved the ground underneath it.
 
-So this is not a criticism of QTTabBar. It's rather excellent. It is simply a recognition that Windows moved on in a way that practically killed one of the best Explorer productivity tools many of us relied on.
+### If you already live in a terminal, you don't need this
 
-### Terminal-first developers already have a solution
+Shell users already have this solved: fast navigation, aliases, scripts, history, fuzzy finders, editor integration — the whole workflow leans on text, and terminals are great at text. Explobar isn't trying to compete with that.
 
-It is worth being precise here: if you are already living in a terminal, this problem is almost irrelevant.
+It's for people who work on Windows and think visually first — Explorer is where they orient themselves — and who then want fast access to the tools and commands relevant to whatever they're looking at.
 
-Shell users have fast navigation, aliases, scripts, history, fuzzy finders, editor integration, and automation built into the workflow because they rely on the "textual" experiences that are handeled by the terminals really well. Explobar is not trying to replace that world.
+## What Explobar actually does
 
-It is for developers who work on Windows and still rely on visual/graphical experiences and use Explorer as a usual starting point: people who navigate visually first, then want immediate access to the tools and commands that matter in that context.
-
-## What Explobar does
-
-Explobar adds a customizable floating toolbar to Windows Explorer.
-
-When you trigger it (e.g. hot-key), a toolbar appears right where you are working, with awareness of the current folder and selected files. From there, you can launch apps, run custom commands, open recent locations, trigger built-in file actions, or wire in your own automation.
+Explobar drops a customizable floating toolbar onto Explorer. Hit a hotkey and it pops up right where you're working, already aware of the current folder and whatever you've got selected. From there you launch apps, run custom commands, jump to recent locations, trigger file actions, or hook in your own scripts.
 
 ![Explobar in action](https://raw.githubusercontent.com/oleg-shilo/explobar/main/docs/explobar.gif)
 
-Conceptually, Explobar partially overlaps with Explorer right-click shell extensions: it gives you context actions for the files and folders in front of you.
+It overlaps a bit with Explorer's right-click menu — both give you contextual actions for whatever's in front of you. But it's faster, mainly because it isn't fighting Explorer's own menu, which every third-party app on your machine has been cramming entries into for a decade. You get a toolbar you built, with exactly what you want on it — nothing to dig through.
 
-But it is dramatically faster because it is not competing with Explorer's own context menus or with the hundreds of third-party apps that keep adding entries there. Instead of digging through an overloaded menu tree, you get a focused toolbar built by you around your workflow.
+You decide what's on it. Three buttons, or thirty. Your call.
 
-And that is the key difference: you are in complete control of what those context actions are. You can keep just a few essential buttons, or define as many actions as your workflow needs.
+The friction it removes looks like this:
 
-In practice, that means less of this:
+- copying a path
+- alt-tabbing to a terminal
+- retyping the same command
+- hunting through a bloated context menu
 
-- copy path
-- switch windows
-- type the command again
-- dig through menus
+And replaces it with: navigate, select, click.
 
-And more of this:
+That's really the whole pitch — shrink the gap between seeing something and acting on it.
 
-- navigate > select > trigger
+One more thing, and it matters more than it sounds: Explobar runs as its own standalone process, outside Explorer. It's not a shell extension wedged into Explorer's internals. So if Microsoft changes something under the hood again, Explobar mostly doesn't care — unlike tools that live inside the process itself.
 
-That is the core idea: reduce the distance between seeing something and doing something.
+## Why I think this is worth your attention
 
-Just as importantly, Explobar avoids the integration model that made older Explorer extensions fragile. It is not a shell extension tightly embedded into Explorer. It is a simple, standalone, zero-dependency app running outside the Explorer process.
+The concept is simple, but it opens up more customization than you'd expect.
 
-That design choice matters. If Explorer changes internally, Explobar is far less exposed than tools that live inside Explorer itself.
+At its core, the toolbar is just buttons and actions, defined by you in a config file.
 
-## Why this is interesting
+Start small: a YAML file with buttons for Terminal, Notepad, a couple of recent folders. That alone kills most of the friction.
 
-Explobar is lightweight in concept, but it opens up a very useful layer of customisation.
+Want to go further — say, computing hashes for every file you've got selected? Drop in a small .NET assembly, or even a single `.cs` file, and wire in whatever logic you need.
 
-At the centre of the app is a very practical idea: the toolbar is just a set of buttons and actions fully defined by the user in a declarative config file.
+So it's:
 
-You can keep it simple with a YAML config and a few buttons for Terminal, Notepad, recent folders, or file actions. That alone removes plenty of friction.
+- easy to start with
+- quick to adapt
+- as deep as you want to take it
 
-But the model does not stop at static launchers. If you need something more advanced, like calculating hashes for all selected files, you can attach custom logic through a small .NET assembly or even a single C# `.cs` file.
+## Who this is for
 
-That is what makes it appealing for developers:
-
-- easy to start
-- fast to adapt
-- powerful if you want to grow into it
-
-## Who should care
-
-Explobar is a good fit if:
+Explobar makes sense if:
 
 - you develop on Windows
-- Explorer is part of your normal daily workflow
-- you often launch tools from folders or file selections
-- you want less context-switching between browsing and doing
+- Explorer is part of your daily routine, not an occasional detour
+- you regularly launch tools from a folder or a selection of files
+- switching between "looking at files" and "doing something with them" bugs you
 
-If your workflow already begins and ends in PowerShell, Bash, or Windows Terminal, the benefit may be limited.
+If your day starts and ends in PowerShell, Bash, or Windows Terminal, you probably won't get much out of it.
 
-If your workflow regularly begins in Explorer, Explobar makes a lot more sense.
+If it starts in Explorer, though, this was built for you.
 
 ## Final thought
 
-A lot of developer tooling focuses on editors, terminals, and cloud workflows. That makes sense. But local file-system work is still part of the day for many Windows developers.
+Most developer tooling chases editors, terminals, cloud workflows — makes sense, that's where a lot of the work is. But plenty of Windows developers still spend real time in the file system, and that side of the day gets almost no attention from tool builders.
 
-Explobar is a focused answer to that reality. It does not try to replace your terminal or your editor. It just removes friction from the place where many Windows workflows still begin: Explorer.
+Explobar is aimed squarely at that gap. It's not trying to replace your terminal or your editor — just to strip the friction out of the place a lot of Windows workflows still start: Explorer.
 
-If this sounds like your workflow, the project is on GitHub.
-Post your questions, suggestions, bug reports there: [https://github.com/oleg-shilo/explobar](https://github.com/oleg-shilo/explobar). 
-Or if you prefer, here in this thread. 
+If that sounds like your setup, the project's on GitHub. Questions, suggestions, bug reports — drop them there: [https://github.com/oleg-shilo/explobar](https://github.com/oleg-shilo/explobar), or right here in the comments.
 
-And installation on Windows is as simple as:
+Installing it on Windows is one line:
 
 ```powershell
 winget install explobar
