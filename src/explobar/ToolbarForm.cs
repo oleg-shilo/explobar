@@ -357,6 +357,8 @@ namespace Explobar
         static Bitmap _defaultIcon;
         public static Bitmap DefaultIcon => _defaultIcon ?? (_defaultIcon = (Bitmap)@"%SystemRoot%\System32\imageres.dll".ExpandEnvars().ExtractIcon(231));
 
+        static SolidBrush semiTransBrush = new SolidBrush(Color.FromArgb(170, 255, 225, 225));
+
         void AddToolbarButton(ToolbarItem info, bool useDarkTheme = false)
         {
             Button button;
@@ -423,15 +425,7 @@ namespace Explobar
             button.FlatStyle = FlatStyle.Flat;
             button.BackColor = Color.Transparent;
             button.Cursor = Cursors.Hand;
-
-            // if (Globals.ShowWithoutSelection)
-            // {
-            //     if (this.ExplorerContext.RootPath.IsEmpty()) // no selection
-            //     {
-            //         // disable the item if it requires selection (%f% file or %c% current folder)
-            //         button.Enabled = info.Arguments.Contains("%f%") || info.Arguments.Contains("%c%");
-            //     }
-            // }
+            button.ForeColor = Color.Transparent;
 
             // Configure border and appearance with dark theme support
             button.FlatAppearance.BorderSize = 0;
@@ -458,6 +452,20 @@ namespace Explobar
                     DrawExpandIndicator(e.Graphics, indicatorRect, useDarkTheme);
                 };
             }
+
+            button.Paint += (s, e) =>
+            {
+                if (Globals.ShowWithoutSelection)
+                {
+                    var requiresPathInput = info.Arguments.Contains("%f%") || info.Arguments.Contains("%c%");
+                    var pathWasSelected = this.ExplorerContext.RootPath.HasText();
+
+                    if (requiresPathInput && !pathWasSelected)
+                    {
+                        e.Graphics.FillRectangle(semiTransBrush, e.ClipRectangle);
+                    }
+                }
+            };
 
             toolTip.SetToolTip(button, $"Button: \"{info.Path}\"");
             try
@@ -505,6 +513,11 @@ namespace Explobar
                 // Ignore errors in tooltip or click handler setup
             }
             toolbarPanel.Controls.Add(button);
+        }
+
+        private void Button_VisibleChanged(object sender, EventArgs e)
+        {
+            throw new NotImplementedException();
         }
 
         // Cache for loaded images to avoid reloading and resizing the same icons multiple times
