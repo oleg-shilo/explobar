@@ -32,7 +32,6 @@ namespace Explobar
     {
         public const int WindowStabilizationDelay = 2000;
         public const int ProcessWindowInitTimeout = 100;
-        public static bool ShowWithoutSelection = true;
 
         public const string CliArgWait = "-wait";
         public const string CliArgHelp = "-help";

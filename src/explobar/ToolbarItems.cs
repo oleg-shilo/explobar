@@ -27,9 +27,11 @@ namespace Explobar
 
     class ToolbarSettings
     {
+        public bool ShowWithoutSelection { get; set; } = false;
         public bool DisableExplorerLaunchButton { get; set; } = false;
         public int ButtonSize { get; set; } = 24;
         public int HistorySize { get; set; } = 10;
+
         public string ShortcutKey { get; set; } = "Shift+Escape";
         public bool ShowConsoleAtStartup { get; set; } = false;
         public bool DarkTheme { get; set; } = false;
@@ -68,6 +70,7 @@ namespace Explobar
                 {
                     ButtonSize = 24,
                     HistorySize = 10,
+                    ShowWithoutSelection = false,
                     ShortcutKey = "Shift+Escape",
                     IndexOfButtonUnderMouse = 0  // Add this line to the DefaultConfig
                 },

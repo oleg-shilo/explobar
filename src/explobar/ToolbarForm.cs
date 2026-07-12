@@ -454,11 +454,13 @@ namespace Explobar
 
             button.Paint += (s, e) =>
             {
+                // it's tempting to update the tooltip, however `toolTip.SetToolTip` interferes with popup menus and closes them on mouse entry
+                //
                 // const string disabledWarning = "\nButton is disabled because the Explorer\nwindow with a path selection is required.";
                 // var baseTooltip = toolTip.GetToolTip(button).Replace(disabledWarning, "");
                 // toolTip.SetToolTip(button, baseTooltip);
 
-                if (Globals.ShowWithoutSelection)
+                if (ToolbarItems.Settings.ShowWithoutSelection)
                 {
                     var pathWasSelected = this.ExplorerContext.RootPath.HasText();
                     var requiresPathInput = false;
