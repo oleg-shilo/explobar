@@ -27,6 +27,8 @@ namespace Explobar
         string IconPath { get; }
 
         string Tooltip { get; }
+
+        bool RequiresPathSelection { get; }
     }
 
     class StockToolbarControls
@@ -50,6 +52,8 @@ namespace Explobar
     {
         // public bool DonotHideToolbarOnClick { get; protected set; }
         public int IconIndex { get; protected set; }
+
+        public bool RequiresPathSelection { get; set; } = false;
 
         public string IconPath { get; protected set; }
         public string Tooltip { get; protected set; }
@@ -455,6 +459,7 @@ namespace Explobar
             IconIndex = 0;// 1;
             IconPath = @"%SystemRoot%\System32\shell32.dll";
             Tooltip = "Create new file";
+            RequiresPathSelection = true;
         }
 
         public override void OnClick(ClickArgs args)
@@ -493,6 +498,7 @@ namespace Explobar
             // IconPath = @"%SystemRoot%\System32\shell32.dll"; // @"%SystemRoot%\System32\wmploc.dll,11"; @"%SystemRoot%\System32\twinui,0"
             IconPath = @"%SystemRoot%\System32\twinui.dll";
             Tooltip = "Create new tab (copy of the current tab)";
+            RequiresPathSelection = true;
         }
 
         public override void OnClick(ClickArgs args)
@@ -521,6 +527,7 @@ namespace Explobar
         {
             IconIndex = 4;
             IconPath = @"%SystemRoot%\System32\shell32.dll";
+            RequiresPathSelection = true;
             Tooltip = "Create new folder";
         }
 
@@ -555,6 +562,7 @@ namespace Explobar
 
     class NavigateFromClipboard : Button, ICustomButton
     {
+        public bool RequiresPathSelection { get; set; } = false;
         public int IconIndex { get; set; } = 260;
         public string IconPath { get; set; } = @"%SystemRoot%\System32\shell32.dll";
 

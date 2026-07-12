@@ -263,7 +263,7 @@ namespace Explobar
 
             this.Load += (s, e) =>
             {
-                enableMouseCheck = true;
+                ResumeMouseCheck();
                 checkMouseTimer?.Start();
             };
 
@@ -326,7 +326,7 @@ namespace Explobar
                     {
                         this.BeginInvoke((Action)(() =>
                         {
-                            enableMouseCheck = true;
+                            ResumeMouseCheck();
                             checkMouseTimer?.Start();
                         }));
                     }
@@ -357,7 +357,7 @@ namespace Explobar
         static Bitmap _defaultIcon;
         public static Bitmap DefaultIcon => _defaultIcon ?? (_defaultIcon = (Bitmap)@"%SystemRoot%\System32\imageres.dll".ExpandEnvars().ExtractIcon(231));
 
-        static SolidBrush semiTransBrush = new SolidBrush(Color.FromArgb(170, 255, 225, 225));
+        static SolidBrush semiTransBrush = new SolidBrush(Color.FromArgb(170, 255, 255, 255));
 
         void AddToolbarButton(ToolbarItem info, bool useDarkTheme = false)
         {
@@ -401,8 +401,7 @@ namespace Explobar
 
                     menu.MouseLeave += (s, ev) => menu.Close();
 
-                    menu.Closed += (s, ev) =>
-                        enableMouseCheck = true;
+                    menu.Closed += (s, ev) => ResumeMouseCheck();
                 }
 
                 iconPath = info.IconPath.IfEmpty(customButton.IconPath.ExpandEnvars());
@@ -455,19 +454,32 @@ namespace Explobar
 
             button.Paint += (s, e) =>
             {
+                // const string disabledWarning = "\nButton is disabled because the Explorer\nwindow with a path selection is required.";
+                // var baseTooltip = toolTip.GetToolTip(button).Replace(disabledWarning, "");
+                // toolTip.SetToolTip(button, baseTooltip);
+
                 if (Globals.ShowWithoutSelection)
                 {
-                    var requiresPathInput = info.Arguments.Contains("%f%") || info.Arguments.Contains("%c%");
                     var pathWasSelected = this.ExplorerContext.RootPath.HasText();
+                    var requiresPathInput = false;
+
+                    // custom button implementer indicates directly if it requires a path selection is required for the button to be enabled
+                    // generic buttons are expressing the input expectations via the presence of %f% or %c% in the arguments
+                    if (s is CustomButton customBtn)
+                        requiresPathInput = customBtn.RequiresPathSelection;
+                    else
+                        requiresPathInput = info.Arguments.Contains("%f%") || info.Arguments.Contains("%c%");
 
                     if (requiresPathInput && !pathWasSelected)
                     {
                         e.Graphics.FillRectangle(semiTransBrush, e.ClipRectangle);
+                        // toolTip.SetToolTip(button, baseTooltip + disabledWarning);
                     }
                 }
             };
 
             toolTip.SetToolTip(button, $"Button: \"{info.Path}\"");
+
             try
             {
                 // Build tooltip text with shortcut if available
@@ -588,12 +600,12 @@ namespace Explobar
             checkMouseTimer?.Stop();
             if (HideOnClosing)
             {
-                // Runtime.Output("Hiding toolbar");
+                Runtime.Output("Hiding toolbar");
                 this.Hide();
             }
             else
             {
-                // Runtime.Output("Closing toolbar");
+                Runtime.Output("Closing toolbar");
                 this.Close();
             }
             // SetForegroundWindow((IntPtr)ExplorerContext.HWND);
