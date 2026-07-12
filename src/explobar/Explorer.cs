@@ -234,12 +234,12 @@ namespace Explobar
         {
             try
             {
-                // Explorer injects this preffix for long paths, but it does not work with Navigate2 method, so we need to remove it.
+                // Explorer injects this prefix for long paths, but it does not work with Navigate2 method, so we need to remove it.
                 var navigatePath = path.Replace("\\\\?\\", "");
 
                 // explorerWindow.Navigate2 does not work with paths containing # character,
                 // it seems to be a bug in explorer. So we need use App interface instead.
-                if (path.Contains("#"))
+                if (path.Contains("#") || explorerWindow == null)
                 {
                     // IE: D:\dev\support\wixsharp_#1887\WixSharp Setup1\WixSharp Setup1
                     Runtime.Output($"Path contains #, encoding as: {navigatePath}");

@@ -34,7 +34,7 @@ namespace Explobar
                     (var root, var selection, var window) = Explorer.GetSelection();
                     Profiler.Log();
 
-                    if (root != null)
+                    if (root != null || Globals.ShowWithoutSelection)
                     {
                         bool isToolbarHidden = (ToolbarForm.Instance?.IsInitializedButHidden() == true);
 

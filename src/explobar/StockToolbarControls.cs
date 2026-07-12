@@ -433,6 +433,12 @@ namespace Explobar
 
         public override void OnClick(ClickArgs args)
         {
+            if (args.Context.Window == null)
+            {
+                Runtime.ShowError($"The command requires an active selection in the explorer.");
+                return;
+            }
+
             string path = args.Context.SelectedItems.FirstOrDefault();
 
             if (path.HasText())
@@ -453,6 +459,12 @@ namespace Explobar
 
         public override void OnClick(ClickArgs args)
         {
+            if (args.Context.RootPath.IsEmpty())
+            {
+                Runtime.ShowError($"The command requires an active selection in the explorer.");
+                return;
+            }
+
             var path = args.Context.RootPath.NextAvailableName("New Text Document.txt");
 
             File.WriteAllText(path, "");
@@ -485,6 +497,12 @@ namespace Explobar
 
         public override void OnClick(ClickArgs args)
         {
+            if (args.Context.RootPath.IsEmpty())
+            {
+                Runtime.ShowError($"The command requires an active selection in the explorer.");
+                return;
+            }
+
             string newRoot = args.Context.RootPath;
 
             var tabs = Explorer.GetTabs();
@@ -509,6 +527,12 @@ namespace Explobar
         public override void OnClick(ClickArgs args)
         {
             // Possible error: COM object that has been separated from Its underlying RCW cannot be used.
+
+            if (args.Context.RootPath.IsEmpty())
+            {
+                Runtime.ShowError($"The command requires an active selection in the explorer.");
+                return;
+            }
 
             var path = args.Context.RootPath.NextAvailableName("New Folder");
 

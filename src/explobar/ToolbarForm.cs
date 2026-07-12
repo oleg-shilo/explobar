@@ -424,6 +424,15 @@ namespace Explobar
             button.BackColor = Color.Transparent;
             button.Cursor = Cursors.Hand;
 
+            // if (Globals.ShowWithoutSelection)
+            // {
+            //     if (this.ExplorerContext.RootPath.IsEmpty()) // no selection
+            //     {
+            //         // disable the item if it requires selection (%f% file or %c% current folder)
+            //         button.Enabled = info.Arguments.Contains("%f%") || info.Arguments.Contains("%c%");
+            //     }
+            // }
+
             // Configure border and appearance with dark theme support
             button.FlatAppearance.BorderSize = 0;
             button.FlatAppearance.MouseOverBackColor = useDarkTheme
@@ -468,9 +477,16 @@ namespace Explobar
                         var clickArgs = new ClickArgs { Context = this.ExplorerContext, Toolbar = this };
 
                         if (customButton != null)
+                        {
                             customButton.OnClick(clickArgs);
+                        }
                         else
-                            info.Execute(this.ExplorerContext);
+                        {
+                            if (this.ExplorerContext.RootPath == null && (info.Arguments.Contains("%f%") || info.Arguments.Contains("%c%")))
+                                Runtime.ShowError($"The command requires an active selection in the explorer.");
+                            else
+                                info.Execute(this.ExplorerContext);
+                        }
 
                         if (!clickArgs.DoNotHideToolbar)
                         {
