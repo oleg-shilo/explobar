@@ -11,6 +11,8 @@ The config file defines the toolbar settings and items displayed when pressing t
    _Examples:_ `F1, Shift+F1, Ctrl+Alt+F12, OemTilde (~)`
 - **ShowConsoleAtStartup**: Show debug console window on application startup (default: false).<br>
    Console can be toggled later via tray icon or toolbar menu.
+- **ShowWithoutSelection**: Show the toolbar even when there is no active Explorer selection (default: false).<br>
+   Buttons that require an Explorer path are disabled. This includes custom buttons that require a path selection and commands that use `%f%` or `%c%`.
 - **DarkTheme**: Enable dark theme for toolbar appearance (default: false).<br>
    When enabled, the toolbar uses dark background and light text colors.
 - **IndexOfButtonUnderMouse**: Controls which button appears under the mouse cursor when toolbar pops up (default: 0).<br>
@@ -143,4 +145,3 @@ _Examples:_
   Icon: 'shell32.dll,43'
   Tooltip: 'Specific button from assembly'
 ```
-

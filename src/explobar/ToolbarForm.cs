@@ -433,10 +433,10 @@ namespace Explobar
                 : Color.FromArgb(64, Color.LightBlue);
             button.FlatAppearance.MouseDownBackColor = Color.Transparent;
 
-            // Add dropdown indicator for expandable buttons
-            if (customButton is CustomButton cb && cb.IsExpandabe)
+            button.Paint += (s, e) =>
             {
-                button.Paint += (s, e) =>
+                // Add dropdown indicator for expandable buttons
+                if (customButton is CustomButton cb && cb.IsExpandabe)
                 {
                     // Draw ComboBox-style dropdown indicator in bottom-right corner
                     int indicatorSize = 7;
@@ -449,34 +449,36 @@ namespace Explobar
                         indicatorSize
                                                            );
                     DrawExpandIndicator(e.Graphics, indicatorRect, useDarkTheme);
-                };
-            }
+                }
 
-            button.Paint += (s, e) =>
-            {
-                // it's tempting to update the tooltip, however `toolTip.SetToolTip` interferes with popup menus and closes them on mouse entry
-                //
-                // const string disabledWarning = "\nButton is disabled because the Explorer\nwindow with a path selection is required.";
-                // var baseTooltip = toolTip.GetToolTip(button).Replace(disabledWarning, "");
-                // toolTip.SetToolTip(button, baseTooltip);
-
-                if (ToolbarItems.Settings.ShowWithoutSelection)
+                if (!button.Enabled)
                 {
-                    var pathWasSelected = this.ExplorerContext.RootPath.HasText();
-                    var requiresPathInput = false;
+                    e.Graphics.FillRectangle(semiTransBrush, e.ClipRectangle);
+                }
+            };
 
-                    // custom button implementer indicates directly if it requires a path selection is required for the button to be enabled
-                    // generic buttons are expressing the input expectations via the presence of %f% or %c% in the arguments
-                    if (s is CustomButton customBtn)
-                        requiresPathInput = customBtn.RequiresPathSelection;
-                    else
-                        requiresPathInput = info.Arguments.Contains("%f%") || info.Arguments.Contains("%c%");
-
-                    if (requiresPathInput && !pathWasSelected)
+            button.VisibleChanged += (s, e) => // cannot use button.Loded as the button may not be recreated between the requests but simply visibility toggled
+            {
+                if (button.Visible)
+                {
+                    var compatibleContext = true;
+                    if (ToolbarItems.Settings.ShowWithoutSelection)
                     {
-                        e.Graphics.FillRectangle(semiTransBrush, e.ClipRectangle);
-                        // toolTip.SetToolTip(button, baseTooltip + disabledWarning);
+                        var pathWasSelected = this.ExplorerContext.RootPath.HasText();
+                        var requiresPathInput = false;
+
+                        // custom button implementer indicates directly if it requires a path selection is required for the button to be enabled
+                        // generic buttons are expressing the input expectations via the presence of %f% or %c% in the arguments
+                        if (s is CustomButton customBtn)
+                            requiresPathInput = customBtn.RequiresPathSelection;
+                        else
+                            requiresPathInput = info.Arguments.Contains("%f%") || info.Arguments.Contains("%c%");
+
+                        if (requiresPathInput && !pathWasSelected)
+                            compatibleContext = false;
                     }
+                    if (button.Enabled != compatibleContext)
+                        button.Enabled = compatibleContext;
                 }
             };
 
